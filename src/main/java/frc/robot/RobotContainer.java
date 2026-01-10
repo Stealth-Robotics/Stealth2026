@@ -18,4 +18,17 @@ public class RobotContainer {
     public Command getAutonomousCommand() {
         return Commands.print("No autonomous command configured");
     }
+
+    /* Reset robot's encoders and states */
+    public Command resetRobot() {
+        return null;
+    }
+
+    /*
+     * Home all the robot's subsystems to the starting configuration. We should make
+     * sure the subsystems don't clash while resetting their states.
+     */
+    public Command homeRobot() {
+        return null;
+    }
 }
