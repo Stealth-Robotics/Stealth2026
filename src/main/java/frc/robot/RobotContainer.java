@@ -13,7 +13,6 @@ import frc.robot.util.ShiftTracker;
 public class RobotContainer {
     private final RobotSystem robot;
     
-
     public RobotContainer() {
         robot = new RobotSystem();
 
@@ -25,7 +24,8 @@ public class RobotContainer {
         // Command bound to a dashboard button
         SmartDashboard.putData("Reset Encoders", resetRobot());
 
-        // Dashboard Toggle to enable/disable Hub state dependant shooting (only shooting when legal)
+        // Allow us to toggle whether we use the shift tracker in a match
+        SmartDashboard.putBoolean("Hub Dependent Shooting", true);
     }
 
     private void configureBindings() {

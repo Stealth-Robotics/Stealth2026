@@ -15,10 +15,10 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kI = 0.0;
     private final double kD = 0.0;
 
-    private final int TURRET_MOTOR_CAN_ID = 0;
+    private final int TURRET_MOTOR_ID = 0;
 
     public TurretSubsystem() {
-        turretMotor = new TalonFX(TURRET_MOTOR_CAN_ID);
+        turretMotor = new TalonFX(TURRET_MOTOR_ID);
 
 
         turretMotor.getConfigurator().apply(turretConfig);

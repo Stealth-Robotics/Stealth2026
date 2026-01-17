@@ -70,7 +70,7 @@ public class ShiftTracker {
             case AUTO -> { return true; }
 
             case TRANSITION_SHIFT -> {
-                if (weWonAuto()) return getTimeLeftInShift() > MIN_SHOOT_TIME_SECONDS;
+                if (weWonAuto()) return getTimeLeftInShift() >= MIN_SHOOT_TIME_SECONDS;
                 else return true;
             }
 
