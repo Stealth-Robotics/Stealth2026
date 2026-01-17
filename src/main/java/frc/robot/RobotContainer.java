@@ -3,13 +3,29 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import frc.robot.util.ShiftTracker;
 
 public class RobotContainer {
+    private final RobotSystem robot;
+    
 
     public RobotContainer() {
+        robot = new RobotSystem();
+
         configureBindings();
+
+        //Periodically update the shift tracker
+        Commands.run(() -> ShiftTracker.periodic()).schedule();
+
+        // Command bound to a dashboard button
+        SmartDashboard.putData("Reset Encoders", resetRobot());
+
+        // Dashboard Toggle to enable/disable Hub state dependant shooting (only shooting when legal)
     }
 
     private void configureBindings() {
@@ -19,9 +35,11 @@ public class RobotContainer {
         return Commands.print("No autonomous command configured");
     }
 
-    /* Reset robot's encoders and states */
+    /* Reset robot's encoders and cancel running commands */
     public Command resetRobot() {
-        return null;
+        return new SequentialCommandGroup(
+
+        ).finallyDo(() -> CommandScheduler.getInstance().cancelAll());
     }
 
     /*
