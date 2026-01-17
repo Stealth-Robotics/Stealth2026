@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -13,7 +14,6 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -26,6 +26,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private final TalonFXConfiguration shooterConfig = new TalonFXConfiguration();
     private final TalonFXConfiguration hoodConfig = new TalonFXConfiguration();
+
+    private final CoastOut coast = new CoastOut();
 
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final MotionMagicVelocityVoltage shooterController = new MotionMagicVelocityVoltage(0);
@@ -58,6 +60,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final int SHOOTER_MOTOR_2_ID = 0;
     private final int HOOD_MOTOR_ID = 0;
 
+    //Supplier that allows us to encapsulate shoot-on-the-move behavior outside of this class
     private final DoubleSupplier distanceFromHubSupplier;
 
     public ShooterSubsystem(DoubleSupplier distanceFromHubSupplier) {
@@ -86,6 +89,14 @@ public class ShooterSubsystem extends SubsystemBase {
         hoodMotor.getConfigurator().apply(hoodConfig);
 
         shooterMotor2.setControl(new Follower(SHOOTER_MOTOR_1_ID, MotorAlignmentValue.Opposed));
+
+        buildInterpolationMaps();
+    }
+
+    private void buildInterpolationMaps() {
+        shooterVelocityMap.put(0.0, 0.0);
+
+        hoodAngleMap.put(0.0, 0.0);
     }
 
     public Command resetSubsystem() {
@@ -96,6 +107,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public Command homeSubsystem() {
         return new SequentialCommandGroup(
+            stop(),
             new InstantCommand(() -> hoodMotor.setControl(hoodController.withPosition(0)))
         );
     }
@@ -107,15 +119,25 @@ public class ShooterSubsystem extends SubsystemBase {
         return spinToRPM(() -> shooterVelocityMap.get(distanceFromHubSupplier.getAsDouble()));
     }
 
+    /**
+     * Set the flywheel to coast to preserve momentum while not drawing any current
+     */
     public Command stop() {
-        return spinToRPM(() -> 0);
+        return runOnce(() -> shooterMotor1.setControl(coast));
     }
 
-    public Command setHoodToShoot() {
-        return setHoodPosition(() -> hoodAngleMap.get(distanceFromHubSupplier.getAsDouble()));
+    /**
+     * Default command to constantly aim the hood to shoot
+     */
+    public Command hoodDefaultCommand() {
+        return run(
+            () -> hoodMotor.setControl(
+                hoodController.withPosition(MathUtil.clamp(hoodAngleMap.get(distanceFromHubSupplier.getAsDouble()), MIN_HOOD_ROTATIONS, MAX_HOOD_ROTATIONS))
+            )
+        );
     }
 
-    private Command setHoodPosition(DoubleSupplier rotations) {
+    public Command setHoodPosition(DoubleSupplier rotations) {
         return runOnce(
             () -> hoodMotor.setControl(hoodController.withPosition(MathUtil.clamp(rotations.getAsDouble(), MIN_HOOD_ROTATIONS, MAX_HOOD_ROTATIONS)))
         ).andThen(new WaitUntilCommand(() -> hoodAtPosition()));

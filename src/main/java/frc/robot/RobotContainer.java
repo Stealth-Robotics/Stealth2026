@@ -38,7 +38,6 @@ public class RobotContainer {
     /* Reset robot's encoders and cancel running commands */
     public Command resetRobot() {
         return new SequentialCommandGroup(
-
         ).finallyDo(() -> CommandScheduler.getInstance().cancelAll());
     }
 

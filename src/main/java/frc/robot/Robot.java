@@ -77,6 +77,10 @@ public class Robot extends TimedRobot {
             m_autonomousCommand.cancel();
         }
 
+        /*
+          ! Good for testing, but may want to remove for actual competition because we may not want to reset between
+          ! auto and teleop
+        */
         m_robotContainer.homeRobot().schedule();
     }
 
