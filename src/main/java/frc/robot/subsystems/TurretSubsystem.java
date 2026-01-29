@@ -48,6 +48,8 @@ public class TurretSubsystem extends SubsystemBase {
         this.robotPoseSupplier = robotPoseSupplier;
         turretMotor = new TalonFX(TURRET_MOTOR_ID);
 
+        //TODO: Add any sensor to mechanism ratio
+
         turretConfig.Slot0.kP = kP;
         turretConfig.Slot0.kI = kI;
         turretConfig.Slot0.kD = kD;

@@ -47,9 +47,10 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTING_kP = 0.0;
     private final double SHOOTING_kI = 0.0;
     private final double SHOOTING_kD = 0.0;
+    private final double SHOOTING_kA = 0.0;
     private final double SHOOTING_kV = 0.0;
     private final double SHOOTING_kS = 0.0;
-    private final double SHOOTING_kACCELERATION = 0.0;
+    private final double SHOOTING_MOTIONMAGIC_kACCELERATION = 0.0;
 
     private final double HOOD_kP = 0.0;
     private final double HOOD_kI = 0.0;
@@ -71,13 +72,16 @@ public class ShooterSubsystem extends SubsystemBase {
 
         hoodMotor = new TalonFX(HOOD_MOTOR_ID);
 
+        //TODO: Add any sensor to mechanism ratio
+
         shooterConfig.Slot0.kP = SHOOTING_kP;
         shooterConfig.Slot0.kI = SHOOTING_kI;
         shooterConfig.Slot0.kD = SHOOTING_kD;
         shooterConfig.Slot0.kV = SHOOTING_kV;
         shooterConfig.Slot0.kS = SHOOTING_kS;
+        shooterConfig.Slot0.kA = SHOOTING_kA;
 
-        shooterConfig.MotionMagic.MotionMagicAcceleration = SHOOTING_kACCELERATION;
+        shooterConfig.MotionMagic.MotionMagicAcceleration = SHOOTING_MOTIONMAGIC_kACCELERATION;
 
         hoodConfig.Slot0.kP = HOOD_kP;
         hoodConfig.Slot0.kI = HOOD_kI;
