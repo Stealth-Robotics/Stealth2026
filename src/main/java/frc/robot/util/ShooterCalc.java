@@ -28,6 +28,8 @@ public class ShooterCalc {
     }
 
     public double getShootVelocity() { return shootVelocity; }
+    // 2 is wheel radius (inches)
+    public double getShootRPM() { return shootVelocity * 30 / (Math.PI * 2 / 12); }
     public double getTurretAngle() { return turretAngle; }
     public double getHoodAngle() { return hoodAngle; }
 }
