@@ -1,29 +1,29 @@
 package frc.robot.subsystems;
 
-import java.util.function.Supplier;
+import java.util.function.DoubleSupplier;
+
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.util.FieldConstants;
-import frc.robot.util.Pose;
 
 public class TurretSubsystem extends SubsystemBase {
     private final TalonFX turretMotor;
-    private final Supplier<Pose> robotPoseSupplier;
-
-    private Pose hubPose = null;
+    private final CANcoder turretEncoder;
 
     private final TalonFXConfiguration turretConfig = new TalonFXConfiguration();
+    private final CANcoderConfiguration turretEncoderConfig = new CANcoderConfiguration();
+
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
 
     //TODO: Find actual values from robot
@@ -37,18 +37,30 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kI = 0.0;
     private final double kD = 0.0;
 
+    //TODO: Find a good tolerance
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 0.25;
+
     //TODO: Find actual values
     private final double MAX_TURRET_ROTATIONS = 0;
     private final double MIN_TURRET_ROTATIONS = 0;
 
+    //Figure out mechanism ratio
+    private final double ENCODER_TO_TURRET_RATIO = 0;
+    private final double MOTOR_TO_ENCODER_RATIO = 1;
+
+    //TODO: Find zeroed value
+    private final double TURRET_ENCODER_MAGNET_OFFSET = 0;
+
     //TODO: Find correct CAN IDs
     private final int TURRET_MOTOR_ID = 0;
+    private final int TURRET_ENCODER_ID = 0;
 
-    public TurretSubsystem(Supplier<Pose> robotPoseSupplier) {
-        this.robotPoseSupplier = robotPoseSupplier;
+    public TurretSubsystem() {
         turretMotor = new TalonFX(TURRET_MOTOR_ID);
+        turretEncoder = new CANcoder(TURRET_ENCODER_ID);
 
-        //TODO: Add any sensor to mechanism ratio
+        turretConfig.Feedback.RotorToSensorRatio = MOTOR_TO_ENCODER_RATIO;
+        turretConfig.Feedback.SensorToMechanismRatio = ENCODER_TO_TURRET_RATIO;
 
         turretConfig.Slot0.kP = kP;
         turretConfig.Slot0.kI = kI;
@@ -59,38 +71,36 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         turretConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
+        //Cancoder configuration
+        turretConfig.Feedback.FeedbackRemoteSensorID = turretEncoder.getDeviceID();
+        turretConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+
+        turretEncoderConfig.MagnetSensor.MagnetOffset = TURRET_ENCODER_MAGNET_OFFSET;
+        turretEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
+
         turretMotor.getConfigurator().apply(turretConfig);
+        turretEncoder.getConfigurator().apply(turretEncoderConfig);
     }
 
-    /**
-     * The turret's default command constantly tracks the goal based on our pose supplier
-     */
-    public Command turretDefaultCommand() {
-        return run(() -> turretMotor.setControl(turretController.withPosition(MathUtil.clamp(getTurretTargetRotations(), MIN_TURRET_ROTATIONS, MAX_TURRET_ROTATIONS))));
+    public Command rotateToAngle(DoubleSupplier degrees) {
+        return null;
     }
 
-    private double getTurretTargetRotations() {
-        if (hubPose == null) 
-            hubPose = (DriverStation.getAlliance().get() == Alliance.Blue) ? 
-                       FieldConstants.BLUE_HUB_POSE :
-                       FieldConstants.RED_HUB_POSE;
-        
-        Pose robotPose = robotPoseSupplier.get();
-
-        double turretXGlobal = robotPose.x + TURRET_ORIGIN_OFFSET_X_INCHES * Math.cos(robotPose.heading);
-        double turretYGlobal = robotPose.y + TURRET_ORIGIN_OFFSET_Y_INCHES * Math.sin(robotPose.heading);
-
-        double targetAngleRadians = Math.atan2(hubPose.y - turretYGlobal, hubPose.x - turretXGlobal);
-
-        return Units.radiansToRotations(robotPose.heading - targetAngleRadians);
+    public boolean isTurretAtAngle() {
+        return Math.abs(getTurretAngleDegrees() - getTargetAngleDegrees()) < TURRET_ANGLE_TOLERANCE_DEGREES;
     }
 
-    private double getTurretRotations() {
-        return turretMotor.getPosition().getValueAsDouble();
+    private double getTurretAngleDegrees() {
+        return Units.rotationsToDegrees(turretMotor.getPosition().getValueAsDouble());
+    }
+
+    private double getTargetAngleDegrees() {
+        return Units.rotationsToDegrees(turretController.Position);
     }
 
     @Override
     public void periodic() {
-        DogLog.forceNt.log("Turret/turret_angle_degrees", Units.rotationsToDegrees(getTurretRotations()));
+        DogLog.forceNt.log("Turret/turret_degrees", getTurretAngleDegrees());
+        DogLog.forceNt.log("Turret/turret_target_degrees", getTargetAngleDegrees());
     }
 }

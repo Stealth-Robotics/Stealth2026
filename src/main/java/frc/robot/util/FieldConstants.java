@@ -1,6 +1,12 @@
 package frc.robot.util;
 
 public class FieldConstants {
-    public static Pose BLUE_HUB_POSE = new Pose(0, 0, 0);
-    public static Pose RED_HUB_POSE = new Pose(0, 0, 0);
+    public static FieldPose BLUE_HUB_POSE = new FieldPose(0, 0, 0);
+    public static FieldPose RED_HUB_POSE = new FieldPose(0, 0, 0);
+
+    public static FieldPose RED_LEFT_PASSING_POSE = new FieldPose(0, 0, 0);
+    public static FieldPose RED_RIGHT_PASSING_POSE = new FieldPose(0, 0, 0);
+
+    public static FieldPose BLUE_LEFT_PASSING_POSE = new FieldPose(0, 0, 0);
+    public static FieldPose BLUE_RIGHT_PASSING_POSE = new FieldPose(0, 0, 0);
 }
