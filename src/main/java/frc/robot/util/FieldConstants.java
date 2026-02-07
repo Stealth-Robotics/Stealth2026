@@ -1,12 +1,31 @@
 package frc.robot.util;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+
 public class FieldConstants {
-    public static FieldPose BLUE_HUB_POSE = new FieldPose(0, 0, 0);
-    public static FieldPose RED_HUB_POSE = new FieldPose(0, 0, 0);
+    public static Pose2d BLUE_HUB_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d RED_HUB_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
 
-    public static FieldPose RED_LEFT_PASSING_POSE = new FieldPose(0, 0, 0);
-    public static FieldPose RED_RIGHT_PASSING_POSE = new FieldPose(0, 0, 0);
+    // Climb Positions
 
-    public static FieldPose BLUE_LEFT_PASSING_POSE = new FieldPose(0, 0, 0);
-    public static FieldPose BLUE_RIGHT_PASSING_POSE = new FieldPose(0, 0, 0);
+    public static Pose2d BLUE_LEFT_TOWER_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d BLUE_RIGHT_TOWER_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+
+    public static Pose2d RED_LEFT_TOWER_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d RED_RIGHT_TOWER_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+
+    public static Pose2d BLUE_LEFT_AUTO_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d BLUE_RIGHT_AUTO_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+
+    public static Pose2d RED_LEFT_AUTO_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d RED_RIGHT_AUTO_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+
+    // Passing Positions
+
+    public static Pose2d RED_LEFT_PASSING_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d RED_RIGHT_PASSING_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+
+    public static Pose2d BLUE_LEFT_PASSING_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d BLUE_RIGHT_PASSING_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
 }

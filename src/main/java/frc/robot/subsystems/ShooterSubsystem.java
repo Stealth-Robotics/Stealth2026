@@ -1,8 +1,6 @@
 package frc.robot.subsystems;
 
 import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
-
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
@@ -17,14 +15,10 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.Vector;
-import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
-import frc.robot.util.FieldPose;
 
 public class ShooterSubsystem extends SubsystemBase {
     private final TalonFX shooterMotor1;

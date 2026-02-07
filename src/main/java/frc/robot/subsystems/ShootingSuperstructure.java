@@ -8,6 +8,12 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
 
+    private final String turretLimelight = "turret_limelight";
+
+    //TODO: Find actual values from robot
+    private final double TURRET_OFFSET_X_INCHES = 0;
+    private final double TURRET_OFFSET_Y_INCHES = 0;
+
     public ShootingSuperstructure() {
         shooter = new ShooterSubsystem();
         turret = new TurretSubsystem();
@@ -42,6 +48,5 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-
     }
 }

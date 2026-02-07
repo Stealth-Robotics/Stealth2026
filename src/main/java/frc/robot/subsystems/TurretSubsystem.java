@@ -13,9 +13,13 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 
 public class TurretSubsystem extends SubsystemBase {
     private final TalonFX turretMotor;
@@ -25,10 +29,6 @@ public class TurretSubsystem extends SubsystemBase {
     private final CANcoderConfiguration turretEncoderConfig = new CANcoderConfiguration();
 
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
-
-    //TODO: Find actual values from robot
-    private final double TURRET_ORIGIN_OFFSET_X_INCHES = 0; // Positive values are to the right of the origin
-    private final double TURRET_ORIGIN_OFFSET_Y_INCHES = 0; // Positive values are to the top of the origin
 
     //TODO: Tune PID/Feedforward constants
     private final double kACCELERATION = 0.0;
@@ -41,8 +41,8 @@ public class TurretSubsystem extends SubsystemBase {
     private final double TURRET_ANGLE_TOLERANCE_DEGREES = 0.25;
 
     //TODO: Find actual values
-    private final double MAX_TURRET_ROTATIONS = 0;
-    private final double MIN_TURRET_ROTATIONS = 0;
+    private final double MAX_TURRET_DEGREES = 0;
+    private final double MIN_TURRET_DEGREES = 0;
 
     //Figure out mechanism ratio
     private final double ENCODER_TO_TURRET_RATIO = 0;
@@ -83,7 +83,13 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public Command rotateToAngle(DoubleSupplier degrees) {
-        return null;
+        return new SequentialCommandGroup(
+            new InstantCommand(() -> turretMotor.setControl(turretController.withPosition(
+                    MathUtil.clamp(degrees.getAsDouble(), MIN_TURRET_DEGREES, MAX_TURRET_DEGREES)
+                ))
+            ),
+            new WaitUntilCommand(this::isTurretAtAngle)
+        );
     }
 
     public boolean isTurretAtAngle() {
