@@ -9,17 +9,17 @@ public class FieldConstants {
 
     // Climb Positions
 
-    public static Pose2d BLUE_LEFT_TOWER_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
-    public static Pose2d BLUE_RIGHT_TOWER_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d BLUE_LEFT_TOWER_CLIMB_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d BLUE_RIGHT_TOWER_CLIMB_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
 
-    public static Pose2d RED_LEFT_TOWER_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
-    public static Pose2d RED_RIGHT_TOWER_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d RED_LEFT_TOWER_CLIMB_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d RED_RIGHT_TOWER_CLIMB_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
 
-    public static Pose2d BLUE_LEFT_AUTO_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
-    public static Pose2d BLUE_RIGHT_AUTO_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d BLUE_LEFT_AUTO_CLIMB_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d BLUE_RIGHT_AUTO_CLIMB_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
 
-    public static Pose2d RED_LEFT_AUTO_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
-    public static Pose2d RED_RIGHT_AUTO_CLIMB = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d RED_LEFT_AUTO_CLIMB_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
+    public static Pose2d RED_RIGHT_AUTO_CLIMB_POSE = new Pose2d(0, 0, Rotation2d.fromDegrees(0));
 
     // Passing Positions
 
