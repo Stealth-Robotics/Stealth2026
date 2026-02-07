@@ -1,10 +1,14 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -16,10 +20,20 @@ public class IntakeSubsystem extends SubsystemBase {
     private final TalonFX rollerMotor;
     private final TalonFX deployMotor;
 
+    private final CANcoder deployEncoder;
+    private final CANcoderConfiguration deployEncoderConfig = new CANcoderConfiguration();
+
     private final TalonFXConfiguration rollerConfig = new TalonFXConfiguration();
     private final TalonFXConfiguration deployConfig = new TalonFXConfiguration();
 
     private final MotionMagicVoltage deployController = new MotionMagicVoltage(0);
+
+    //TODO: Zero encoder
+    private final double DEPLOY_ENCODER_ZERO_OFFSET = 0;
+
+    //TODO: Figure out actual mechanism ratios
+    private final double DEPLOY_ENCODER_TO_MECHANISM_RATIO = -1;
+    private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 0;
 
     //TODO: Tune rotation setpoints
     private final double DEPLOYED_ROTATIONS = 0;
@@ -40,11 +54,17 @@ public class IntakeSubsystem extends SubsystemBase {
 
     //TODO: Find correct CAN IDs
     private final int ROLLER_MOTOR_ID = 0;
-    private final int DEPLOY_MOTO_ID = 0;
+    private final int DEPLOY_MOTOR_ID = 0;
+    private final int DEPLOY_ENCODER_ID = 0;
 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
-        deployMotor = new TalonFX(DEPLOY_MOTO_ID);
+        deployMotor = new TalonFX(DEPLOY_MOTOR_ID);
+        deployEncoder = new CANcoder(DEPLOY_ENCODER_ID);
+
+        //CANCoder config
+        deployEncoderConfig.MagnetSensor.MagnetOffset = DEPLOY_ENCODER_ZERO_OFFSET;
+        deployEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
 
         //Roller motor config
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
@@ -53,6 +73,12 @@ public class IntakeSubsystem extends SubsystemBase {
         //Deploy motor config
         deployConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+
+        deployConfig.Feedback.FeedbackRemoteSensorID = deployEncoder.getDeviceID();
+        deployConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+
+        deployConfig.Feedback.SensorToMechanismRatio = DEPLOY_ENCODER_TO_MECHANISM_RATIO;
+        deployConfig.Feedback.RotorToSensorRatio = DEPLOY_MOTOR_TO_ENCODER_RATIO;
 
         deployConfig.Slot0.kP = DEPLOY_kP;
         deployConfig.Slot0.kI = DEPLOY_kI;
@@ -64,6 +90,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
         rollerMotor.getConfigurator().apply(rollerConfig);
         deployMotor.getConfigurator().apply(deployConfig);
+        deployEncoder.getConfigurator().apply(deployEncoderConfig);
     }
 
     /**
