@@ -37,8 +37,8 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kI = 0.0;
     private final double kD = 0.0;
 
-    //TODO: Find a good tolerance
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 0.25;
+    //A tolerance to allow shooting before the turret has reached position (tuned in simulation)
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 5;
 
     //TODO: Find actual values
     private final double MAX_TURRET_DEGREES = 0;

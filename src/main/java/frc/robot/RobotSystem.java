@@ -19,6 +19,14 @@ public class RobotSystem extends SubsystemBase {
         climb = new ClimbSubsystem();
     }
 
+     /**
+     * Only allows us to shoot if the turret is tracking (not wrapping or at limit), the shooter is at speed, and
+     * we are not driving/spinning to quickly
+     */
+    public boolean isSafeToShoot() {
+        return false;
+    }
+
     @Override
     public void periodic() {
         
