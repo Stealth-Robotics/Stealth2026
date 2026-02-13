@@ -42,6 +42,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     //TODO: Find actual values
     private final double MAX_TURRET_DEGREES = 0;
+    private final double TURRET_HOME_DEGREES = 0;
     private final double MIN_TURRET_DEGREES = 0;
 
     //Figure out mechanism ratio
@@ -80,6 +81,10 @@ public class TurretSubsystem extends SubsystemBase {
 
         turretMotor.getConfigurator().apply(turretConfig);
         turretEncoder.getConfigurator().apply(turretEncoderConfig);
+    }
+
+    public Command homeSubsystem() {
+        return rotateToAngle(() -> TURRET_HOME_DEGREES);
     }
 
     public Command rotateToAngle(DoubleSupplier degrees) {

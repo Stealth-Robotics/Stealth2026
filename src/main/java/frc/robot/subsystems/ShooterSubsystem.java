@@ -15,6 +15,7 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -132,7 +133,9 @@ public class ShooterSubsystem extends SubsystemBase {
      */
     public Command setHoodPosition(DoubleSupplier rotations) {
         return runOnce(
-            () -> hoodMotor.setControl(hoodController.withPosition(MathUtil.clamp(rotations.getAsDouble(), MIN_HOOD_ROTATIONS, MAX_HOOD_ROTATIONS)))
+            () -> hoodMotor.setControl(hoodController.withPosition(
+                MathUtil.clamp(rotations.getAsDouble(), MIN_HOOD_ROTATIONS, MAX_HOOD_ROTATIONS))
+            )
         ).andThen(new WaitUntilCommand(() -> isHoodAtPosition()));
     }
 
