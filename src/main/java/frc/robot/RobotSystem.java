@@ -23,8 +23,8 @@ public class RobotSystem extends SubsystemBase {
      * Only allows us to shoot if the turret is tracking (not wrapping or at limit), the shooter is at speed, and
      * we are not driving/spinning to quickly
      */
-    public boolean isSafeToShoot() {
-        return false;
+    public boolean isShootingValid() {
+        return shooter.isShootingValid();
     }
 
     @Override

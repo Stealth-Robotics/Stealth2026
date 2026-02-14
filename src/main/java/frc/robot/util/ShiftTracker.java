@@ -44,7 +44,7 @@ public class ShiftTracker {
         }
 
         if (ourAlliance == null)
-            ourAlliance = DriverStation.getAlliance().get();
+            ourAlliance = DriverStation.getAlliance().orElse(null);
 
         int phaseDuration = phase.getStartTime() - phase.getEndTime();
         if (phaseTimer.hasElapsed(phaseDuration))
@@ -65,6 +65,8 @@ public class ShiftTracker {
     public static boolean canScore() {
         if (!phaseTimer.isRunning())
             return true;
+        else if (ourAlliance == null)
+            return false;
 
         switch (phase) {
             case AUTO -> { return true; }

@@ -158,7 +158,7 @@ public class ShooterSubsystem extends SubsystemBase {
     /**
      * @return Whether or not the shooter is at its target velocity (within a tolerance)
      */
-    private boolean isShooterAtVelocity() {
+    public boolean isShooterAtVelocity() {
         return Math.abs(getRPM() - getTargetRPM()) < SHOOTER_VELOCITY_TOLERANCE_RPM;
     }
 

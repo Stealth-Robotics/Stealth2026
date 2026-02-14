@@ -22,6 +22,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.ShotTrajectoryCalculator;
 
 public class ShootingSuperstructure extends SubsystemBase {
+    private ShooterState state = ShooterState.HOMED;
+
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
 
@@ -52,6 +54,12 @@ public class ShootingSuperstructure extends SubsystemBase {
     //TODO: Find actual CAN ID
     private final int CAN_RANGE_ID = 0;
 
+    private enum ShooterState {
+        HOMED,
+        PASSING,
+        HUB_TRACKING
+    }
+
     public ShootingSuperstructure() {
         shooter = new ShooterSubsystem();
         turret = new TurretSubsystem();
@@ -68,7 +76,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         return new SequentialCommandGroup(
             shooter.homeSubsystem(),
             turret.homeSubsystem()
-        );
+        ).beforeStarting(() -> state = ShooterState.HOMED);
     }
 
     /**
@@ -83,7 +91,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             else {
                 return RED_HUB;
             }
-        }, HUB_TRAJECTORY_MAX_HEIGHT_FEET, robotPose, robotVelocity);
+        }, HUB_TRAJECTORY_MAX_HEIGHT_FEET, robotPose, robotVelocity).beforeStarting(() -> state = ShooterState.HUB_TRACKING);
     }
 
     /**
@@ -100,7 +108,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             else {
                 return PASS_RED_LEFT;
             }
-        }, PASSING_TRAJECTORY_MAX_HEIGHT_FEET, robotPose, robotVelocity);
+        }, PASSING_TRAJECTORY_MAX_HEIGHT_FEET, robotPose, robotVelocity).beforeStarting(() -> state = ShooterState.PASSING);
     }
 
     /**
@@ -115,12 +123,19 @@ public class ShootingSuperstructure extends SubsystemBase {
                 trajectoryHeight
             );
 
-            shooter.spinToRPM(() -> ShotTrajectoryCalculator.getTargetFlywheelRPM());
-            shooter.setHoodPosition(() -> Units.degreesToRotations(ShotTrajectoryCalculator.getHoodAngle()));
+            shooter.spinToRPM(() -> ShotTrajectoryCalculator.getTargetFlywheelRPM()).schedule();
+            shooter.setHoodPosition(() -> Units.degreesToRotations(ShotTrajectoryCalculator.getHoodAngle())).schedule();
 
             double turretTarget = Units.radiansToDegrees(robotPose.get().getRotation().getAngle()) - ShotTrajectoryCalculator.getTurretAngle();
-            turret.rotateToAngle(() -> turretTarget);
+            turret.rotateToAngle(() -> turretTarget).schedule();
         });
+    }
+
+    /**
+     * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
+     */
+    public boolean isShootingValid() {
+        return shooter.isShooterAtVelocity() && turret.isTurretAtAngle() && state != ShooterState.HOMED;
     }
 
     /**

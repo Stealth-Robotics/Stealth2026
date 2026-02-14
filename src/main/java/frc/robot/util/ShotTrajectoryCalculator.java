@@ -1,9 +1,5 @@
 package frc.robot.util;
 
-import static edu.wpi.first.units.Units.Meters;
-
-import java.util.function.Supplier;
-
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
