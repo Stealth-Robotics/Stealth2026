@@ -72,8 +72,9 @@ public class ShootingSuperstructure extends SubsystemBase {
         //Configure CANRange sensor
         shotSensorConfig.FovParams.FOVRangeX = 6.75;
         shotSensorConfig.FovParams.FOVRangeY = 6.75;
-        shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
-        
+        shotSensorConfig.ToFParams.UpdateFrequency = 50;
+        shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRangeUserFreq;
+
         shotSensor.getConfigurator().apply(shotSensorConfig);
     }
 
