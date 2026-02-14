@@ -8,7 +8,6 @@ import com.ctre.phoenix6.hardware.CANrange;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
@@ -20,31 +19,24 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.util.FieldConstants;
 import frc.robot.util.ShotTrajectoryCalculator;
 
 public class ShootingSuperstructure extends SubsystemBase {
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
 
+    //TODO: Find maximum time inbetween shots when rapidly shooting
     private final double MAX_SHOT_SPACING_SECONDS = 0.5;
 
     private final CANrange shotSensor;
-    private final int CAN_RANGE_ID = 0;
+
     private final CANrangeConfiguration shotSensorConfig = new CANrangeConfiguration();
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
 
     private final String turretLimelight = "turret_limelight";
 
-    // Aiming targets for the hub locations
-    private final Translation3d hubTarget;
-
     public static final Translation3d BLUE_HUB = new Translation3d();
     public static final Translation3d RED_HUB = new Translation3d();
-
-    // Aiming targets for the different passing locations
-    private final Translation3d passLeftTarget;
-    private final Translation3d passRightTarget;
 
     public static final Translation3d PASS_BLUE_LEFT = new Translation3d();
     public static final Translation3d PASS_BLUE_RIGHT = new Translation3d();
@@ -57,6 +49,9 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Transform3d TURRET_TRANSFORM = new Transform3d(0, 0, 0, Rotation3d.kZero);
 
+    //TODO: Find actual CAN ID
+    private final int CAN_RANGE_ID = 0;
+
     public ShootingSuperstructure() {
         shooter = new ShooterSubsystem();
         turret = new TurretSubsystem();
@@ -64,18 +59,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         //TODO: Configure CANrange sensor
         shotSensor.getConfigurator().apply(shotSensorConfig);
-
-        //Set the correct aiming locations
-        if (DriverStation.getAlliance().get().equals(Alliance.Blue)) {
-            hubTarget = BLUE_HUB;
-            passLeftTarget = PASS_BLUE_LEFT;
-            passRightTarget = PASS_BLUE_RIGHT;
-        }
-        else {
-            hubTarget = RED_HUB;
-            passLeftTarget = PASS_RED_LEFT;
-            passRightTarget = PASS_RED_RIGHT;
-        }
     }
 
     /**
@@ -92,7 +75,15 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Aim at our alliance's hub
      */
     public Command trackHub(Supplier<Pose3d> robotPose, Supplier<ChassisSpeeds> robotVelocity) {
-        return trackTarget(() -> hubTarget, HUB_TRAJECTORY_MAX_HEIGHT_FEET, robotPose, robotVelocity);
+        return trackTarget(() -> {
+            Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+            if (alliance == Alliance.Blue) {
+                return BLUE_HUB;
+            }
+            else {
+                return RED_HUB;
+            }
+        }, HUB_TRAJECTORY_MAX_HEIGHT_FEET, robotPose, robotVelocity);
     }
 
     /**
@@ -101,11 +92,13 @@ public class ShootingSuperstructure extends SubsystemBase {
     public Command pass(Supplier<Pose3d> robotPose, Supplier<ChassisSpeeds> robotVelocity) {
         return trackTarget(() -> {
             //TODO: Implement pose checking to determine which target to aim at
-            if (true) {
-                return passLeftTarget;
+            Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+
+            if (alliance == Alliance.Blue) {
+                return PASS_BLUE_LEFT;
             }
             else {
-                return passRightTarget;
+                return PASS_RED_LEFT;
             }
         }, PASSING_TRAJECTORY_MAX_HEIGHT_FEET, robotPose, robotVelocity);
     }
