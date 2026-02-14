@@ -48,6 +48,7 @@ public class ShotTrajectoryCalculator {
         );
 
         targetFlywheelRPM = (fuelVelocity.getNorm() * 720) / (Math.PI * FLYWHEEL_DIAMETER_INCHES);
+
         targetTurretAngle = Units.radiansToDegrees(Math.atan2(fuelVelocity.getZ(), fuelVelocity.getX()));
 
         double horizontalSpeed = Math.sqrt(fuelVelocity.getX() * fuelVelocity.getX() + fuelVelocity.getZ() * fuelVelocity.getZ());
