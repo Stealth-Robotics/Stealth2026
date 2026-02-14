@@ -4,6 +4,7 @@ import java.util.function.Supplier;
 
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
 import com.ctre.phoenix6.hardware.CANrange;
+import com.ctre.phoenix6.signals.UpdateModeValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.filter.Debouncer;
@@ -31,8 +32,11 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double MAX_SHOT_SPACING_SECONDS = 0.5;
 
     private final CANrange shotSensor;
-
     private final CANrangeConfiguration shotSensorConfig = new CANrangeConfiguration();
+
+    //TODO: Tune distance
+    private final double FUEL_DETECTED_THRESHOLD_INCHES = 0.5f;
+
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
 
     private final String turretLimelight = "turret_limelight";
@@ -65,7 +69,11 @@ public class ShootingSuperstructure extends SubsystemBase {
         turret = new TurretSubsystem();
         shotSensor = new CANrange(CAN_RANGE_ID);
 
-        //TODO: Configure CANrange sensor
+        //Configure CANRange sensor
+        shotSensorConfig.FovParams.FOVRangeX = 6.75;
+        shotSensorConfig.FovParams.FOVRangeY = 6.75;
+        shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
+        
         shotSensor.getConfigurator().apply(shotSensorConfig);
     }
 
@@ -142,7 +150,7 @@ public class ShootingSuperstructure extends SubsystemBase {
      * @return If the shot sensor detects that a fuel hasn't been shot for MAX_SHOT_SPACING_SECONDS
      */
     public boolean isShooting() {
-        return shotDebouncer.calculate(false);
+        return shotDebouncer.calculate(Units.metersToInches(shotSensor.getDistance().getValueAsDouble()) < FUEL_DETECTED_THRESHOLD_INCHES);
     }
 
     @Override
