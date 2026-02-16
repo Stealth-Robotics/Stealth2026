@@ -46,6 +46,8 @@ public class RobotContainer {
      * sure the subsystems don't clash while resetting their states.
      */
     public Command homeRobot() {
-        return null;
+        return new Command() {
+            
+        };
     }
 }
