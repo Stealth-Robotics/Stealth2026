@@ -45,7 +45,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_kD = 0.0;
     private final double DEPLOY_MOTIONMAGIC_kACCELERATION = 0.0;
     private final double DEPLOY_MOTIONMAGIC_kVELOCITY = 0.0;
-    private final double DEPLOY_MOTIONMAGIC_JERK = 0.0;
+    private final double DEPLOY_MOTIONMAGIC_kJERK = 0.0;
 
     private final double INTAKE_ROLLER_SPEED = 1.0;
 
@@ -86,7 +86,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
         deployConfig.MotionMagic.MotionMagicAcceleration = DEPLOY_MOTIONMAGIC_kACCELERATION;
         deployConfig.MotionMagic.MotionMagicCruiseVelocity = DEPLOY_MOTIONMAGIC_kVELOCITY;
-        deployConfig.MotionMagic.MotionMagicJerk = DEPLOY_MOTIONMAGIC_JERK;
+        deployConfig.MotionMagic.MotionMagicJerk = DEPLOY_MOTIONMAGIC_kJERK;
 
         rollerMotor.getConfigurator().apply(rollerConfig);
         deployMotor.getConfigurator().apply(deployConfig);
