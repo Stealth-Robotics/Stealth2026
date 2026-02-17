@@ -19,7 +19,7 @@ public class Robot extends TimedRobot {
     public Robot() {
         m_robotContainer = new RobotContainer();
 
-        /* Configure DogLog for use 
+        /* Configure DogLog for use in a match & for testing
          * Some of these options should be modified at competitions for better performance
         */
         DogLog.setOptions(
@@ -36,6 +36,9 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         CommandScheduler.getInstance().run();
+
+        //Run the robot container's periodic manually
+        m_robotContainer.periodic();
     }
 
     @Override
@@ -73,6 +76,10 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopInit() {
+        //For testing, just in case we aren't running a full match (auto -> teleop)
+        if (!ShiftTracker.isRunning())
+            ShiftTracker.start();
+
         if (m_autonomousCommand != null) {
             m_autonomousCommand.cancel();
         }

@@ -3,23 +3,26 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.ShiftTracker;
 
 public class RobotContainer {
+    private final CommandXboxController driverController = new CommandXboxController(0);
+    private final CommandXboxController operatorController = new CommandXboxController(1);
+
     private final RobotSystem robot;
     
     public RobotContainer() {
         robot = new RobotSystem();
 
         configureBindings();
-
-        //Periodically update the shift tracker
-        Commands.run(() -> ShiftTracker.periodic()).schedule();
 
         // Command bound to a dashboard button
         SmartDashboard.putData("Reset Encoders", resetRobot());
@@ -46,8 +49,14 @@ public class RobotContainer {
      * sure the subsystems don't clash while resetting their states.
      */
     public Command homeRobot() {
-        return new Command() {
-            
-        };
+        return new InstantCommand();
+    }
+
+    //Used mostly for telemetry and logging general match info
+    public void periodic() {
+        ShiftTracker.periodic();
+        
+        DogLog.forceNt.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
+        DogLog.forceNt.log("Hub Scorable", ShiftTracker.canScore());
     }
 }

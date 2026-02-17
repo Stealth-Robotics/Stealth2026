@@ -7,6 +7,7 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.generated.TunerConstants;
@@ -15,6 +16,7 @@ import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.TransferSubsystem;
+import frc.robot.util.ShiftTracker;
 
 public class RobotSystem extends SubsystemBase {
     private final IntakeSubsystem intake;
@@ -34,9 +36,6 @@ public class RobotSystem extends SubsystemBase {
     //private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
     //private final Telemetry logger = new Telemetry(MaxSpeed);
-
-    private final CommandXboxController joystick = new CommandXboxController(0);
-
 
     public RobotSystem() {
         intake = new IntakeSubsystem();
@@ -68,5 +67,6 @@ public class RobotSystem extends SubsystemBase {
 
     @Override
     public void periodic() {    
+        
     }
 }

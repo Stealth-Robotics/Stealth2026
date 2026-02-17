@@ -2,7 +2,6 @@ package frc.robot.util;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.Timer;
 
 /**
@@ -10,7 +9,7 @@ import edu.wpi.first.wpilibj.Timer;
  */
 public class ShiftTracker {
     private static MatchPhase phase = MatchPhase.UNDEFINED;
-    private static final Timer phaseTimer = new Timer();
+    private static final Timer matchTimer = new Timer();
 
     private static Alliance ourAlliance = null;
     private static Alliance allianceThatWonAuto = null;
@@ -18,19 +17,22 @@ public class ShiftTracker {
     private static final double MIN_SHOOT_TIME_SECONDS = 0.8;
 
     public static void start() {
-        reset();
-
         if (DriverStation.isAutonomous())
             phase = MatchPhase.AUTO;
         else
             phase = MatchPhase.TRANSITION_SHIFT;
 
-        phaseTimer.start();
+        reset();
+        matchTimer.start();
     }
 
     public static void reset() {
-        phaseTimer.stop();
-        phaseTimer.reset();
+        matchTimer.reset();
+        matchTimer.stop();
+    }
+
+    public static MatchPhase getCurrentMatchPhase() {
+        return phase;
     }
 
     /**
@@ -46,14 +48,13 @@ public class ShiftTracker {
         if (ourAlliance == null)
             ourAlliance = DriverStation.getAlliance().orElse(null);
 
-        int phaseDuration = phase.getStartTime() - phase.getEndTime();
-        if (phaseTimer.hasElapsed(phaseDuration))
+        if (matchTimer.hasElapsed(phase.getEndTime()))
             phase = phase.getNext();
 
         /* Phase becomes null when we are in auto or teleop DS modes and have exceeded the standard
          * match duration. We stop tracking shifts and any calls to canScore() will return true for testing purposes
          */
-        if (phase == null) {
+        if (phase == MatchPhase.UNDEFINED || phase == null) {
             reset();
             phase = MatchPhase.UNDEFINED;
         }
@@ -63,13 +64,18 @@ public class ShiftTracker {
      * @return Whether or not we can score into our alliance's hub
      */
     public static boolean canScore() {
-        if (!phaseTimer.isRunning())
+        if (!matchTimer.isRunning())
             return true;
         else if (ourAlliance == null)
             return false;
 
         switch (phase) {
             case AUTO -> { return true; }
+
+            case AUTO_TELE_TRANSITION -> {
+                if (!weWonAuto() && getTimeLeftInShift() <= MIN_SHOOT_TIME_SECONDS) return true;
+                else return false;
+            }
 
             case TRANSITION_SHIFT -> {
                 if (weWonAuto()) return getTimeLeftInShift() >= MIN_SHOOT_TIME_SECONDS;
@@ -91,11 +97,19 @@ public class ShiftTracker {
         }
     }
 
+    public static boolean isRunning() {
+        return matchTimer.isRunning();
+    }
+
     private static boolean weWonAuto() {
         return ourAlliance == allianceThatWonAuto;
     }
 
-    private static double getTimeLeftInShift() {
-        return Math.max(0, phase.getEndTime() - phaseTimer.get());
+    public static double getTime() {
+        return matchTimer.get();
+    }
+
+    public static double getTimeLeftInShift() {
+        return Math.max(0, phase.getEndTime() - matchTimer.get());
     }
 }
