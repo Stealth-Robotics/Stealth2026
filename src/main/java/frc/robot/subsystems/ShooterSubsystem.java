@@ -10,6 +10,7 @@ import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
@@ -37,17 +38,17 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final MotionMagicVelocityVoltage shooterController = new MotionMagicVelocityVoltage(0);
 
-    //TODO: Set magnet offset once cancoder is at zero position
-    private final double HOOD_ENCODER_MAGNET_OFFSET = 0;
-    private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5;
-    private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 8;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.054688;
+    private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1;
+
+    private final double HOOD_ROTOR_TO_SENSOR_RATIO = 1.0 / 5.0;
+    private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 1.0 / 8.0;
 
     //TODO: Find good tolerances
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 5;
     private final double HOOD_TOLERANCE_ROTATIONS = 0.01;
 
-    //TODO: Measure actual values
-    private final double MAX_HOOD_ROTATIONS = 0;
+    private final double MAX_HOOD_ROTATIONS = 0.47;
     private final double MIN_HOOD_ROTATIONS = 0;
 
     //TODO: Tune all PID/Feedforward constants
@@ -59,15 +60,16 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTING_kS = 0.0;
     private final double SHOOTING_MOTIONMAGIC_kACCELERATION = 0.0;
 
-    private final double HOOD_kP = 0.0;
+    //TODO: Tune kP and kI until satisfactory
+    private final double HOOD_kP = 10.0;
     private final double HOOD_kI = 0.0;
     private final double HOOD_kD = 0.0;
 
-    //TODO: Find correct CAN IDs
-    private final int SHOOTER_MOTOR_1_ID = 0;
-    private final int SHOOTER_MOTOR_2_ID = 0;
-    private final int HOOD_MOTOR_ID = 0;
-    private final int HOOD_ENCODER_ID = 0;
+    private final int SHOOTER_MOTOR_1_ID = 2;
+    private final int SHOOTER_MOTOR_2_ID = 3;
+
+    private final int HOOD_MOTOR_ID = 4;
+    private final int HOOD_ENCODER_ID = 9;
 
     public ShooterSubsystem() {
         shooterMotor1 = new TalonFX(SHOOTER_MOTOR_1_ID);
@@ -87,26 +89,31 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterConfig.MotionMagic.MotionMagicAcceleration = SHOOTING_MOTIONMAGIC_kACCELERATION;
 
         //Hood motor configuration
+        hoodConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+
         hoodConfig.Feedback.RotorToSensorRatio = HOOD_ROTOR_TO_SENSOR_RATIO;
         hoodConfig.Feedback.SensorToMechanismRatio = HOOD_SENSOR_TO_MECHANISM_RATIO;
+
+        hoodConfig.Feedback.FeedbackRemoteSensorID = hoodEncoder.getDeviceID();
+        hoodConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
 
         hoodConfig.Slot0.kP = HOOD_kP;
         hoodConfig.Slot0.kI = HOOD_kI;
         hoodConfig.Slot0.kD = HOOD_kD;
         
         //Cancoder configuration
-        hoodConfig.Feedback.FeedbackRemoteSensorID = hoodEncoder.getDeviceID();
-        hoodConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
-
+        hoodEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = HOOD_ENCODER_DISCONTINUTY_POINT;
         hoodEncoderConfig.MagnetSensor.MagnetOffset = HOOD_ENCODER_MAGNET_OFFSET;
         hoodEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
 
         //Apply device configs
-        hoodEncoder.getConfigurator().apply(hoodEncoderConfig);
         shooterMotor1.getConfigurator().apply(shooterConfig);
         shooterMotor2.getConfigurator().apply(shooterConfig);
+        
         hoodMotor.getConfigurator().apply(hoodConfig);
+        hoodEncoder.getConfigurator().apply(hoodEncoderConfig);
 
+        //Set the other shooting motor to follow the other (but inverted)
         shooterMotor2.setControl(new Follower(SHOOTER_MOTOR_1_ID, MotorAlignmentValue.Opposed));
     }
 

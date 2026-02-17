@@ -45,16 +45,15 @@ public class TurretSubsystem extends SubsystemBase {
     private final double TURRET_HOME_DEGREES = 0;
     private final double MIN_TURRET_DEGREES = 0;
 
-    //Figure out mechanism ratio
-    private final double ENCODER_TO_TURRET_RATIO = 0;
+    //TODO: Figure out mechanism ratio
+    private final double ENCODER_TO_TURRET_RATIO = 45;
     private final double MOTOR_TO_ENCODER_RATIO = 1;
 
     //TODO: Find zeroed value
     private final double TURRET_ENCODER_MAGNET_OFFSET = 0;
 
-    //TODO: Find correct CAN IDs
-    private final int TURRET_MOTOR_ID = 0;
-    private final int TURRET_ENCODER_ID = 0;
+    private final int TURRET_MOTOR_ID = 7;
+    private final int TURRET_ENCODER_ID = 8;
 
     public TurretSubsystem() {
         turretMotor = new TalonFX(TURRET_MOTOR_ID);

@@ -55,8 +55,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Transform3d TURRET_TRANSFORM = new Transform3d(0, 0, 0, Rotation3d.kZero);
 
-    //TODO: Find actual CAN ID
-    private final int CAN_RANGE_ID = 0;
+    private final int CAN_RANGE_ID = 15;
 
     private enum ShooterState {
         HOMED,
