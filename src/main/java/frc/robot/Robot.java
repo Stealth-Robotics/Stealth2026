@@ -5,7 +5,9 @@ package frc.robot;
 
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.DriverStation.MatchType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.util.ShiftTracker;
@@ -76,9 +78,9 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopInit() {
-        //For testing, just in case we aren't running a full match (auto -> teleop)
-        if (!ShiftTracker.isRunning())
+        if (!ShiftTracker.isRunning()) {
             ShiftTracker.start();
+        }
 
         if (m_autonomousCommand != null) {
             m_autonomousCommand.cancel();

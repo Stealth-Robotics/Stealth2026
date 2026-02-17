@@ -8,7 +8,7 @@ import edu.wpi.first.wpilibj.Timer;
  * Ultility class that keeps track of who can score when and for how long (dependent on who won auto)
  */
 public class ShiftTracker {
-    private static MatchPhase phase = MatchPhase.UNDEFINED;
+    private static MatchPhase phase = MatchPhase.UNKNOWN;
     private static final Timer matchTimer = new Timer();
 
     private static Alliance ourAlliance = null;
@@ -16,19 +16,27 @@ public class ShiftTracker {
 
     private static final double MIN_SHOOT_TIME_SECONDS = 0.8;
 
+    //Just in case we start teleop without auto and we need to correctly offset the time
+    private static int timeOffset = 0;
+
     public static void start() {
+        reset();
+
         if (DriverStation.isAutonomous())
             phase = MatchPhase.AUTO;
-        else
+        else {
             phase = MatchPhase.TRANSITION_SHIFT;
+            timeOffset = 23;
+        }
 
-        reset();
         matchTimer.start();
     }
 
     public static void reset() {
         matchTimer.reset();
         matchTimer.stop();
+
+        timeOffset = 0;
     }
 
     public static MatchPhase getCurrentMatchPhase() {
@@ -38,7 +46,7 @@ public class ShiftTracker {
     /**
      * Called periodically to ensure we accurately track which shift we are in
      */
-    public static void periodic() {
+    public static void update() {
         if (allianceThatWonAuto == null) {
             String speculatedAutoWinner = DriverStation.getGameSpecificMessage();
             if (!speculatedAutoWinner.isEmpty())
@@ -48,15 +56,18 @@ public class ShiftTracker {
         if (ourAlliance == null)
             ourAlliance = DriverStation.getAlliance().orElse(null);
 
-        if (matchTimer.hasElapsed(phase.getEndTime()))
-            phase = phase.getNext();
-
-        /* Phase becomes null when we are in auto or teleop DS modes and have exceeded the standard
-         * match duration. We stop tracking shifts and any calls to canScore() will return true for testing purposes
-         */
-        if (phase == MatchPhase.UNDEFINED || phase == null) {
-            reset();
-            phase = MatchPhase.UNDEFINED;
+        if (isRunning()) {
+            if (phase != MatchPhase.UNKNOWN && phase != null) {
+                if (matchTimer.hasElapsed(phase.getEndTime()))
+                    phase = phase.getNext();
+            }
+            else {
+                /* Phase becomes null when we are in auto or teleop DS modes and have exceeded the standard
+                * match duration. We stop tracking shifts and any calls to canScore() will return true for testing purposes
+                */
+                reset();
+                phase = MatchPhase.UNKNOWN;
+            }
         }
     }
 
@@ -92,7 +103,7 @@ public class ShiftTracker {
                 else return getTimeLeftInShift() <= MIN_SHOOT_TIME_SECONDS;
             }
 
-            case ENDGAME, UNDEFINED -> { return true; }
+            case ENDGAME, UNKNOWN -> { return true; }
             default -> { return false; }
         }
     }
@@ -110,6 +121,6 @@ public class ShiftTracker {
     }
 
     public static double getTimeLeftInShift() {
-        return Math.max(0, phase.getEndTime() - matchTimer.get());
+        return Math.max(0, phase.getEndTime() - (matchTimer.get() + timeOffset));
     }
 }

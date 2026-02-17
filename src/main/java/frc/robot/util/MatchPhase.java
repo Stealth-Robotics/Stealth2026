@@ -1,8 +1,8 @@
 package frc.robot.util;
 
 public enum MatchPhase {
-    UNDEFINED(0, 0, null),
-    ENDGAME(133, 163, UNDEFINED),
+    UNKNOWN(0, 0, null),
+    ENDGAME(133, 163, UNKNOWN),
     SHIFT4(108, 133, ENDGAME),
     SHIFT3(83, 108, SHIFT4),
     SHIFT2(58, 83, SHIFT3),

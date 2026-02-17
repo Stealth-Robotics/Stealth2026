@@ -59,7 +59,7 @@ public class RobotContainer {
 
     //Used mostly for telemetry and logging general match info
     public void periodic() {
-        ShiftTracker.periodic();
+        ShiftTracker.update();
 
         DogLog.forceNt.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
         DogLog.forceNt.log("Hub Scorable", ShiftTracker.canScore());
