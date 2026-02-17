@@ -17,7 +17,7 @@ public class ShiftTracker {
     private static final double MIN_SHOOT_TIME_SECONDS = 0.8;
 
     //Just in case we start teleop without auto and we need to correctly offset the time
-    private static int timeOffset = 0;
+    private static double timeOffset = 0;
 
     public static void start() {
         reset();
@@ -26,7 +26,10 @@ public class ShiftTracker {
             phase = MatchPhase.AUTO;
         else {
             phase = MatchPhase.TRANSITION_SHIFT;
-            timeOffset = 23;
+
+            double autoDuration = (MatchPhase.AUTO.getEndTime() - MatchPhase.AUTO.getStartTime());
+            double autoToTeleopDuration = (MatchPhase.AUTO_TELE_TRANSITION.getEndTime() - MatchPhase.AUTO_TELE_TRANSITION.getStartTime());
+            timeOffset = autoDuration + autoToTeleopDuration;
         }
 
         matchTimer.start();
