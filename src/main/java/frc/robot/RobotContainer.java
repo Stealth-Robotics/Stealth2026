@@ -32,6 +32,11 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
+        robot.setDriveDefaultCommand(
+            () -> -driverController.getLeftX(),
+            () -> -driverController.getLeftY(),
+            () -> -driverController.getRightX()
+        );
     }
 
     public Command getAutonomousCommand() {
@@ -55,7 +60,7 @@ public class RobotContainer {
     //Used mostly for telemetry and logging general match info
     public void periodic() {
         ShiftTracker.periodic();
-        
+
         DogLog.forceNt.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
         DogLog.forceNt.log("Hub Scorable", ShiftTracker.canScore());
     }
