@@ -1,6 +1,8 @@
 package frc.robot;
 
 import java.util.function.DoubleSupplier;
+import choreo.auto.AutoFactory;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
@@ -9,6 +11,7 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.TransferSubsystem;
 
+@SuppressWarnings("unused")
 public class RobotSystem extends SubsystemBase {
     private final DriveSubsystem drive;
     private final IntakeSubsystem intake;
@@ -16,12 +19,18 @@ public class RobotSystem extends SubsystemBase {
     private final ShootingSuperstructure shooter;
     private final ClimbSubsystem climb;
 
-    public RobotSystem() {
+    private final Command driverRumble, operatorRumble;
+
+
+    public RobotSystem(Command driverRumble, Command operatorRumble) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
         transfer = new TransferSubsystem();
         shooter = new ShootingSuperstructure();
         climb = new ClimbSubsystem();
+
+        this.driverRumble = driverRumble;
+        this.operatorRumble = operatorRumble;
     }
 
     /**
@@ -45,6 +54,17 @@ public class RobotSystem extends SubsystemBase {
      */
     public boolean isShootingValid() {
         return shooter.isShootingValid();
+    }
+
+    public Autos getAutos() {
+        return new Autos(
+            drive.createAutoFactory(),
+            drive,
+            intake,
+            transfer,
+            shooter,
+            climb
+        );
     }
 
     @Override

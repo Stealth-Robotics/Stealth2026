@@ -3,17 +3,17 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.UsbCamera;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
 
 public class RobotContainer {
@@ -21,34 +21,32 @@ public class RobotContainer {
     private final CommandXboxController operatorController = new CommandXboxController(1);
 
     private final RobotSystem robot;
+
+    private final Autos autos;
+    private final AutoChooser autoChooser;
     
     public RobotContainer() {
-        robot = new RobotSystem();
+        robot = new RobotSystem(driverRumble(), operatorRumble());
 
-        configureBindings();
+        //Add the auto chooser to our dashboard
+        autos = robot.getAutos();
+
+        autoChooser = new AutoChooser();
+        SmartDashboard.putData("Auto Chooser", autoChooser);
 
         //Stream the driver camera to Elastic
         UsbCamera camera = CameraServer.startAutomaticCapture();
         camera.setResolution(640, 480);
         camera.setFPS(30);
 
-        //Command bound to a dashboard button
+        //Allows us to reset our robot to its starting config 
         SmartDashboard.putData("Reset Encoders", resetRobot());
 
-        //Allow us to toggle whether we use the shift tracker in a match
-        SmartDashboard.putBoolean("Hub Dependent Shooting", true);
-    }
+        //Allows us to toggle whether we use the shift tracker in a match
+        SmartDashboard.putBoolean("TrackHubState", true);
 
-    private void configureBindings() {
-        robot.setDriveDefaultCommand(
-            () -> -driverController.getLeftX(),
-            () -> -driverController.getLeftY(),
-            () -> -driverController.getRightX()
-        );
-    }
-
-    public Command getAutonomousCommand() {
-        return Commands.print("No autonomous command configured");
+        configureBindings();
+        addAutosToChooser();
     }
 
     /* Reset robot's encoders and cancel running commands */
@@ -63,6 +61,33 @@ public class RobotContainer {
      */
     public Command homeRobot() {
         return new InstantCommand();
+    }
+
+    public Command getAutonomousCommand() {
+        return autoChooser.selectedCommand();
+    }
+
+    private void configureBindings() {
+        robot.setDriveDefaultCommand(
+            () -> -driverController.getLeftX(),
+            () -> -driverController.getLeftY(),
+            () -> -driverController.getRightX()
+        );
+    }
+
+    /*
+     * Add all our working autonomous routines to the chooser for selecting on Elastic
+     */
+    private void addAutosToChooser() {
+        autoChooser.addRoutine("Nothing Auto", () -> autos.nothingAuto());
+    }
+
+    private Command driverRumble() {
+        return new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1));
+    }
+
+    private Command operatorRumble() {
+        return new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 1));
     }
 
     //Used mostly for telemetry and logging general match info
