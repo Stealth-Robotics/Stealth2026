@@ -4,6 +4,8 @@
 package frc.robot;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -11,6 +13,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
 
 public class RobotContainer {
@@ -24,10 +27,15 @@ public class RobotContainer {
 
         configureBindings();
 
-        // Command bound to a dashboard button
+        //Stream the driver camera to Elastic
+        UsbCamera camera = CameraServer.startAutomaticCapture();
+        camera.setResolution(640, 480);
+        camera.setFPS(30);
+
+        //Command bound to a dashboard button
         SmartDashboard.putData("Reset Encoders", resetRobot());
 
-        // Allow us to toggle whether we use the shift tracker in a match
+        //Allow us to toggle whether we use the shift tracker in a match
         SmartDashboard.putBoolean("Hub Dependent Shooting", true);
     }
 
