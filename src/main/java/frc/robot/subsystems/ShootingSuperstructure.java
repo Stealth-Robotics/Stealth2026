@@ -29,17 +29,14 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final TurretSubsystem turret;
 
     //TODO: Find maximum time inbetween shots when rapidly shooting
-    private final double MAX_SHOT_SPACING_SECONDS = 0.5;
+    private final double MAX_SHOT_SPACING_SECONDS = 0.75;
 
     private final CANrange shotSensor;
     private final CANrangeConfiguration shotSensorConfig = new CANrangeConfiguration();
 
-    //TODO: Tune distance
     private final double FUEL_DETECTED_THRESHOLD_INCHES = 0.5f;
 
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
-
-    private final String turretLimelight = "turret_limelight";
 
     public static final Translation3d BLUE_HUB = new Translation3d();
     public static final Translation3d RED_HUB = new Translation3d();
@@ -105,7 +102,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     /**
      * Aim to pass into our alliance area (dynamic, and based off of our field position)
      */
-    public Command pass(Supplier<Pose3d> robotPose, Supplier<ChassisSpeeds> robotVelocity) {
+    public Command passTracking(Supplier<Pose3d> robotPose, Supplier<ChassisSpeeds> robotVelocity) {
         return trackTarget(() -> {
             //TODO: Implement pose checking to determine which target to aim at
             Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
@@ -131,7 +128,6 @@ public class ShootingSuperstructure extends SubsystemBase {
                 trajectoryHeight
             );
 
-            shooter.spinToRPM(() -> ShotTrajectoryCalculator.getTargetFlywheelRPM()).schedule();
             shooter.setHoodPosition(() -> Units.degreesToRotations(ShotTrajectoryCalculator.getHoodAngle())).schedule();
 
             double turretTarget = Units.radiansToDegrees(robotPose.get().getRotation().getAngle()) - ShotTrajectoryCalculator.getTurretAngle();
@@ -139,11 +135,19 @@ public class ShootingSuperstructure extends SubsystemBase {
         });
     }
 
+    public Command trackWithFlywheel() {
+        return run(() -> shooter.spinToRPM(() -> ShotTrajectoryCalculator.getTargetFlywheelRPM()).schedule());
+    }
+
+    public Command stopTrackingWithFlywheel() {
+        return shooter.deactivateShooter();
+    }
+
     /**
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
-    public boolean isShootingValid() {
-        return shooter.isShooterAtVelocity() && turret.isTurretAtAngle() && state != ShooterState.HOMED;
+    public boolean readyToShoot() {
+        return shooter.isShooterAtVelocity() && turret.isTurretNearAngle() && state != ShooterState.HOMED;
     }
 
     /**

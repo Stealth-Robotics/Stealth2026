@@ -17,7 +17,6 @@ public class TransferSubsystem extends SubsystemBase {
     private final double SPINNING_SPEED = 0.75;
     private final double FEEDING_SPEED = 1;
 
-    //TODO: Find correct CAN IDs
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
@@ -39,7 +38,7 @@ public class TransferSubsystem extends SubsystemBase {
         return runOnce(() -> spindexerMotor.set(SPINNING_SPEED));
     }
 
-    public Command stopSpin() {
+    public Command stopSpinning() {
         return runOnce(() -> spindexerMotor.set(0));
     }
 
@@ -47,7 +46,7 @@ public class TransferSubsystem extends SubsystemBase {
         return runOnce(() -> feederMotor.set(FEEDING_SPEED));
     }
 
-    public Command stopFeed() {
+    public Command stopFeeding() {
         return runOnce(() -> feederMotor.set(0));
     }
 

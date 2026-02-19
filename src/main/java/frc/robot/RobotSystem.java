@@ -2,7 +2,6 @@ package frc.robot;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
-import choreo.auto.AutoFactory;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -13,7 +12,6 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.TransferSubsystem;
 
-@SuppressWarnings("unused")
 public class RobotSystem extends SubsystemBase {
     private final DriveSubsystem drive;
     private final IntakeSubsystem intake;
@@ -57,14 +55,6 @@ public class RobotSystem extends SubsystemBase {
                 isFieldCentric
             )
         );
-    }
-    
-    /**
-     * Only allows us to shoot if the turret is tracking (not wrapping or at limit), the shooter is at speed, and
-     * we are not driving/spinning to quickly
-     */
-    public boolean isShootingValid() {
-        return shooter.isShootingValid();
     }
 
     public Autos getAutos() {

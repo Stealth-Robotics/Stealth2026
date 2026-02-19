@@ -37,8 +37,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kI = 1.0;
     private final double kD = 0.0;
 
-    //TODO: Find acceptable angle tolerance
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 0.25;
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 2;
 
     //TODO: Find actual values
     private final double MAX_TURRET_DEGREES = 125;
@@ -99,7 +98,7 @@ public class TurretSubsystem extends SubsystemBase {
         );
     }
 
-    public boolean isTurretAtAngle() {
+    public boolean isTurretNearAngle() {
         return Math.abs(getTurretAngleDegrees() - getTargetAngleDegrees()) < TURRET_ANGLE_TOLERANCE_DEGREES;
     }
 
