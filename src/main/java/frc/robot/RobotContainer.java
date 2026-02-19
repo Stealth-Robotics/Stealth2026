@@ -24,6 +24,8 @@ public class RobotContainer {
 
     private final Autos autos;
     private final AutoChooser autoChooser;
+
+    private boolean driveFieldCentric = true;
     
     public RobotContainer() {
         robot = new RobotSystem(driverRumble(), operatorRumble());
@@ -71,8 +73,11 @@ public class RobotContainer {
         robot.setDriveDefaultCommand(
             () -> -driverController.getLeftX(),
             () -> -driverController.getLeftY(),
-            () -> -driverController.getRightX()
+            () -> -driverController.getRightX(),
+            () -> driveFieldCentric
         );
+
+        driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
     }
 
     /*

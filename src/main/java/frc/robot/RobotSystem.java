@@ -1,8 +1,10 @@
 package frc.robot;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import choreo.auto.AutoFactory;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
@@ -37,13 +39,22 @@ public class RobotSystem extends SubsystemBase {
      * @param x The supplier for driving the robot forward (field centric)
      * @param y The supplier for driving the robot sideways (field centric)
      * @param theta The supplier for rotating the robot
+     * @param isFieldCentric Supplier that allows us to toggle between driving modes
      */
-    public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta) {
+    public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta, BooleanSupplier isFieldCentric) {
         drive.setDefaultCommand(
-            drive.applyRequest(() -> drive.fieldCentric
-                .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
-                .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
-                .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE)
+            new ConditionalCommand(
+                drive.applyRequest(() -> drive.fieldCentric
+                    .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
+                    .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
+                    .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE)
+                ),
+                drive.applyRequest(() -> drive.robotCentric
+                        .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED)
+                        .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED)
+                        .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE)
+                ),
+                isFieldCentric
             )
         );
     }
