@@ -5,8 +5,8 @@ import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.Follower;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
@@ -20,7 +20,6 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 
 public class ShooterSubsystem extends SubsystemBase {
     private final TalonFX shooterMotor1;
@@ -37,13 +36,13 @@ public class ShooterSubsystem extends SubsystemBase {
     private final CoastOut coast = new CoastOut();
 
     private final PositionVoltage hoodController = new PositionVoltage(0);
-    private final MotionMagicVelocityVoltage shooterController = new MotionMagicVelocityVoltage(0);
+    private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
     private final double HOOD_ENCODER_MAGNET_OFFSET = -0.57;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1;
 
-    private final double HOOD_ROTOR_TO_SENSOR_RATIO = 1;
-    private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 1;
+    private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
+    private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 8.0;
 
     //TODO: Find good tolerance
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 50;
@@ -60,7 +59,6 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTING_kA = 0.0;
     private final double SHOOTING_kV = 0.0;
     private final double SHOOTING_kS = 0.0;
-    private final double SHOOTING_MOTIONMAGIC_kACCELERATION = 1000.0;
 
     //TODO: Tune kP and kI until satisfactory
     private final double HOOD_kP = 15.0;
@@ -89,8 +87,6 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterConfig.Slot0.kV = SHOOTING_kV;
         shooterConfig.Slot0.kS = SHOOTING_kS;
         shooterConfig.Slot0.kA = SHOOTING_kA;
-
-        shooterConfig.MotionMagic.MotionMagicAcceleration = SHOOTING_MOTIONMAGIC_kACCELERATION;
 
         //Hood motor configuration
         hoodConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
@@ -177,6 +173,10 @@ public class ShooterSubsystem extends SubsystemBase {
      */ 
     private double getTargetRPM() {
         return shooterController.Velocity * 60.0;
+    }
+
+    public double getHoodDegrees() {
+        return Units.rotationsToDegrees(hoodMotor.getPosition().getValueAsDouble() / 8.0);
     }
 
     @Override

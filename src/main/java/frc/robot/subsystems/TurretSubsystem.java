@@ -45,9 +45,11 @@ public class TurretSubsystem extends SubsystemBase {
     private final double TURRET_HOME_DEGREES = 0;
     private final double MIN_TURRET_DEGREES = -36;
 
+    private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.5;
+
     //TODO: Figure out mechanism ratio
-    private final double ENCODER_TO_TURRET_RATIO = 45;
-    private final double MOTOR_TO_ENCODER_RATIO = 1.0;
+    private final double TURRET_SENSOR_TO_MECHANISM_RATIO = 45;
+    private final double TURRET_ROTOR_TO_SENSOR_RATIO = 1.0;
 
     //TODO: Find zeroed value
     private final double TURRET_ENCODER_MAGNET_OFFSET = 0.439697;
@@ -59,8 +61,8 @@ public class TurretSubsystem extends SubsystemBase {
         turretMotor = new TalonFX(TURRET_MOTOR_ID);
         turretEncoder = new CANcoder(TURRET_ENCODER_ID);
 
-        turretConfig.Feedback.RotorToSensorRatio = MOTOR_TO_ENCODER_RATIO;
-        turretConfig.Feedback.SensorToMechanismRatio = ENCODER_TO_TURRET_RATIO;
+        turretConfig.Feedback.RotorToSensorRatio = TURRET_ROTOR_TO_SENSOR_RATIO;
+        turretConfig.Feedback.SensorToMechanismRatio = TURRET_SENSOR_TO_MECHANISM_RATIO;
 
         turretConfig.Slot0.kP = kP;
         turretConfig.Slot0.kI = kI;
@@ -77,6 +79,7 @@ public class TurretSubsystem extends SubsystemBase {
 
         turretEncoderConfig.MagnetSensor.MagnetOffset = TURRET_ENCODER_MAGNET_OFFSET;
         turretEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
+        turretEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = TURRET_ENCODER_DISCONTINUTY_POINT;
 
         turretMotor.getConfigurator().apply(turretConfig);
         turretEncoder.getConfigurator().apply(turretEncoderConfig);
@@ -100,11 +103,11 @@ public class TurretSubsystem extends SubsystemBase {
         return Math.abs(getTurretAngleDegrees() - getTargetAngleDegrees()) < TURRET_ANGLE_TOLERANCE_DEGREES;
     }
 
-    private double getTurretAngleDegrees() {
+    public double getTurretAngleDegrees() {
         return Units.rotationsToDegrees(turretMotor.getPosition().getValueAsDouble());
     }
 
-    private double getTargetAngleDegrees() {
+    public double getTargetAngleDegrees() {
         return Units.rotationsToDegrees(turretController.Position);
     }
 
