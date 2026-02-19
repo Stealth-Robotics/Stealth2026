@@ -31,26 +31,26 @@ public class TurretSubsystem extends SubsystemBase {
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
 
     //TODO: Tune PID/Feedforward constants
-    private final double kACCELERATION = 0.0;
-    private final double kCRUISE_VELOCITY = 0.0;
-    private final double kP = 0.0;
-    private final double kI = 0.0;
+    private final double kACCELERATION = 100.0;
+    private final double kCRUISE_VELOCITY = 500.0;
+    private final double kP = 80.0;
+    private final double kI = 1.0;
     private final double kD = 0.0;
 
     //TODO: Find acceptable angle tolerance
     private final double TURRET_ANGLE_TOLERANCE_DEGREES = 0.25;
 
     //TODO: Find actual values
-    private final double MAX_TURRET_DEGREES = 0;
+    private final double MAX_TURRET_DEGREES = 125;
     private final double TURRET_HOME_DEGREES = 0;
-    private final double MIN_TURRET_DEGREES = 0;
+    private final double MIN_TURRET_DEGREES = -36;
 
     //TODO: Figure out mechanism ratio
     private final double ENCODER_TO_TURRET_RATIO = 45;
-    private final double MOTOR_TO_ENCODER_RATIO = 1;
+    private final double MOTOR_TO_ENCODER_RATIO = 1.0;
 
     //TODO: Find zeroed value
-    private final double TURRET_ENCODER_MAGNET_OFFSET = 0;
+    private final double TURRET_ENCODER_MAGNET_OFFSET = 0.439697;
 
     private final int TURRET_MOTOR_ID = 7;
     private final int TURRET_ENCODER_ID = 8;
@@ -87,12 +87,12 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public Command rotateToAngle(DoubleSupplier degrees) {
-        return new SequentialCommandGroup(
-            new InstantCommand(() -> turretMotor.setControl(turretController.withPosition(
+        return runOnce(
+            () -> turretMotor.setControl(
+                turretController.withPosition(
                     Units.degreesToRotations(MathUtil.clamp(degrees.getAsDouble(), MIN_TURRET_DEGREES, MAX_TURRET_DEGREES))
-                ))
-            ),
-            new WaitUntilCommand(this::isTurretAtAngle)
+                )
+            )
         );
     }
 

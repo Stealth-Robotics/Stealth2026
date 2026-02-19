@@ -16,6 +16,7 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -38,31 +39,32 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final MotionMagicVelocityVoltage shooterController = new MotionMagicVelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.054688;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.57;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1;
 
-    private final double HOOD_ROTOR_TO_SENSOR_RATIO = 1.0 / 5.0;
-    private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 1.0 / 8.0;
+    private final double HOOD_ROTOR_TO_SENSOR_RATIO = 1;
+    private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 1;
 
-    //TODO: Find good tolerances
-    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 5;
-    private final double HOOD_TOLERANCE_ROTATIONS = 0.01;
+    //TODO: Find good tolerance
+    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 50;
 
-    private final double MAX_HOOD_ROTATIONS = 0.47;
+    private final double MAX_HOOD_ROTATIONS = 0.485;
     private final double MIN_HOOD_ROTATIONS = 0;
 
+    private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1 / 1.5;
+
     //TODO: Tune all PID/Feedforward constants
-    private final double SHOOTING_kP = 0.0;
-    private final double SHOOTING_kI = 0.0;
+    private final double SHOOTING_kP = 100.0;
+    private final double SHOOTING_kI = 10.0;
     private final double SHOOTING_kD = 0.0;
     private final double SHOOTING_kA = 0.0;
     private final double SHOOTING_kV = 0.0;
     private final double SHOOTING_kS = 0.0;
-    private final double SHOOTING_MOTIONMAGIC_kACCELERATION = 0.0;
+    private final double SHOOTING_MOTIONMAGIC_kACCELERATION = 1000.0;
 
     //TODO: Tune kP and kI until satisfactory
-    private final double HOOD_kP = 10.0;
-    private final double HOOD_kI = 0.0;
+    private final double HOOD_kP = 15.0;
+    private final double HOOD_kI = 0.1;
     private final double HOOD_kD = 0.0;
 
     private final int SHOOTER_MOTOR_1_ID = 2;
@@ -79,6 +81,8 @@ public class ShooterSubsystem extends SubsystemBase {
         hoodEncoder = new CANcoder(HOOD_ENCODER_ID);
 
         //Shooter motors configuration
+        shooterConfig.Feedback.SensorToMechanismRatio = SHOOTER_MOTOR_TO_FLYWHEEL_RATIO;
+
         shooterConfig.Slot0.kP = SHOOTING_kP;
         shooterConfig.Slot0.kI = SHOOTING_kI;
         shooterConfig.Slot0.kD = SHOOTING_kD;
@@ -95,7 +99,7 @@ public class ShooterSubsystem extends SubsystemBase {
         hoodConfig.Feedback.SensorToMechanismRatio = HOOD_SENSOR_TO_MECHANISM_RATIO;
 
         hoodConfig.Feedback.FeedbackRemoteSensorID = hoodEncoder.getDeviceID();
-        hoodConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+        hoodConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
 
         hoodConfig.Slot0.kP = HOOD_kP;
         hoodConfig.Slot0.kI = HOOD_kI;
@@ -142,23 +146,16 @@ public class ShooterSubsystem extends SubsystemBase {
             () -> hoodMotor.setControl(hoodController.withPosition(
                 MathUtil.clamp(rotations.getAsDouble(), MIN_HOOD_ROTATIONS, MAX_HOOD_ROTATIONS))
             )
-        ).andThen(new WaitUntilCommand(() -> isHoodAtPosition()));
+        );
     }
 
     /**
-     * Sets the shooter to spin up to the specified RPM and waits until at that speed
+     * Sets the shooter to spin up to the specified RPM
      */
     public Command spinToRPM(DoubleSupplier rpm) {
         return runOnce(
-            () -> shooterMotor1.setControl(shooterController.withVelocity(rpm.getAsDouble() / 60))
-        ).andThen(new WaitUntilCommand(() -> isShooterAtVelocity()));
-    }
-    
-    /**
-     * @return Whether or not the hood is at its target rotations (within a tolerance)
-     */
-    private boolean isHoodAtPosition() {
-        return Math.abs(hoodMotor.getPosition().getValueAsDouble() - hoodController.Position) < HOOD_TOLERANCE_ROTATIONS;
+            () -> shooterMotor1.setControl(shooterController.withVelocity(rpm.getAsDouble() / 60.0))
+        );
     }
 
     /**
@@ -169,17 +166,17 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     /**
-     *  @return the shooter's velocity in Rotations Per Minute
+     *  @return the shooter's velocity in RPM
      */ 
     private double getRPM() {
-        return shooterMotor1.getVelocity().getValueAsDouble() / 60.0;
+        return shooterMotor1.getVelocity().getValueAsDouble() * 60.0;
     }
 
     /**
-     *  @return the shooter's target velocity in Rotations Per Minute
+     *  @return the shooter's target velocity in RPM
      */ 
     private double getTargetRPM() {
-        return shooterController.Velocity / 60.0;
+        return shooterController.Velocity * 60.0;
     }
 
     @Override
@@ -187,7 +184,5 @@ public class ShooterSubsystem extends SubsystemBase {
         DogLog.forceNt.log("Shooter/shooter_rpm", getRPM());
         DogLog.forceNt.log("Shooter/shooter_target_rpm", getTargetRPM());
         DogLog.forceNt.log("Shooter/shooter_ready", isShooterAtVelocity());
-
-        DogLog.forceNt.log("Shooter/hood_ready", isHoodAtPosition());
     }
 }

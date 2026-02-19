@@ -18,17 +18,17 @@ public class TransferSubsystem extends SubsystemBase {
     private final double FEEDING_SPEED = 1;
 
     //TODO: Find correct CAN IDs
-    private final int SPINDEXER_MOTOR_ID = 0;
-    private final int FEEDER_MOTOR_ID = 0;
+    private final int SPINDEXER_MOTOR_ID = 5;
+    private final int FEEDER_MOTOR_ID = 6;
 
     public TransferSubsystem() {
         spindexerMotor = new TalonFX(SPINDEXER_MOTOR_ID);
         feederMotor = new TalonFX(FEEDER_MOTOR_ID);
 
-        spindexerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        spindexerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         spindexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
-        feederConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        feederConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
         spindexerMotor.getConfigurator().apply(spindexerConfig);
