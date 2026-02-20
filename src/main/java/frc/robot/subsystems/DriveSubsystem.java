@@ -18,6 +18,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -247,6 +248,20 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         return m_sysIdRoutineToApply.dynamic(direction);
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    /**
+     * Returns the robot's field relative pose in the normal coordinate system (x, y), where y is forward and x is sideways
+     */
+    public Pose2d getPose() {
+        //TODO: Might need to flip x and y because of stupid stupid dum dum
+        return getState().Pose;
+    }
+
+    public ChassisSpeeds getFieldRelativeVelocity() {
+        return ChassisSpeeds.fromRobotRelativeSpeeds(getState().Speeds, getPigeon2().getRotation2d());
+    }
+
     public AutoFactory createAutoFactory() {
         return new AutoFactory(
             () -> getState().Pose,
@@ -283,6 +298,8 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
                 .withWheelForceFeedforwardsY(sample.moduleForcesY())
         );
     }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Override
     public void periodic() {

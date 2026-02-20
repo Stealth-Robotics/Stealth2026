@@ -9,7 +9,9 @@ import com.ctre.phoenix6.signals.UpdateModeValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -20,50 +22,53 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.ShotParams;
 import frc.robot.util.ShotTrajectoryCalculator;
 
 public class ShootingSuperstructure extends SubsystemBase {
-    private ShooterState state = ShooterState.HOMED;
+    private ShooterState state = ShooterState.IDLE;
+    private boolean applyIdle = false;
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
 
-    //TODO: Find maximum time inbetween shots when rapidly shooting
+    private final Supplier<Pose2d> robotPoseSupplier;
+    private final Supplier<ChassisSpeeds> robotVelocitySupplier;
+
+    //TODO: Find maximum time in between shots when rapidly shooting
     private final double MAX_SHOT_SPACING_SECONDS = 0.75;
 
     private final CANrange shotSensor;
     private final CANrangeConfiguration shotSensorConfig = new CANrangeConfiguration();
 
-    private final double FUEL_DETECTED_THRESHOLD_INCHES = 0.5f;
+    private final double FUEL_DETECTED_THRESHOLD_INCHES = 0.5;
 
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
 
-    public static final Translation3d BLUE_HUB = new Translation3d();
-    public static final Translation3d RED_HUB = new Translation3d();
-
-    public static final Translation3d PASS_BLUE_LEFT = new Translation3d();
-    public static final Translation3d PASS_BLUE_RIGHT = new Translation3d();
-
-    public static final Translation3d PASS_RED_LEFT = new Translation3d();
-    public static final Translation3d PASS_RED_RIGHT = new Translation3d();
-
     private final double HUB_TRAJECTORY_MAX_HEIGHT_FEET = 13;
     private final double PASSING_TRAJECTORY_MAX_HEIGHT_FEET = 5;
+
+    private final ShotParams hub = new ShotParams(new Translation3d(), HUB_TRAJECTORY_MAX_HEIGHT_FEET);
+    private final ShotParams leftPass = new ShotParams(new Translation3d(), PASSING_TRAJECTORY_MAX_HEIGHT_FEET);
+    private final ShotParams rightPass = new ShotParams(new Translation3d(), PASSING_TRAJECTORY_MAX_HEIGHT_FEET);
 
     private final Transform3d TURRET_TRANSFORM = new Transform3d(0, 0, 0, Rotation3d.kZero);
 
     private final int CAN_RANGE_ID = 15;
 
     private enum ShooterState {
-        HOMED,
+        IDLE,
         PASSING,
         HUB_TRACKING
     }
 
-    public ShootingSuperstructure() {
+    public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier) {
         shooter = new ShooterSubsystem();
         turret = new TurretSubsystem();
         shotSensor = new CANrange(CAN_RANGE_ID);
+
+        this.robotPoseSupplier = robotPoseSupplier;
+        this.robotVelocitySupplier = robotVelocitySupplier;
 
         //Configure CANRange sensor
         shotSensorConfig.FovParams.FOVRangeX = 6.75;
@@ -74,80 +79,63 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensor.getConfigurator().apply(shotSensorConfig);
     }
 
-    /**
-     * Reset the turret, hood, and flywheel back to their homed states (zeroed and unpowered)
-     */
-    public Command home() {
-        return new SequentialCommandGroup(
-            shooter.homeSubsystem(),
-            turret.homeSubsystem()
-        ).beforeStarting(() -> state = ShooterState.HOMED);
+    public void setState(ShooterState state) {
+        this.state = state;
     }
 
     /**
-     * Aim at our alliance's hub
+     * Set the hood, turret, and flywheel to their homed/idle states (zeroed and unpowered)
      */
-    public Command trackHub(Supplier<Pose3d> robotPose, Supplier<ChassisSpeeds> robotVelocity) {
-        return trackTarget(() -> {
-            Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-            if (alliance == Alliance.Blue) {
-                return BLUE_HUB;
-            }
-            else {
-                return RED_HUB;
-            }
-        }, HUB_TRAJECTORY_MAX_HEIGHT_FEET, robotPose, robotVelocity).beforeStarting(() -> state = ShooterState.HUB_TRACKING);
+    private void idleSubsystems() {
+        shooter.homeSubsystem().schedule();
+        turret.homeSubsystem().schedule();
+    }
+
+    private void trackHub() {
+        ShotParams params = allianceFlipShotParams(hub);
+        Pose2d robotPose2d = robotPoseSupplier.get();
+        Pose3d robotPose3d = new Pose3d(robotPose2d.getX(), robotPose2d.getY(), 0, new Rotation3d(robotPose2d.getRotation()));
+
+        ShotTrajectoryCalculator.update(
+            robotPose3d.transformBy(TURRET_TRANSFORM),
+            robotVelocitySupplier.get(),
+            params.target(),
+            params.maxTrajectoryHeight()
+        );
+
+        shooter.setHoodPosition(() -> Units.degreesToRotations(ShotTrajectoryCalculator.getHoodAngle())).schedule();
+
+        double turretTarget = robotPoseSupplier.get().getRotation().getDegrees() - ShotTrajectoryCalculator.getTurretAngle();
+        turret.rotateToAngle(() -> turretTarget).schedule();
     }
 
     /**
-     * Aim to pass into our alliance area (dynamic, and based off of our field position)
+     * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
-    public Command passTracking(Supplier<Pose3d> robotPose, Supplier<ChassisSpeeds> robotVelocity) {
-        return trackTarget(() -> {
-            //TODO: Implement pose checking to determine which target to aim at
-            Alliance alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+    private void pass() {
+        //TODO: Add code to change passing target
+        ShotParams params = allianceFlipShotParams(leftPass);
+        Pose2d robotPose2d = robotPoseSupplier.get();
+        Pose3d robotPose3d = new Pose3d(robotPose2d.getX(), robotPose2d.getY(), 0, new Rotation3d(robotPose2d.getRotation()));
 
-            if (alliance == Alliance.Blue) {
-                return PASS_BLUE_LEFT;
-            }
-            else {
-                return PASS_RED_LEFT;
-            }
-        }, PASSING_TRAJECTORY_MAX_HEIGHT_FEET, robotPose, robotVelocity).beforeStarting(() -> state = ShooterState.PASSING);
-    }
+        ShotTrajectoryCalculator.update(
+            robotPose3d.transformBy(TURRET_TRANSFORM),
+            robotVelocitySupplier.get(),
+            params.target(),
+            params.maxTrajectoryHeight()
+        );
 
-    /**
-     * Command that continually tracks a target with the hood, turret, and flywheel
-     */
-    private Command trackTarget(Supplier<Translation3d> target, double trajectoryHeight, Supplier<Pose3d> robotPose, Supplier<ChassisSpeeds> robotVelocity) {
-        return run(() -> {
-            ShotTrajectoryCalculator.update(
-                robotPose.get().transformBy(TURRET_TRANSFORM),
-                robotVelocity.get(),
-                target.get(),
-                trajectoryHeight
-            );
+        shooter.setHoodPosition(() -> Units.degreesToRotations(ShotTrajectoryCalculator.getHoodAngle())).schedule();
 
-            shooter.setHoodPosition(() -> Units.degreesToRotations(ShotTrajectoryCalculator.getHoodAngle())).schedule();
-
-            double turretTarget = Units.radiansToDegrees(robotPose.get().getRotation().getAngle()) - ShotTrajectoryCalculator.getTurretAngle();
-            turret.rotateToAngle(() -> turretTarget).schedule();
-        });
-    }
-
-    public Command trackWithFlywheel() {
-        return run(() -> shooter.spinToRPM(() -> ShotTrajectoryCalculator.getTargetFlywheelRPM()).schedule());
-    }
-
-    public Command stopTrackingWithFlywheel() {
-        return shooter.deactivateShooter();
+        double turretTarget = robotPoseSupplier.get().getRotation().getDegrees() - ShotTrajectoryCalculator.getTurretAngle();
+        turret.rotateToAngle(() -> turretTarget).schedule();
     }
 
     /**
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
     public boolean readyToShoot() {
-        return shooter.isShooterAtVelocity() && turret.isTurretNearAngle() && state != ShooterState.HOMED;
+        return shooter.isShooterAtVelocity() && turret.isTurretNearAngle() && state != ShooterState.IDLE;
     }
 
     /**
@@ -157,8 +145,50 @@ public class ShootingSuperstructure extends SubsystemBase {
         return shotDebouncer.calculate(Units.metersToInches(shotSensor.getDistance().getValueAsDouble()) < FUEL_DETECTED_THRESHOLD_INCHES);
     }
 
+    /**
+     * Flips the pose to the red alliance if we are indeed on the red alliance (blue is default otherwise)
+     */
+    private ShotParams allianceFlipShotParams(ShotParams original) {
+        var alliance = DriverStation.getAlliance();
+
+        if (alliance.isPresent() && alliance.get() == Alliance.Red) {
+            var rotated2d = original.target().toTranslation2d().rotateBy(Rotation2d.fromDegrees(180));
+
+            return new ShotParams(
+                new Translation3d(
+                    rotated2d.getX(),
+                    rotated2d.getY(),
+                    original.target().getZ()
+                ), 
+                original.maxTrajectoryHeight()
+            );
+        }
+
+        return original;
+    }
+
     @Override
     public void periodic() {
+        switch (state) {
+            case IDLE -> {
+                if (applyIdle) {
+                    idleSubsystems();
+                    applyIdle = false;
+                }
+            }
+
+            case HUB_TRACKING -> {
+                trackHub();
+                applyIdle = true;
+            }
+
+            case PASSING -> {
+                pass();
+                applyIdle = true;
+            }
+        }
+
+        DogLog.forceNt.log("ShootingSuperstructure/state", state.name());
         DogLog.forceNt.log("ShootingSuperstructure/is_shooting", isShooting());
     }
 }

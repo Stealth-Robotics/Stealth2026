@@ -4,6 +4,7 @@ import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -29,6 +30,8 @@ public class TurretSubsystem extends SubsystemBase {
     private final CANcoderConfiguration turretEncoderConfig = new CANcoderConfiguration();
 
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
+
+    private final CoastOut coast = new CoastOut();
 
     //TODO: Tune PID/Feedforward constants
     private final double kACCELERATION = 100.0;

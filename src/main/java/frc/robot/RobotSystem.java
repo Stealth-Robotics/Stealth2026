@@ -21,12 +21,11 @@ public class RobotSystem extends SubsystemBase {
 
     private final Command driverRumble, operatorRumble;
 
-
     public RobotSystem(Command driverRumble, Command operatorRumble) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
         transfer = new TransferSubsystem();
-        shooter = new ShootingSuperstructure();
+        shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
         climb = new ClimbSubsystem();
 
         this.driverRumble = driverRumble;
