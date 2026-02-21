@@ -41,20 +41,11 @@ public class RobotContainer {
         camera.setResolution(640, 480);
         camera.setFPS(30);
 
-        //Allows us to reset our robot to its starting config 
-        SmartDashboard.putData("Reset Encoders", resetRobot());
-
         //Allows us to toggle whether we use the shift tracker in a match
-        SmartDashboard.putBoolean("TrackHubState", true);
+        SmartDashboard.putBoolean("Force Allow Shooting", true);
 
         configureBindings();
         addAutosToChooser();
-    }
-
-    /* Reset robot's encoders and cancel running commands */
-    public Command resetRobot() {
-        return new SequentialCommandGroup(
-        ).finallyDo(() -> CommandScheduler.getInstance().cancelAll()).ignoringDisable(true);
     }
 
     /*
@@ -101,5 +92,6 @@ public class RobotContainer {
 
         DogLog.forceNt.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
         DogLog.forceNt.log("Hub Scorable", ShiftTracker.canScore());
+        DogLog.forceNt.log("Driving Mode", driveFieldCentric ? "Field Centric" : "Robot Centric");
     }
 }

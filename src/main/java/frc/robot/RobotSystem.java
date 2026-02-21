@@ -2,8 +2,12 @@ package frc.robot;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+
+import dev.doglog.DogLog;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
@@ -11,6 +15,7 @@ import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.TransferSubsystem;
+import frc.robot.util.ShiftTracker;
 
 public class RobotSystem extends SubsystemBase {
     private final DriveSubsystem drive;
@@ -30,6 +35,11 @@ public class RobotSystem extends SubsystemBase {
 
         this.driverRumble = driverRumble;
         this.operatorRumble = operatorRumble;
+    }
+
+    public Command shoot() {
+        return new InstantCommand()
+        .onlyIf(() -> ShiftTracker.canScore() || SmartDashboard.getBoolean("Force Allow Shooting", false));
     }
 
     /**
