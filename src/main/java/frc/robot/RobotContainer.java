@@ -38,9 +38,9 @@ public class RobotContainer {
         SmartDashboard.putData("Auto Chooser", autoChooser);
 
         //Stream the driver camera to Elastic
-        UsbCamera camera = CameraServer.startAutomaticCapture();
-        camera.setResolution(640, 480);
-        camera.setFPS(30);
+        // UsbCamera camera = CameraServer.startAutomaticCapture();
+        // camera.setResolution(640, 480);
+        // camera.setFPS(30);
 
         //Allows us to toggle whether we use the shift tracker in a match
         SmartDashboard.putBoolean("Force Allow Shooting", true);
