@@ -64,12 +64,13 @@ public class RobotContainer {
     private void configureBindings() {
         //Drive Control
         robot.setDriveDefaultCommand(
-            () -> -driverController.getLeftX(),
-            () -> -driverController.getLeftY(),
-            () -> -driverController.getRightX(),
+            () -> driverController.getLeftX(),
+            () -> driverController.getLeftY(),
+            () -> driverController.getRightX(),
             () -> driveFieldCentric
         );
 
+        driverController.rightStick().onTrue(robot.resetRobotHeading());
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
 
         //Shooting Control

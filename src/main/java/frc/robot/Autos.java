@@ -6,7 +6,6 @@ import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
-import frc.robot.subsystems.TransferSubsystem;
 
 public class Autos {
     private final AutoFactory autoFactory;

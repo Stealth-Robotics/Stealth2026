@@ -59,20 +59,22 @@ public class RobotSystem extends SubsystemBase {
      */
     public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta, BooleanSupplier isFieldCentric) {
         drive.setDefaultCommand(
-            new ConditionalCommand(
-                drive.applyRequest(() -> drive.fieldCentric
-                    .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
-                    .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
-                    .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE)
-                ),
-                drive.applyRequest(() -> drive.robotCentric
+            drive.applyRequest(() -> {
+                return isFieldCentric.getAsBoolean() ? 
+                    drive.fieldCentric
+                        .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
+                        .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
+                        .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
+                    drive.robotCentric
                         .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED)
                         .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED)
-                        .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE)
-                ),
-                isFieldCentric
-            )
+                        .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE);
+            })
         );
+    }
+
+    public Command resetRobotHeading() {
+        return runOnce(() -> drive.seedFieldCentric());
     }
 
     public Autos getAutos() {
