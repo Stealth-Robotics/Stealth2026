@@ -61,6 +61,7 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
+        //Drive Control
         robot.setDriveDefaultCommand(
             () -> -driverController.getLeftX(),
             () -> -driverController.getLeftY(),
@@ -69,6 +70,11 @@ public class RobotContainer {
         );
 
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
+
+        //Shooting Control
+        driverController.rightBumper()
+            .onTrue(robot.shoot())
+            .onFalse(new InstantCommand(() -> robot.shoot().cancel()));
     }
 
     /*

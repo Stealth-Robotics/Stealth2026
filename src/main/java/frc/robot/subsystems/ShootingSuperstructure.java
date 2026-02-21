@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotTrajectoryCalculator;
 
@@ -31,6 +32,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
+    private final TransferSubsystem transfer;
 
     private final Supplier<Pose2d> robotPoseSupplier;
     private final Supplier<ChassisSpeeds> robotVelocitySupplier;
@@ -65,6 +67,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier) {
         shooter = new ShooterSubsystem();
         turret = new TurretSubsystem();
+        transfer = new TransferSubsystem();
+
         shotSensor = new CANrange(CAN_RANGE_ID);
 
         this.robotPoseSupplier = robotPoseSupplier;
@@ -81,6 +85,24 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public void setState(ShooterState state) {
         this.state = state;
+    }
+
+    public Command shoot() {
+        return shooter.spinToRPM(() -> ShotTrajectoryCalculator.getTargetFlywheelRPM()).andThen(run(() -> {
+            if (readyToShoot()) {
+                transfer.spin().schedule();
+                transfer.feed().schedule();
+            }
+            else {
+                transfer.stopSpinning().schedule();
+                transfer.stopFeeding().schedule();
+            }
+        }))
+        .finallyDo(() -> {
+            shooter.deactivateShooter().schedule();
+            transfer.stopSpinning().schedule();
+            transfer.stopFeeding().schedule();
+        });
     }
 
     /**
@@ -134,14 +156,14 @@ public class ShootingSuperstructure extends SubsystemBase {
     /**
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
-    public boolean readyToShoot() {
+    private boolean readyToShoot() {
         return shooter.isShooterAtVelocity() && turret.isTurretNearAngle() && state != ShooterState.IDLE;
     }
 
     /**
      * @return If the shot sensor detects that a fuel hasn't been shot for MAX_SHOT_SPACING_SECONDS
      */
-    public boolean isShooting() {
+    private boolean isShooting() {
         return shotDebouncer.calculate(Units.metersToInches(shotSensor.getDistance().getValueAsDouble()) < FUEL_DETECTED_THRESHOLD_INCHES);
     }
 

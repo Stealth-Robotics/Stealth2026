@@ -13,16 +13,14 @@ public class Autos {
 
     private final DriveSubsystem drive;
     private final IntakeSubsystem intake;
-    private final TransferSubsystem transfer;
     private final ShootingSuperstructure shooter;
     private final ClimbSubsystem climb;
 
-    public Autos(AutoFactory autoFactory, DriveSubsystem drive, IntakeSubsystem intake, TransferSubsystem transfer, ShootingSuperstructure shooter, ClimbSubsystem climb) {
+    public Autos(AutoFactory autoFactory, DriveSubsystem drive, IntakeSubsystem intake, ShootingSuperstructure shooter, ClimbSubsystem climb) {
         this.autoFactory = autoFactory;
         
         this.drive = drive;
         this.intake = intake;
-        this.transfer = transfer;
         this.shooter = shooter;
         this.climb = climb;
     }

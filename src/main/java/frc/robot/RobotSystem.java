@@ -20,7 +20,6 @@ import frc.robot.util.ShiftTracker;
 public class RobotSystem extends SubsystemBase {
     private final DriveSubsystem drive;
     private final IntakeSubsystem intake;
-    private final TransferSubsystem transfer;
     private final ShootingSuperstructure shooter;
     private final ClimbSubsystem climb;
 
@@ -29,7 +28,6 @@ public class RobotSystem extends SubsystemBase {
     public RobotSystem(Command driverRumble, Command operatorRumble) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
-        transfer = new TransferSubsystem();
         shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
         climb = new ClimbSubsystem();
 
@@ -38,7 +36,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command shoot() {
-        return new InstantCommand()
+        return shooter.shoot()
         .onlyIf(() -> ShiftTracker.canScore() || SmartDashboard.getBoolean("Force Allow Shooting", false));
     }
 
@@ -71,7 +69,6 @@ public class RobotSystem extends SubsystemBase {
             drive.createAutoFactory(),
             drive,
             intake,
-            transfer,
             shooter,
             climb
         );
