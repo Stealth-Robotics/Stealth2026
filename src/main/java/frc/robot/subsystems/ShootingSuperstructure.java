@@ -23,8 +23,10 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
+import frc.robot.util.CurrentAlliance;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotTrajectoryCalculator;
+import frc.robot.util.ZoneManager;
 
 public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
@@ -58,7 +60,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final int CAN_RANGE_ID = 15;
 
-    private enum ShooterState {
+    public enum ShooterState {
         IDLE,
         PASSING,
         HUB_TRACKING
@@ -114,7 +116,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     private void trackHub() {
-        ShotParams params = allianceFlipShotParams(hub);
+        ShotParams params = allianceFlip(hub);
         Pose2d robotPose2d = robotPoseSupplier.get();
         Pose3d robotPose3d = new Pose3d(robotPose2d.getX(), robotPose2d.getY(), 0, new Rotation3d(robotPose2d.getRotation()));
 
@@ -135,8 +137,13 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
     private void pass() {
-        //TODO: Add code to change passing target
-        ShotParams params = allianceFlipShotParams(leftPass);
+        ShotParams params;
+
+        if (ZoneManager.inLeftPassingZone()) 
+            params = allianceFlip(leftPass);
+        else
+            params = allianceFlip(rightPass);
+
         Pose2d robotPose2d = robotPoseSupplier.get();
         Pose3d robotPose3d = new Pose3d(robotPose2d.getX(), robotPose2d.getY(), 0, new Rotation3d(robotPose2d.getRotation()));
 
@@ -157,7 +164,7 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
     private boolean readyToShoot() {
-        return shooter.isShooterAtVelocity() && turret.isTurretNearAngle() && state != ShooterState.IDLE;
+        return shooter.isShooterAtVelocity() && turret.isTurretNearAngle();
     }
 
     /**
@@ -170,10 +177,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     /**
      * Flips the pose to the red alliance if we are indeed on the red alliance (blue is default otherwise)
      */
-    private ShotParams allianceFlipShotParams(ShotParams original) {
-        var alliance = DriverStation.getAlliance();
-
-        if (alliance.isPresent() && alliance.get() == Alliance.Red) {
+    private ShotParams allianceFlip(ShotParams original) {
+        if (CurrentAlliance.get().equals(Alliance.Red)) {
             var rotated2d = original.target().toTranslation2d().rotateBy(Rotation2d.fromDegrees(180));
 
             return new ShotParams(

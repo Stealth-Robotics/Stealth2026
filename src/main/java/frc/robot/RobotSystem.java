@@ -15,7 +15,9 @@ import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.TransferSubsystem;
+import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 import frc.robot.util.ShiftTracker;
+import frc.robot.util.ZoneManager;
 
 public class RobotSystem extends SubsystemBase {
     private final DriveSubsystem drive;
@@ -38,6 +40,15 @@ public class RobotSystem extends SubsystemBase {
     public Command shoot() {
         return shooter.shoot()
         .onlyIf(() -> ShiftTracker.canScore() || SmartDashboard.getBoolean("Force Allow Shooting", false));
+    }
+
+    private void updateShootingState() {
+        if (ZoneManager.inHubZone())
+            shooter.setState(ShooterState.HUB_TRACKING);
+        else if (ZoneManager.inPassingZone())
+            shooter.setState(ShooterState.PASSING);
+        else
+            shooter.setState(ShooterState.IDLE);
     }
 
     /**
@@ -75,6 +86,8 @@ public class RobotSystem extends SubsystemBase {
     }
 
     @Override
-    public void periodic() {    
+    public void periodic() {
+        ZoneManager.updateWithRobotPose(drive.getPose());
+        updateShootingState();
     }
 }

@@ -36,6 +36,5 @@ public class ClimbSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        
     }
 }
