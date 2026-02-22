@@ -8,12 +8,12 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 
 public class ShotTrajectoryCalculator {
-    private static final double GRAVITATIONAL_CONSTANT = 32.2; // Gravitational constant in ft/s^2
-    private static final double FLYWHEEL_DIAMETER_INCHES = 4;
+    private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
+    private static final double FLYWHEEL_DIAMETER_METERS = Units.inchesToMeters(4);
 
     //TODO: Tune values
-    private static final double LATENCY_COMPENSATION_SECONDS = 0.040;
-    private static final double ANTIDRAG_COEFFICIENT = 1.3; // Coefficient multiplied by horizontal shot velocity to compensate for drag
+    private static final double LATENCY_COMPENSATION_SECONDS = 0;
+    private static final double ANTIDRAG_COEFFICIENT = 1; // Coefficient multiplied by horizontal shot velocity to compensate for drag
 
     //Variables that store the latest calculated values needed to perform a shot
     private static double targetFlywheelRPM = 0;
@@ -27,28 +27,40 @@ public class ShotTrajectoryCalculator {
      * @param targetHeight The max height the fuel will ever reach during flight
      */
     public static void update(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight) {
-        double robotXVelocity = Units.metersToFeet(robotVelocity.vxMetersPerSecond);
-        double robotZVelocity = Units.metersToFeet(-robotVelocity.vyMetersPerSecond);
-
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
-        fuelExitPose.plus(new Transform3d(robotXVelocity * LATENCY_COMPENSATION_SECONDS, 0, robotZVelocity * LATENCY_COMPENSATION_SECONDS, Rotation3d.kZero));
+        fuelExitPose = fuelExitPose.plus(
+            new Transform3d(
+                robotVelocity.vxMetersPerSecond * LATENCY_COMPENSATION_SECONDS,
+                robotVelocity.vyMetersPerSecond * LATENCY_COMPENSATION_SECONDS,
+                0.0,
+                Rotation3d.kZero
+            )
+        );
 
-        //t is calculated to be the seconds needed for the ball to reach desired height, and return to goal height, under vacuum conditions
-        double t = Math.sqrt(2 * (targetHeight - fuelExitPose.getY()) / GRAVITATIONAL_CONSTANT) + Math.sqrt(2 * (targetHeight - targetPose.getY()) / GRAVITATIONAL_CONSTANT);
+        //Cap targetHeight to make sure values don't result in NaN
+        targetHeight = Math.max(targetHeight, Math.max(fuelExitPose.getZ(), targetPose.getZ()));
+
+        /*
+         *  t is calculated to be the seconds needed for the ball to reach desired height, 
+         *  and return to goal height, under vacuum conditions
+        */
+        double t = 
+            Math.sqrt(2.0 * (targetHeight - fuelExitPose.getZ()) / GRAVITATIONAL_CONSTANT) + 
+            Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
 
         //Calculate launch velocity vector so that it will hit the target in t seconds
         Translation3d fuelVelocity = new Translation3d(
-                ANTIDRAG_COEFFICIENT * (targetPose.getX() - fuelExitPose.getX()) / t - robotXVelocity,
-                (targetPose.getY() - fuelExitPose.getY()) / t - GRAVITATIONAL_CONSTANT * t / 2,
-                ANTIDRAG_COEFFICIENT * (targetPose.getZ() - fuelExitPose.getZ()) / t - robotZVelocity
+                ANTIDRAG_COEFFICIENT * (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond,
+                ANTIDRAG_COEFFICIENT * (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond,
+                (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
         );
 
-        targetFlywheelRPM = (fuelVelocity.getNorm() * 720) / (Math.PI * FLYWHEEL_DIAMETER_INCHES);
+        targetFlywheelRPM = fuelVelocity.getNorm() / (Math.PI * FLYWHEEL_DIAMETER_METERS) * 60.0;
 
-        targetTurretAngle = Units.radiansToDegrees(Math.atan2(fuelVelocity.getZ(), fuelVelocity.getX()));
+        targetTurretAngle = Units.radiansToDegrees(Math.atan2(fuelVelocity.getY(), fuelVelocity.getX()));
 
-        double horizontalSpeed = Math.sqrt(fuelVelocity.getX() * fuelVelocity.getX() + fuelVelocity.getZ() * fuelVelocity.getZ());
-        targetHoodAngle = Units.radiansToDegrees(Math.atan2(fuelVelocity.getY(), horizontalSpeed));
+        double horizontalSpeed = Math.sqrt(fuelVelocity.getX() * fuelVelocity.getX() + fuelVelocity.getY() * fuelVelocity.getY());
+        targetHoodAngle = Units.radiansToDegrees(Math.atan2(fuelVelocity.getZ(), horizontalSpeed));
     }
 
     public static double getTargetFlywheelRPM() {

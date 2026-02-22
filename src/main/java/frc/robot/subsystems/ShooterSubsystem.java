@@ -47,22 +47,22 @@ public class ShooterSubsystem extends SubsystemBase {
     //TODO: Find good tolerance
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 50;
 
-    private final double MAX_HOOD_ROTATIONS = 0.485;
-    private final double MIN_HOOD_ROTATIONS = 0;
+    private final double MAX_HOOD_DEGREES = 22;
+    private final double MIN_HOOD_DEGREES = 0;
 
-    private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1 / 1.5;
+    private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;
 
     //TODO: Tune all PID/Feedforward constants
-    private final double SHOOTING_kP = 100.0;
-    private final double SHOOTING_kI = 10.0;
+    private final double SHOOTING_kP = 1.0;
+    private final double SHOOTING_kI = 1.2;
     private final double SHOOTING_kD = 0.0;
     private final double SHOOTING_kA = 0.0;
-    private final double SHOOTING_kV = 0.0;
+    private final double SHOOTING_kV = 0.1;
     private final double SHOOTING_kS = 0.0;
 
     //TODO: Tune kP and kI until satisfactory
-    private final double HOOD_kP = 15.0;
-    private final double HOOD_kI = 0.1;
+    private final double HOOD_kP = 150.0;
+    private final double HOOD_kI = 10.0;
     private final double HOOD_kD = 0.0;
 
     private final int SHOOTER_MOTOR_1_ID = 2;
@@ -123,7 +123,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public Command homeSubsystem() {
         return new SequentialCommandGroup(
             deactivateShooter(),
-            setHoodPosition(() -> MIN_HOOD_ROTATIONS)
+            setHoodDegrees(() -> MIN_HOOD_DEGREES)
         );
     }
 
@@ -135,12 +135,12 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     /**
-     * Sets the hood to the specified rotations and waits until finished
+     * Sets the hood to the specified angle in degrees
      */
-    public Command setHoodPosition(DoubleSupplier rotations) {
+    public Command setHoodDegrees(DoubleSupplier degrees) {
         return runOnce(
             () -> hoodMotor.setControl(hoodController.withPosition(
-                MathUtil.clamp(rotations.getAsDouble(), MIN_HOOD_ROTATIONS, MAX_HOOD_ROTATIONS))
+                Units.degreesToRotations(MathUtil.clamp(degrees.getAsDouble(), MIN_HOOD_DEGREES, MAX_HOOD_DEGREES)))
             )
         );
     }
@@ -176,7 +176,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public double getHoodDegrees() {
-        return Units.rotationsToDegrees(hoodMotor.getPosition().getValueAsDouble() / 8.0);
+        return Units.rotationsToDegrees(hoodMotor.getPosition().getValueAsDouble());
     }
 
     @Override
@@ -184,5 +184,8 @@ public class ShooterSubsystem extends SubsystemBase {
         DogLog.forceNt.log("Shooter/shooter_rpm", getRPM());
         DogLog.forceNt.log("Shooter/shooter_target_rpm", getTargetRPM());
         DogLog.forceNt.log("Shooter/shooter_ready", isShooterAtVelocity());
+        DogLog.forceNt.log("Shooter/shooter_error", Math.abs(getRPM() - getTargetRPM()));
+        
+        DogLog.forceNt.log("Shooter/hood_angle", Math.round(Units.rotationsToDegrees(hoodMotor.getPosition().getValueAsDouble()) * 100) / 100);
     }
 }

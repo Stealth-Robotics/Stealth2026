@@ -49,14 +49,19 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
 
-    private final double HUB_TRAJECTORY_MAX_HEIGHT_FEET = 13;
-    private final double PASSING_TRAJECTORY_MAX_HEIGHT_FEET = 5;
+    //TODO: Tune these values to actual goal
+    private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 4;
+    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2.5;
 
-    private final ShotParams hub = new ShotParams(new Translation3d(), HUB_TRAJECTORY_MAX_HEIGHT_FEET);
-    private final ShotParams leftPass = new ShotParams(new Translation3d(), PASSING_TRAJECTORY_MAX_HEIGHT_FEET);
-    private final ShotParams rightPass = new ShotParams(new Translation3d(), PASSING_TRAJECTORY_MAX_HEIGHT_FEET);
+    //TODO: Tune these values to actual goal
+    private final ShotParams hub = new ShotParams(new Translation3d(4.645359992980957, 4.034599781036377, 1.8288), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private final Transform3d TURRET_TRANSFORM = new Transform3d(0, 0, 0, Rotation3d.kZero);
+    //TODO: Tune these values to actual targets
+    private final ShotParams leftPass = new ShotParams(new Translation3d(), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams rightPass = new ShotParams(new Translation3d(), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+
+    //TODO: Get actual accurate CAD measurement
+    private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.189, -0.2, 0.4, Rotation3d.kZero);
 
     private final int CAN_RANGE_ID = 15;
 
@@ -120,13 +125,13 @@ public class ShootingSuperstructure extends SubsystemBase {
         Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
         ShotTrajectoryCalculator.update(
-            robotPose3d.transformBy(TURRET_TRANSFORM),
+            robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
             robotVelocitySupplier.get(),
             params.target(),
             params.maxTrajectoryHeight()
         );
 
-        shooter.setHoodPosition(() -> Units.degreesToRotations(ShotTrajectoryCalculator.getHoodAngle())).schedule();
+        shooter.setHoodDegrees(() -> ShotTrajectoryCalculator.getHoodAngle()).schedule();
 
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.rotateToAngle(() -> turretTarget).schedule();
@@ -146,13 +151,13 @@ public class ShootingSuperstructure extends SubsystemBase {
         Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
         ShotTrajectoryCalculator.update(
-            robotPose3d.transformBy(TURRET_TRANSFORM),
+            robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
             robotVelocitySupplier.get(),
             params.target(),
             params.maxTrajectoryHeight()
         );
 
-        shooter.setHoodPosition(() -> Units.degreesToRotations(ShotTrajectoryCalculator.getHoodAngle())).schedule();
+        shooter.setHoodDegrees(() -> ShotTrajectoryCalculator.getHoodAngle()).schedule();
 
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.rotateToAngle(() -> turretTarget).schedule();

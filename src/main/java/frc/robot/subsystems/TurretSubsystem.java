@@ -34,8 +34,8 @@ public class TurretSubsystem extends SubsystemBase {
     private final CoastOut coast = new CoastOut();
 
     //TODO: Tune PID/Feedforward constants
-    private final double kACCELERATION = 100.0;
-    private final double kCRUISE_VELOCITY = 500.0;
+    private final double kACCELERATION = 80.0;
+    private final double kCRUISE_VELOCITY = 300.0;
     private final double kP = 80.0;
     private final double kI = 1.0;
     private final double kD = 0.0;
@@ -43,15 +43,15 @@ public class TurretSubsystem extends SubsystemBase {
     private final double TURRET_ANGLE_TOLERANCE_DEGREES = 2;
 
     //TODO: Find actual values
-    private final double MAX_TURRET_DEGREES = 125;
+    private final double MAX_TURRET_DEGREES = 121;
     private final double TURRET_HOME_DEGREES = 0;
     private final double MIN_TURRET_DEGREES = -36;
 
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.5;
 
     //TODO: Figure out mechanism ratio
-    private final double TURRET_SENSOR_TO_MECHANISM_RATIO = 45;
-    private final double TURRET_ROTOR_TO_SENSOR_RATIO = 1.0;
+    private final double TURRET_SENSOR_TO_MECHANISM_RATIO = 1;
+    private final double TURRET_ROTOR_TO_SENSOR_RATIO = 45;
 
     //TODO: Find zeroed value
     private final double TURRET_ENCODER_MAGNET_OFFSET = 0.439697;
@@ -115,7 +115,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.forceNt.log("Turret/turret_degrees", getTurretAngleDegrees());
-        DogLog.forceNt.log("Turret/turret_target_degrees", getTargetAngleDegrees());
+        DogLog.forceNt.log("Turret/turret_degrees", Math.round(getTurretAngleDegrees() * 100) / 100.0);
+        DogLog.forceNt.log("Turret/turret_target_degrees", Math.round(getTargetAngleDegrees() * 100) / 100.0);
     }
 }

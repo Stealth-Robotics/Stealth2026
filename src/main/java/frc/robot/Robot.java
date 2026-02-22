@@ -3,6 +3,8 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import com.ctre.phoenix6.SignalLogger;
+
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
 import edu.wpi.first.net.WebServer;
@@ -22,18 +24,21 @@ public class Robot extends TimedRobot {
         /* Configure DogLog for use in a match & for testing
          * Some of these options should be modified at competitions for better performance
         */
-        DogLog.setOptions(
-            new DogLogOptions()
-                .withCaptureDs(false)
-                .withCaptureNt(false)
-                .withNtPublish(false)
-                .withCaptureConsole(false)
-                .withNtTunables(true)
-                .withLogExtras(true)
-        );
+        // DogLog.setOptions(
+        //     new DogLogOptions()
+        //         .withCaptureDs(false)
+        //         .withCaptureNt(false)
+        //         .withNtPublish(false)
+        //         .withCaptureConsole(false)
+        //         .withNtTunables(true)
+        //         .withLogExtras(true)
+        // );
 
         //For Elastic save loading
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
+
+        //Stop hoot replay logging
+        SignalLogger.enableAutoLogging(false);
     }
 
     @Override
