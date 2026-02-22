@@ -78,12 +78,12 @@ public class RobotSystem extends SubsystemBase {
             drive.applyRequest(() -> {
                 return isFieldCentric.getAsBoolean() ? 
                     drive.fieldCentric
-                        .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
-                        .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
-                        .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
-                    drive.robotCentric
                         .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED)
                         .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED)
+                        .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
+                    drive.robotCentric
+                        .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
+                        .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
                         .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE);
             })
         );
