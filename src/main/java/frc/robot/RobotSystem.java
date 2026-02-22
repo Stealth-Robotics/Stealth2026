@@ -1,11 +1,16 @@
 package frc.robot;
 
+import java.security.AllPermission;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+
+import com.pathplanner.lib.util.GeometryUtil;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
@@ -18,8 +23,11 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.TransferSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
+import frc.robot.util.CurrentAlliance;
+import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.ZoneManager;
+import frc.robot.util.LimelightHelpers.PoseEstimate;
 
 public class RobotSystem extends SubsystemBase {
     private final DriveSubsystem drive;
@@ -29,6 +37,8 @@ public class RobotSystem extends SubsystemBase {
 
     private final Command driverRumble, operatorRumble;
 
+    private final Field2d fieldTelemetry = new Field2d();
+
     public RobotSystem(Command driverRumble, Command operatorRumble) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
@@ -37,6 +47,9 @@ public class RobotSystem extends SubsystemBase {
 
         this.driverRumble = driverRumble;
         this.operatorRumble = operatorRumble;
+
+        //Log the field + robot pose to Elastic
+        SmartDashboard.putData("fieldTelemetry", fieldTelemetry);
     }
 
     public Command shoot() {
@@ -90,9 +103,32 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
+    private void updateOdometryEstimateWithLimelight() {
+        LimelightHelpers.SetRobotOrientation("limelight-robot", drive.getPigeon2().getRotation2d().getDegrees(), 0, 0, 0, 0, 0);
+
+        if (CurrentAlliance.get().equals(Alliance.Blue)) {
+            PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight-robot");
+            if (poseEstimate != null && poseEstimate.tagCount > 0) {
+                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds);
+            }
+        }
+        else {
+            PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiRed_MegaTag2("limelight-robot");
+            if (poseEstimate != null && poseEstimate.tagCount > 0) {
+                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds);
+            }
+        }
+    }
+
     @Override
     public void periodic() {
+        //TODO: Uncomment once ZoneManager is correctly implemented
         // ZoneManager.updateWithRobotPose(drive.getPose());
         updateShootingState();
+
+        updateOdometryEstimateWithLimelight();
+
+        //Update the field telemetry's robot pose
+        fieldTelemetry.setRobotPose(drive.getPose());
     }
 }
