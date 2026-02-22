@@ -14,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.util.CurrentAlliance;
+import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 
 public class RobotContainer {
@@ -87,10 +87,10 @@ public class RobotContainer {
 
     //Used mostly for telemetry and logging general match info
     public void periodic() {
-        CurrentAlliance.update();
+        AllianceUtility.update();
         ShiftTracker.update();
 
-        DogLog.log("Alliance", CurrentAlliance.get().name());
+        DogLog.log("Alliance", AllianceUtility.getAlliance().name());
         DogLog.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
         DogLog.log("Hub Scorable", ShiftTracker.canScore());
         DogLog.log("Driving Mode", driveFieldCentric ? "Field Centric" : "Robot Centric");

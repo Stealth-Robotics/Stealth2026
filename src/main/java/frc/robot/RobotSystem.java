@@ -23,7 +23,7 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.TransferSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
-import frc.robot.util.CurrentAlliance;
+import frc.robot.util.AllianceUtility;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.ZoneManager;
@@ -106,7 +106,7 @@ public class RobotSystem extends SubsystemBase {
     private void updateOdometryEstimateWithLimelight() {
         LimelightHelpers.SetRobotOrientation("limelight-robot", drive.getPigeon2().getRotation2d().getDegrees(), 0, 0, 0, 0, 0);
 
-        if (CurrentAlliance.get().equals(Alliance.Blue)) {
+        if (AllianceUtility.getAlliance().equals(Alliance.Blue)) {
             PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight-robot");
             if (poseEstimate != null && poseEstimate.tagCount > 0) {
                 drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds);

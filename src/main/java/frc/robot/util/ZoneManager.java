@@ -35,17 +35,17 @@ public class ZoneManager {
     }
 
     public static boolean inLeftPassingZone() {
-        Alliance alliance = CurrentAlliance.get();
+        Alliance alliance = AllianceUtility.getAlliance();
         return false;
     }
 
     public static boolean inRightPassingZone() {
-        Alliance alliance = CurrentAlliance.get();
+        Alliance alliance = AllianceUtility.getAlliance();
         return false;
     }
 
     public static boolean inTrenchZone() {
-        Alliance alliance = CurrentAlliance.get();
+        Alliance alliance = AllianceUtility.getAlliance();
         return false;
     }
 }

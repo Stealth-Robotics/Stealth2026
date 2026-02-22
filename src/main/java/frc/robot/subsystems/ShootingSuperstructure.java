@@ -23,7 +23,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
-import frc.robot.util.CurrentAlliance;
+import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotTrajectoryCalculator;
 import frc.robot.util.ZoneManager;
@@ -121,7 +121,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     private void trackHub() {
-        ShotParams params = allianceFlip(hub);
+        ShotParams params = AllianceUtility.flipPose(hub);
         Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
         ShotTrajectoryCalculator.update(
@@ -144,9 +144,9 @@ public class ShootingSuperstructure extends SubsystemBase {
         ShotParams params;
 
         if (ZoneManager.inLeftPassingZone()) 
-            params = allianceFlip(leftPass);
+            params = AllianceUtility.flipPose(leftPass);
         else
-            params = allianceFlip(rightPass);
+            params = AllianceUtility.flipPose(rightPass);
 
         Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
@@ -175,26 +175,6 @@ public class ShootingSuperstructure extends SubsystemBase {
      */
     private boolean isShooting() {
         return shotDebouncer.calculate(Units.metersToInches(shotSensor.getDistance().getValueAsDouble()) < FUEL_DETECTED_THRESHOLD_INCHES);
-    }
-
-    /**
-     * Flips the pose to the red alliance if we are indeed on the red alliance (blue is default otherwise)
-     */
-    private ShotParams allianceFlip(ShotParams original) {
-        if (CurrentAlliance.get().equals(Alliance.Red)) {
-            var rotated2d = original.target().toTranslation2d().rotateBy(Rotation2d.fromDegrees(180));
-
-            return new ShotParams(
-                new Translation3d(
-                    rotated2d.getX(),
-                    rotated2d.getY(),
-                    original.target().getZ()
-                ), 
-                original.maxTrajectoryHeight()
-            );
-        }
-
-        return original;
     }
 
     @Override
