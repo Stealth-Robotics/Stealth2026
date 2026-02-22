@@ -115,7 +115,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.forceNt.log("Turret/turret_degrees", Math.round(getTurretAngleDegrees() * 100) / 100.0);
-        DogLog.forceNt.log("Turret/turret_target_degrees", Math.round(getTargetAngleDegrees() * 100) / 100.0);
+        DogLog.log("Turret/turret_degrees", Math.round(getTurretAngleDegrees() * 100) / 100.0);
+        DogLog.log("Turret/turret_target_degrees", Math.round(getTargetAngleDegrees() * 100) / 100.0);
     }
 }

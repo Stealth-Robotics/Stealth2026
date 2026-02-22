@@ -218,7 +218,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             }
         }
 
-        DogLog.forceNt.log("ShootingSuperstructure/state", state.name());
-        DogLog.forceNt.log("ShootingSuperstructure/is_shooting", isShooting());
+        DogLog.log("ShootingSuperstructure/state", state.name());
+        DogLog.log("ShootingSuperstructure/is_shooting", isShooting());
     }
 }

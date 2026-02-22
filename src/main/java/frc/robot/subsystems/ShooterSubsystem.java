@@ -181,11 +181,11 @@ public class ShooterSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.forceNt.log("Shooter/shooter_rpm", getRPM());
-        DogLog.forceNt.log("Shooter/shooter_target_rpm", getTargetRPM());
-        DogLog.forceNt.log("Shooter/shooter_ready", isShooterAtVelocity());
-        DogLog.forceNt.log("Shooter/shooter_error", Math.abs(getRPM() - getTargetRPM()));
+        DogLog.log("Shooter/shooter_rpm", getRPM());
+        DogLog.log("Shooter/shooter_target_rpm", getTargetRPM());
+        DogLog.log("Shooter/shooter_ready", isShooterAtVelocity());
+        DogLog.log("Shooter/shooter_error", Math.abs(getRPM() - getTargetRPM()));
         
-        DogLog.forceNt.log("Shooter/hood_angle", Math.round(Units.rotationsToDegrees(hoodMotor.getPosition().getValueAsDouble()) * 100) / 100);
+        DogLog.log("Shooter/hood_angle", Math.round(Units.rotationsToDegrees(hoodMotor.getPosition().getValueAsDouble()) * 100) / 100);
     }
 }

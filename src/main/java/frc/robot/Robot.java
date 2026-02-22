@@ -5,8 +5,6 @@ package frc.robot;
 
 import com.ctre.phoenix6.SignalLogger;
 
-import dev.doglog.DogLog;
-import dev.doglog.DogLogOptions;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -21,19 +19,6 @@ public class Robot extends TimedRobot {
     public Robot() {
         m_robotContainer = new RobotContainer();
 
-        /* Configure DogLog for use in a match & for testing
-         * Some of these options should be modified at competitions for better performance
-        */
-        // DogLog.setOptions(
-        //     new DogLogOptions()
-        //         .withCaptureDs(false)
-        //         .withCaptureNt(false)
-        //         .withNtPublish(false)
-        //         .withCaptureConsole(false)
-        //         .withNtTunables(true)
-        //         .withLogExtras(true)
-        // );
-
         //For Elastic save loading
         WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
 
@@ -45,7 +30,7 @@ public class Robot extends TimedRobot {
     public void robotPeriodic() {
         CommandScheduler.getInstance().run();
 
-        //Run the robot container's periodic manually
+        //Run the robot container's periodic
         m_robotContainer.periodic();
     }
 

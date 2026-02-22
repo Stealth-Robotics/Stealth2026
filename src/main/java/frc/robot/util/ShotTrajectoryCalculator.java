@@ -12,13 +12,13 @@ public class ShotTrajectoryCalculator {
     private static final double FLYWHEEL_DIAMETER_METERS = Units.inchesToMeters(4);
 
     //TODO: Tune values
-    private static final double LATENCY_COMPENSATION_SECONDS = 0;
-    private static final double ANTIDRAG_COEFFICIENT = 1; // Coefficient multiplied by horizontal shot velocity to compensate for drag
+    private static final double LATENCY_COMPENSATION_SECONDS = 0.0;
+    private static final double ANTIDRAG_COEFFICIENT = 1.0; // Coefficient multiplied by horizontal shot velocity to compensate for drag
 
     //Variables that store the latest calculated values needed to perform a shot
-    private static double targetFlywheelRPM = 0;
-    private static double targetTurretAngle = 0;
-    private static double targetHoodAngle = 0;
+    private static double targetFlywheelRPM = 0.0;
+    private static double targetTurretAngle = 0.0;
+    private static double targetHoodAngle = 0.0;
 
     /**
      * @param fuelExitPose The position where the fuel will exit the shooter relative to the field
@@ -60,7 +60,7 @@ public class ShotTrajectoryCalculator {
         targetTurretAngle = Units.radiansToDegrees(Math.atan2(fuelVelocity.getY(), fuelVelocity.getX()));
 
         double horizontalSpeed = Math.sqrt(fuelVelocity.getX() * fuelVelocity.getX() + fuelVelocity.getY() * fuelVelocity.getY());
-        targetHoodAngle = Units.radiansToDegrees(Math.atan2(fuelVelocity.getZ(), horizontalSpeed));
+        targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(fuelVelocity.getZ(), horizontalSpeed));
     }
 
     public static double getTargetFlywheelRPM() {

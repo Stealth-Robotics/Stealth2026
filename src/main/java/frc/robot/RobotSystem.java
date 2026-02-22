@@ -45,12 +45,13 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateShootingState() {
-        if (ZoneManager.inHubZone())
-            shooter.setState(ShooterState.HUB_TRACKING);
-        else if (ZoneManager.inPassingZone())
-            shooter.setState(ShooterState.PASSING);
-        else
-            shooter.setState(ShooterState.IDLE);
+        shooter.setState(ShooterState.HUB_TRACKING);
+        // if (ZoneManager.inHubZone())
+        //     shooter.setState(ShooterState.HUB_TRACKING);
+        // else if (ZoneManager.inPassingZone())
+        //     shooter.setState(ShooterState.PASSING);
+        // else
+        //     shooter.setState(ShooterState.IDLE);
     }
 
     /**
@@ -75,7 +76,7 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
-    public Command resetRobotHeading() {
+    public Command seedFieldCentric() {
         return runOnce(() -> drive.seedFieldCentric());
     }
 
@@ -91,7 +92,7 @@ public class RobotSystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        ZoneManager.updateWithRobotPose(drive.getPose());
+        // ZoneManager.updateWithRobotPose(drive.getPose());
         updateShootingState();
     }
 }

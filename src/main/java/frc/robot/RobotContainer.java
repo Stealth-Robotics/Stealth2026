@@ -37,24 +37,17 @@ public class RobotContainer {
         autoChooser = new AutoChooser();
         SmartDashboard.putData("Auto Chooser", autoChooser);
 
+        //TODO: Commented out because we don't have the driver cam hooked up yet
         //Stream the driver camera to Elastic
         // UsbCamera camera = CameraServer.startAutomaticCapture();
         // camera.setResolution(640, 480);
         // camera.setFPS(30);
 
-        //Allows us to toggle whether we use the shift tracker in a match
+        //Allows us to bypass the shift tracker for testing/emergency situations
         SmartDashboard.putBoolean("Force Allow Shooting", true);
 
         configureBindings();
         addAutosToChooser();
-    }
-
-    /*
-     * Home all the robot's subsystems to the starting configuration. We should make
-     * sure the subsystems don't clash while resetting their states.
-     */
-    public Command homeRobot() {
-        return new InstantCommand();
     }
 
     public Command getAutonomousCommand() {
@@ -62,7 +55,6 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
-        //Drive Control
         robot.setDriveDefaultCommand(
             () -> driverController.getLeftX(),
             () -> driverController.getLeftY(),
@@ -70,13 +62,12 @@ public class RobotContainer {
             () -> driveFieldCentric
         );
 
-        driverController.rightStick().onTrue(robot.resetRobotHeading());
+        driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
 
-        //Shooting Control
-        driverController.rightBumper()
-            .onTrue(robot.shoot())
-            .onFalse(new InstantCommand(() -> robot.shoot().cancel()));
+        // driverController.rightBumper()
+        //     .onTrue(robot.shoot())
+        //     .onFalse(new InstantCommand(() -> robot.shoot().cancel()));
     }
 
     /*
@@ -99,9 +90,9 @@ public class RobotContainer {
         CurrentAlliance.update();
         ShiftTracker.update();
 
-        DogLog.forceNt.log("Alliance", CurrentAlliance.get().name());
-        DogLog.forceNt.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
-        DogLog.forceNt.log("Hub Scorable", ShiftTracker.canScore());
-        DogLog.forceNt.log("Driving Mode", driveFieldCentric ? "Field Centric" : "Robot Centric");
+        DogLog.log("Alliance", CurrentAlliance.get().name());
+        DogLog.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
+        DogLog.log("Hub Scorable", ShiftTracker.canScore());
+        DogLog.log("Driving Mode", driveFieldCentric ? "Field Centric" : "Robot Centric");
     }
 }
