@@ -5,6 +5,8 @@ package frc.robot;
 
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
+import edu.wpi.first.net.WebServer;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -29,6 +31,9 @@ public class Robot extends TimedRobot {
                 .withNtTunables(true)
                 .withLogExtras(true)
         );
+
+        //For Elastic save loading
+        WebServer.start(5800, Filesystem.getDeployDirectory().getPath());
     }
 
     @Override

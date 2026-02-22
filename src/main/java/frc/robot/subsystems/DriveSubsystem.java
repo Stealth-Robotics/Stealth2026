@@ -249,12 +249,7 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    /**
-     * Returns the robot's field relative pose in the normal coordinate system (x, y), where y is forward and x is sideways
-     */
     public Pose2d getPose() {
-        //TODO: Might need to flip x and y because of stupid stupid dum dum
         return getState().Pose;
     }
 

@@ -117,8 +117,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private void trackHub() {
         ShotParams params = allianceFlip(hub);
-        Pose2d robotPose2d = robotPoseSupplier.get();
-        Pose3d robotPose3d = new Pose3d(robotPose2d.getX(), robotPose2d.getY(), 0, new Rotation3d(robotPose2d.getRotation()));
+        Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
         ShotTrajectoryCalculator.update(
             robotPose3d.transformBy(TURRET_TRANSFORM),
@@ -129,7 +128,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         shooter.setHoodPosition(() -> Units.degreesToRotations(ShotTrajectoryCalculator.getHoodAngle())).schedule();
 
-        double turretTarget = robotPoseSupplier.get().getRotation().getDegrees() - ShotTrajectoryCalculator.getTurretAngle();
+        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.rotateToAngle(() -> turretTarget).schedule();
     }
 
@@ -144,8 +143,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         else
             params = allianceFlip(rightPass);
 
-        Pose2d robotPose2d = robotPoseSupplier.get();
-        Pose3d robotPose3d = new Pose3d(robotPose2d.getX(), robotPose2d.getY(), 0, new Rotation3d(robotPose2d.getRotation()));
+        Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
         ShotTrajectoryCalculator.update(
             robotPose3d.transformBy(TURRET_TRANSFORM),
@@ -156,7 +154,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         shooter.setHoodPosition(() -> Units.degreesToRotations(ShotTrajectoryCalculator.getHoodAngle())).schedule();
 
-        double turretTarget = robotPoseSupplier.get().getRotation().getDegrees() - ShotTrajectoryCalculator.getTurretAngle();
+        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.rotateToAngle(() -> turretTarget).schedule();
     }
 
