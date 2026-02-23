@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
+import frc.robot.util.ShotTrajectoryCalculator;
 
 public class RobotContainer {
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -65,16 +66,14 @@ public class RobotContainer {
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
 
-        // driverController.rightBumper()
-        //     .onTrue(robot.shoot())
-        //     .onFalse(new InstantCommand(() -> robot.shoot().cancel()));
+        driverController.rightBumper().whileTrue(robot.shoot());
     }
 
     /*
      * Add all our working autonomous routines to the chooser for selecting on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addRoutine("Nothing Auto", () -> autos.nothingAuto());
+        autoChooser.addRoutine("TestAuto", () -> autos.testAuto());
     }
 
     private Command driverRumble() {

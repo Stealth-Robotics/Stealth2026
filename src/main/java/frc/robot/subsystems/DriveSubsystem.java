@@ -42,7 +42,7 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     
     public double MAX_SPEED = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
-    public double MAX_ANGULAR_RATE = RotationsPerSecond.of(1.25).in(RadiansPerSecond); // 1.25 of a rotation per second max angular velocity
+    public double MAX_ANGULAR_RATE = RotationsPerSecond.of(1).in(RadiansPerSecond); // 1 rotation per second max angular velocity
 
     public final SwerveRequest.FieldCentric fieldCentric = new SwerveRequest.FieldCentric()
             .withDeadband(MAX_SPEED * 0.1).withRotationalDeadband(MAX_ANGULAR_RATE * 0.1) // Add a 10% deadband

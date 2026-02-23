@@ -38,7 +38,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.57;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.0248;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
@@ -53,12 +53,12 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;
 
     //TODO: Tune all PID/Feedforward constants
-    private final double SHOOTING_kP = 1.0;
-    private final double SHOOTING_kI = 1.2;
+    private final double SHOOTING_kP = 0.076017;
+    private final double SHOOTING_kI = 0.0;
     private final double SHOOTING_kD = 0.0;
-    private final double SHOOTING_kA = 0.0;
-    private final double SHOOTING_kV = 0.1;
-    private final double SHOOTING_kS = 0.0;
+    private final double SHOOTING_kA = 0.0072909;
+    private final double SHOOTING_kV = 0.18437;
+    private final double SHOOTING_kS = 0.25233;
 
     //TODO: Tune kP and kI until satisfactory
     private final double HOOD_kP = 150.0;
@@ -118,40 +118,26 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     /**
-     * Commands the subsystem to its homed behavior (called on teleop init and autonomous init)
-     */
-    public Command homeSubsystem() {
-        return new SequentialCommandGroup(
-            deactivateShooter(),
-            setHoodDegrees(() -> MIN_HOOD_DEGREES)
-        );
-    }
-
-    /**
      * Set the flywheel to coast to preserve rotational inertia
      */
-    public Command deactivateShooter() {
-        return runOnce(() -> shooterMotor1.setControl(coast));
+    public void coastShooter() {
+        shooterMotor1.setControl(coast);
     }
 
     /**
      * Sets the hood to the specified angle in degrees
      */
-    public Command setHoodDegrees(DoubleSupplier degrees) {
-        return runOnce(
-            () -> hoodMotor.setControl(hoodController.withPosition(
-                Units.degreesToRotations(MathUtil.clamp(degrees.getAsDouble(), MIN_HOOD_DEGREES, MAX_HOOD_DEGREES)))
-            )
+    public void setHoodDegrees(double degrees) {
+        hoodMotor.setControl(hoodController.withPosition(
+            Units.degreesToRotations(MathUtil.clamp(degrees, MIN_HOOD_DEGREES, MAX_HOOD_DEGREES)))
         );
     }
 
     /**
      * Sets the shooter to spin up to the specified RPM
      */
-    public Command spinToRPM(DoubleSupplier rpm) {
-        return runOnce(
-            () -> shooterMotor1.setControl(shooterController.withVelocity(rpm.getAsDouble() / 60.0))
-        );
+    public void spinToRPM(double rpm) {
+        shooterMotor1.setControl(shooterController.withVelocity(rpm / 60.0));
     }
 
     /**

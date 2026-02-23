@@ -19,9 +19,12 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
@@ -54,14 +57,13 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2.5;
 
     //TODO: Tune these values to actual goal
-    private final ShotParams hub = new ShotParams(new Translation3d(4.645359992980957, 4.034599781036377, 1.8288), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
     //TODO: Tune these values to actual targets
     private final ShotParams leftPass = new ShotParams(new Translation3d(), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    //TODO: Get actual accurate CAD measurement
-    private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.189, -0.2, 0.4, Rotation3d.kZero);
+    private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
     private final int CAN_RANGE_ID = 15;
 
@@ -95,20 +97,22 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command shoot() {
-        return shooter.spinToRPM(() -> ShotTrajectoryCalculator.getTargetFlywheelRPM()).andThen(run(() -> {
+        return run(() -> {
+            shooter.spinToRPM(ShotTrajectoryCalculator.getTargetFlywheelRPM());
+
             if (readyToShoot()) {
-                transfer.spin().schedule();
-                transfer.feed().schedule();
+                transfer.spin();
+                transfer.feed();
             }
             else {
-                transfer.stopSpinning().schedule();
-                transfer.stopFeeding().schedule();
+                transfer.stopSpinning();
+                transfer.stopFeeding();
             }
-        }))
-        .finallyDo(() -> {
-            shooter.deactivateShooter().schedule();
-            transfer.stopSpinning().schedule();
-            transfer.stopFeeding().schedule();
+
+        }).finallyDo(() -> {
+            shooter.coastShooter();
+            transfer.stopSpinning();
+            transfer.stopFeeding();
         });
     }
 
@@ -116,8 +120,10 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Set the hood, turret, and flywheel to their homed/idle states (zeroed and unpowered)
      */
     private void idleSubsystems() {
-        shooter.homeSubsystem().schedule();
-        turret.homeSubsystem().schedule();
+        shooter.coastShooter();
+        shooter.setHoodDegrees(0);
+
+        turret.homeTurret();
     }
 
     private void trackHub() {
@@ -131,10 +137,10 @@ public class ShootingSuperstructure extends SubsystemBase {
             params.maxTrajectoryHeight()
         );
 
-        shooter.setHoodDegrees(() -> ShotTrajectoryCalculator.getHoodAngle()).schedule();
+        shooter.setHoodDegrees(ShotTrajectoryCalculator.getHoodAngle());
 
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
-        turret.rotateToAngle(() -> turretTarget).schedule();
+        turret.setTargetDegrees(turretTarget);
     }
 
     /**
@@ -157,10 +163,10 @@ public class ShootingSuperstructure extends SubsystemBase {
             params.maxTrajectoryHeight()
         );
 
-        shooter.setHoodDegrees(() -> ShotTrajectoryCalculator.getHoodAngle()).schedule();
+        shooter.setHoodDegrees(ShotTrajectoryCalculator.getHoodAngle());
 
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
-        turret.rotateToAngle(() -> turretTarget).schedule();
+        turret.setTargetDegrees(turretTarget);
     }
 
     /**

@@ -1,0 +1,84 @@
+{
+ "name":"ChoreoSettings",
+ "version":2,
+ "type":"Swerve",
+ "variables":{
+  "expressions":{},
+  "poses":{}
+ },
+ "config":{
+  "frontLeft":{
+   "x":{
+    "exp":"10.125 in",
+    "val":0.257175
+   },
+   "y":{
+    "exp":"11.625 in",
+    "val":0.295275
+   }
+  },
+  "backLeft":{
+   "x":{
+    "exp":"-10.125 in",
+    "val":-0.257175
+   },
+   "y":{
+    "exp":"11.625 in",
+    "val":0.295275
+   }
+  },
+  "mass":{
+   "exp":"90 lbs",
+   "val":40.8233133
+  },
+  "inertia":{
+   "exp":"4.27 kg m ^ 2",
+   "val":4.27
+  },
+  "gearing":{
+   "exp":"6",
+   "val":6.0
+  },
+  "radius":{
+   "exp":"2 in",
+   "val":0.0508
+  },
+  "vmax":{
+   "exp":"5000 RPM",
+   "val":523.5987755982989
+  },
+  "tmax":{
+   "exp":"1 N * m",
+   "val":1.0
+  },
+  "cof":{
+   "exp":"1.2",
+   "val":1.2
+  },
+  "bumper":{
+   "front":{
+    "exp":"12.75 in",
+    "val":0.32384999999999997
+   },
+   "side":{
+    "exp":"14.25 in",
+    "val":0.36195
+   },
+   "back":{
+    "exp":"12.75 in",
+    "val":0.32384999999999997
+   }
+  },
+  "differentialTrackWidth":{
+   "exp":"22 in",
+   "val":0.5588
+  }
+ },
+ "generationFeatures":[],
+ "codegen":{
+  "root":"..\\C:\\Users\\Portobello\\Documents\\GitHub\\Stealth2026\\src\\main\\deploy",
+  "genVars":true,
+  "genTrajData":true,
+  "useChoreoLib":true
+ }
+}

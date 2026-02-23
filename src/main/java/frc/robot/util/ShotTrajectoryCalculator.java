@@ -12,8 +12,8 @@ public class ShotTrajectoryCalculator {
     private static final double FLYWHEEL_DIAMETER_METERS = Units.inchesToMeters(4);
 
     //TODO: Tune values
-    private static final double LATENCY_COMPENSATION_SECONDS = 0.0;
-    private static final double ANTIDRAG_COEFFICIENT = 1.0; // Coefficient multiplied by horizontal shot velocity to compensate for drag
+    private static final double LATENCY_COMPENSATION_SECONDS = Units.millisecondsToSeconds(50);
+    private static final double ANTIDRAG_COEFFICIENT = 1; // Coefficient multiplied by horizontal shot velocity to compensate for drag
 
     //Variables that store the latest calculated values needed to perform a shot
     private static double targetFlywheelRPM = 0.0;
@@ -27,6 +27,9 @@ public class ShotTrajectoryCalculator {
      * @param targetHeight The max height the fuel will ever reach during flight
      */
     public static void update(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight) {
+        //Scale robot velocity down
+        robotVelocity.times(0.9);
+
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
         fuelExitPose = fuelExitPose.plus(
             new Transform3d(

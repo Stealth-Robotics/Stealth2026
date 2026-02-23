@@ -1,7 +1,5 @@
 package frc.robot.subsystems;
 
-import java.util.function.DoubleSupplier;
-
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
@@ -16,11 +14,7 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 
 public class TurretSubsystem extends SubsystemBase {
     private final TalonFX turretMotor;
@@ -30,8 +24,6 @@ public class TurretSubsystem extends SubsystemBase {
     private final CANcoderConfiguration turretEncoderConfig = new CANcoderConfiguration();
 
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
-
-    private final CoastOut coast = new CoastOut();
 
     //TODO: Tune PID/Feedforward constants
     private final double kACCELERATION = 80.0;
@@ -87,18 +79,14 @@ public class TurretSubsystem extends SubsystemBase {
         turretEncoder.getConfigurator().apply(turretEncoderConfig);
     }
 
-    public Command homeSubsystem() {
-        return rotateToAngle(() -> TURRET_HOME_DEGREES);
+    public void homeTurret() {
+        setTargetDegrees(TURRET_HOME_DEGREES);
     }
 
-    public Command rotateToAngle(DoubleSupplier degrees) {
-        return runOnce(
-            () -> turretMotor.setControl(
-                turretController.withPosition(
-                    Units.degreesToRotations(MathUtil.clamp(degrees.getAsDouble(), MIN_TURRET_DEGREES, MAX_TURRET_DEGREES))
-                )
-            )
-        );
+    public void setTargetDegrees(double degrees) {
+        turretMotor.setControl(turretController.withPosition(
+            Units.degreesToRotations(MathUtil.clamp(degrees, MIN_TURRET_DEGREES, MAX_TURRET_DEGREES))
+        ));
     }
 
     public boolean isTurretNearAngle() {
