@@ -1,6 +1,5 @@
 package frc.robot.subsystems;
 
-import java.util.function.DoubleSupplier;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
@@ -17,8 +16,6 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class ShooterSubsystem extends SubsystemBase {
@@ -45,7 +42,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 8.0;
 
     //TODO: Find good tolerance
-    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 50;
+    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 100;
 
     private final double MAX_HOOD_DEGREES = 22;
     private final double MIN_HOOD_DEGREES = 0;
@@ -169,8 +166,6 @@ public class ShooterSubsystem extends SubsystemBase {
     public void periodic() {
         DogLog.log("Shooter/shooter_rpm", getRPM());
         DogLog.log("Shooter/shooter_target_rpm", getTargetRPM());
-        DogLog.log("Shooter/shooter_ready", isShooterAtVelocity());
-        DogLog.log("Shooter/shooter_error", Math.abs(getRPM() - getTargetRPM()));
         
         DogLog.log("Shooter/hood_angle", Math.round(Units.rotationsToDegrees(hoodMotor.getPosition().getValueAsDouble()) * 100) / 100);
     }

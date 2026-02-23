@@ -11,21 +11,13 @@ import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotTrajectoryCalculator;
@@ -147,13 +139,7 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
     private void pass() {
-        ShotParams params;
-
-        if (ZoneManager.inLeftPassingZone()) 
-            params = AllianceUtility.flipPose(leftPass);
-        else
-            params = AllianceUtility.flipPose(rightPass);
-
+        ShotParams params = ZoneManager.inLeftPassingZone() ? AllianceUtility.flipPose(leftPass) : AllianceUtility.flipPose(rightPass);
         Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
         ShotTrajectoryCalculator.update(
@@ -173,7 +159,7 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
     private boolean readyToShoot() {
-        return shooter.isShooterAtVelocity() && turret.isTurretNearAngle();
+        return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isTurretNearAngle();
     }
 
     /**

@@ -1,33 +1,29 @@
 package frc.robot.util;
 
-import edu.wpi.first.math.geometry.Ellipse2d;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rectangle2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
 public class ZoneManager {
     private static Pose2d robotPose = new Pose2d();
 
-    private static Rectangle2d BLUE_HUB_ZONE = new Rectangle2d(Translation2d.kZero, Translation2d.kZero);
-    private static Rectangle2d RED_HUB_ZONE = new Rectangle2d(Translation2d.kZero, Translation2d.kZero);
+    /*  All RectZones should be defined on the Blue Alliance 
+     *  and are automatically flipped to the Red Alliance if needed 
+     */
 
-    private static Ellipse2d BLUE_HUB_KEEP_OUT_ZONE = new Ellipse2d(Translation2d.kZero, 20);
-    private static Ellipse2d RED_HUB_KEEP_OUT_ZONE = new Ellipse2d(Translation2d.kZero, 20);
+    private static final RectZone hub = new RectZone(0, 0, 4, 8.07);
+
+    private static final RectZone leftTrench = new RectZone(4, 6.87, 5.2, 8.07);
+    private static final RectZone rightTrench = new RectZone(4, 0, 5.2, 1.25);
+
+    private static final RectZone leftPassing = new RectZone(5.2, 8.07, 16.5, 4);
+    private static final RectZone rightPassing = new RectZone(5.2, 0, 16.5, 4);
     
     public static void updateWithRobotPose(Pose2d newRobotPose) {
         robotPose = newRobotPose;
     }
 
     public static boolean inHubZone() {
-        // if (CurrentAlliance.get().equals(Alliance.Blue))
-        //     return BLUE_HUB_ZONE.contains(robotPose.getTranslation()) && !BLUE_HUB_KEEP_OUT_ZONE.contains(robotPose.getTranslation());
-        // else 
-        //     return RED_HUB_ZONE.contains(robotPose.getTranslation()) && !RED_HUB_KEEP_OUT_ZONE.contains(robotPose.getTranslation());
-
-        return false;
+        return AllianceUtility.flipRectZone(hub).contains(robotPose.getTranslation());
     }
 
     public static boolean inPassingZone() {
@@ -35,17 +31,15 @@ public class ZoneManager {
     }
 
     public static boolean inLeftPassingZone() {
-        Alliance alliance = AllianceUtility.getAlliance();
-        return false;
+        return AllianceUtility.flipRectZone(leftPassing).contains(robotPose.getTranslation());
     }
 
     public static boolean inRightPassingZone() {
-        Alliance alliance = AllianceUtility.getAlliance();
-        return false;
+        return AllianceUtility.flipRectZone(rightPassing).contains(robotPose.getTranslation());
     }
 
-    public static boolean inTrenchZone() {
-        Alliance alliance = AllianceUtility.getAlliance();
-        return false;
+    public static boolean inTrenchZone() {        
+        return AllianceUtility.flipRectZone(leftTrench).contains(robotPose.getTranslation()) 
+            && AllianceUtility.flipRectZone(rightTrench).contains(robotPose.getTranslation());
     }
 }

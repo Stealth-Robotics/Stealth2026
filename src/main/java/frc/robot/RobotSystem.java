@@ -19,6 +19,7 @@ import frc.robot.util.AllianceUtility;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ShiftTracker;
+import frc.robot.util.ZoneManager;
 
 public class RobotSystem extends SubsystemBase {
     private final DriveSubsystem drive;
@@ -40,7 +41,7 @@ public class RobotSystem extends SubsystemBase {
         this.operatorRumble = operatorRumble;
 
         //Log the field + robot pose to Elastic
-        SmartDashboard.putData("fieldTelemetry", fieldTelemetry);
+        SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
     }
 
     public Command shoot() {
@@ -49,13 +50,12 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateShootingState() {
-        shooter.setState(ShooterState.HUB_TRACKING);
-        // if (ZoneManager.inHubZone())
-        //     shooter.setState(ShooterState.HUB_TRACKING);
-        // else if (ZoneManager.inPassingZone())
-        //     shooter.setState(ShooterState.PASSING);
-        // else
-        //     shooter.setState(ShooterState.IDLE);
+        if (ZoneManager.inHubZone())
+            shooter.setState(ShooterState.HUB_TRACKING);
+        else if (ZoneManager.inPassingZone())
+            shooter.setState(ShooterState.PASSING);
+        else
+            shooter.setState(ShooterState.IDLE);
     }
 
     /**
@@ -113,15 +113,13 @@ public class RobotSystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        //TODO: Uncomment once ZoneManager is correctly implemented
-        // ZoneManager.updateWithRobotPose(drive.getPose());
+        ZoneManager.updateWithRobotPose(drive.getPose());
+
         updateShootingState();
 
         updateOdometryEstimateWithLimelight();
 
         //Update the field telemetry's robot pose
         fieldTelemetry.setRobotPose(drive.getPose());
-
-        DogLog.log("RobotVelocity", drive.getFieldRelativeVelocity());
     }
 }
