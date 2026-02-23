@@ -12,9 +12,6 @@ public class ZoneManager {
 
     private static final RectZone hub = new RectZone(0, 0, 4, 8.07);
 
-    private static final RectZone leftTrench = new RectZone(4, 6.87, 5.2, 8.07);
-    private static final RectZone rightTrench = new RectZone(4, 0, 5.2, 1.25);
-
     private static final RectZone leftPassing = new RectZone(5.2, 8.07, 16.5, 4);
     private static final RectZone rightPassing = new RectZone(5.2, 0, 16.5, 4);
     
@@ -36,10 +33,5 @@ public class ZoneManager {
 
     public static boolean inRightPassingZone() {
         return AllianceUtility.flipRectZone(rightPassing).contains(robotPose.getTranslation());
-    }
-
-    public static boolean inTrenchZone() {        
-        return AllianceUtility.flipRectZone(leftTrench).contains(robotPose.getTranslation()) 
-            && AllianceUtility.flipRectZone(rightTrench).contains(robotPose.getTranslation());
     }
 }
