@@ -4,6 +4,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 
@@ -14,6 +15,11 @@ public class ShotTrajectoryCalculator {
     //TODO: Tune values
     private static final double LATENCY_COMPENSATION_SECONDS = Units.millisecondsToSeconds(50);
     private static final double ANTIDRAG_COEFFICIENT = 1; // Coefficient multiplied by horizontal shot velocity to compensate for drag
+
+    private static final InterpolatingDoubleTreeMap distanceToRPM = new InterpolatingDoubleTreeMap() {{
+        put(0.0, 0.0);
+        put(24.0, 0.0);
+    }};
 
     //Variables that store the latest calculated values needed to perform a shot
     private static double targetFlywheelRPM = 0.0;
@@ -51,19 +57,30 @@ public class ShotTrajectoryCalculator {
             Math.sqrt(2.0 * (targetHeight - fuelExitPose.getZ()) / GRAVITATIONAL_CONSTANT) + 
             Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
 
-        //Calculate launch velocity vector so that it will hit the target in t seconds
-        Translation3d fuelVelocity = new Translation3d(
+        Translation3d movingShotVelocity = new Translation3d(
                 ANTIDRAG_COEFFICIENT * (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond,
                 ANTIDRAG_COEFFICIENT * (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond,
                 (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
         );
 
-        targetFlywheelRPM = fuelVelocity.getNorm() / (Math.PI * FLYWHEEL_DIAMETER_METERS) * 60.0;
+        Translation3d stationaryShotVelocity = new Translation3d(
+            ANTIDRAG_COEFFICIENT * (targetPose.getX() - fuelExitPose.getX()) / t,
+            ANTIDRAG_COEFFICIENT * (targetPose.getY() - fuelExitPose.getY()) / t,
+            (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
+        );
 
-        targetTurretAngle = Units.radiansToDegrees(Math.atan2(fuelVelocity.getY(), fuelVelocity.getX()));
+        double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
 
-        double horizontalSpeed = Math.sqrt(fuelVelocity.getX() * fuelVelocity.getX() + fuelVelocity.getY() * fuelVelocity.getY());
-        targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(fuelVelocity.getZ(), horizontalSpeed));
+        double baseRPM = distanceToRPM.get(metersToGoal);
+        double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();
+
+        //Scale up the measured RPM by the scale needed to compensate for robot velocity
+        targetFlywheelRPM = baseRPM * veloScale;
+
+        targetTurretAngle = Units.radiansToDegrees(Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()));
+
+        double horizontalSpeed = Math.sqrt(Math.pow(movingShotVelocity.getX(), 2) + Math.pow(movingShotVelocity.getY(), 2));
+        targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
     }
 
     public static double getTargetFlywheelRPM() {
