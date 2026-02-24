@@ -44,7 +44,7 @@ public class ShooterSubsystem extends SubsystemBase {
     //TODO: Find good tolerance
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 100;
 
-    private final double MAX_HOOD_DEGREES = 22;
+    private final double MAX_HOOD_DEGREES = 21;
     private final double MIN_HOOD_DEGREES = 0;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;

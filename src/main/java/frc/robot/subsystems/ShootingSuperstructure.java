@@ -108,6 +108,11 @@ public class ShootingSuperstructure extends SubsystemBase {
         });
     }
 
+    public Command reverseTransfer() {
+        return run(() -> transfer.reverseFeed())
+            .finallyDo(() -> transfer.stopSpinning());
+    }
+
     /**
      * Set the hood, turret, and flywheel to their homed/idle states (zeroed and unpowered)
      */

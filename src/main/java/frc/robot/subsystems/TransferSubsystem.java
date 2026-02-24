@@ -41,6 +41,10 @@ public class TransferSubsystem extends SubsystemBase {
         spindexerMotor.set(0);
     }
 
+    public void reverseFeed() {
+        feederMotor.set(-FEEDING_SPEED);
+    }
+
     public void feed() {
         feederMotor.set(FEEDING_SPEED);
     }

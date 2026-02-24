@@ -10,15 +10,15 @@ import edu.wpi.first.math.util.Units;
 
 public class ShotTrajectoryCalculator {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
-    private static final double FLYWHEEL_DIAMETER_METERS = Units.inchesToMeters(4);
 
     //TODO: Tune values
     private static final double LATENCY_COMPENSATION_SECONDS = Units.millisecondsToSeconds(50);
-    private static final double ANTIDRAG_COEFFICIENT = 1; // Coefficient multiplied by horizontal shot velocity to compensate for drag
 
     private static final InterpolatingDoubleTreeMap distanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(0.0, 0.0);
-        put(24.0, 0.0);
+        put(2.18, 2700.0);
+        put(2.89, 3000.0);
+        put(4.299, 3400.0);
+        put(5.3, 3800.0);
     }};
 
     //Variables that store the latest calculated values needed to perform a shot
@@ -58,14 +58,14 @@ public class ShotTrajectoryCalculator {
             Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
 
         Translation3d movingShotVelocity = new Translation3d(
-                ANTIDRAG_COEFFICIENT * (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond,
-                ANTIDRAG_COEFFICIENT * (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond,
+                (targetPose.getX() - fuelExitPose.getX()) / t + robotVelocity.vyMetersPerSecond,
+                (targetPose.getY() - fuelExitPose.getY()) / t + robotVelocity.vxMetersPerSecond,
                 (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
         );
 
         Translation3d stationaryShotVelocity = new Translation3d(
-            ANTIDRAG_COEFFICIENT * (targetPose.getX() - fuelExitPose.getX()) / t,
-            ANTIDRAG_COEFFICIENT * (targetPose.getY() - fuelExitPose.getY()) / t,
+            (targetPose.getX() - fuelExitPose.getX()) / t,
+            (targetPose.getY() - fuelExitPose.getY()) / t,
             (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
         );
 
