@@ -25,7 +25,6 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
 
-    //TODO: Tune PID/Feedforward constants
     private final double kACCELERATION = 80.0;
     private final double kCRUISE_VELOCITY = 300.0;
     private final double kP = 80.0;
@@ -34,18 +33,15 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final double TURRET_ANGLE_TOLERANCE_DEGREES = 5;
 
-    //TODO: Find actual values
     private final double MAX_TURRET_DEGREES = 121;
     private final double TURRET_HOME_DEGREES = 0;
     private final double MIN_TURRET_DEGREES = -36;
 
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.5;
 
-    //TODO: Figure out mechanism ratio
     private final double TURRET_SENSOR_TO_MECHANISM_RATIO = 1;
     private final double TURRET_ROTOR_TO_SENSOR_RATIO = 45;
 
-    //TODO: Find zeroed value
     private final double TURRET_ENCODER_MAGNET_OFFSET = 0.439697;
 
     private final int TURRET_MOTOR_ID = 7;
