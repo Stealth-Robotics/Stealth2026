@@ -21,6 +21,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.units.mutable.GenericMutableMeasureImpl;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
@@ -40,7 +41,9 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
  */
 public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+    private final double POSITION_TOLERANCE_METERS = 0.1;
+    private final double ANGLE_TOLERANCE_DEGREES = 0.25;
+
     public double MAX_SPEED = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
     public double MAX_ANGULAR_RATE = RotationsPerSecond.of(1).in(RadiansPerSecond); // 1 rotation per second max angular velocity
 
@@ -266,6 +269,33 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
             this,
             (sample, isStart) -> {}
         );
+    }
+
+    public Command goToPose(Pose2d targetPose) {
+        return run(() -> {
+            var pose = getPose();
+            ChassisSpeeds targetSpeeds = new ChassisSpeeds();
+
+            targetSpeeds.vxMetersPerSecond += m_pathXController.calculate(
+                pose.getX(), targetPose.getX()
+            );
+            targetSpeeds.vyMetersPerSecond += m_pathYController.calculate(
+                pose.getY(), targetPose.getY()
+            );
+            targetSpeeds.omegaRadiansPerSecond += m_pathThetaController.calculate(
+                pose.getRotation().getRadians(), targetPose.getRotation().getRadians()
+            );
+
+            setControl(
+                m_pathApplyFieldSpeeds.withSpeeds(targetSpeeds)
+            );
+        }).until(() -> robotNearPose(targetPose));
+    }
+
+    private boolean robotNearPose(Pose2d targetPose) {
+        boolean withinPosition = getPose().getTranslation().getDistance(targetPose.getTranslation()) < POSITION_TOLERANCE_METERS;
+        boolean withinAngle = Math.abs(getPose().getRotation().getDegrees() - targetPose.getRotation().getDegrees()) < ANGLE_TOLERANCE_DEGREES;
+        return withinPosition && withinAngle;
     }
 
     /*
