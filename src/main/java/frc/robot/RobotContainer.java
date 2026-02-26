@@ -7,6 +7,8 @@ import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.UsbCamera;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -68,6 +70,8 @@ public class RobotContainer {
 
         driverController.rightBumper().whileTrue(robot.shoot());
         driverController.leftBumper().whileTrue(robot.clearTransfer());
+
+        driverController.a().whileTrue(robot.rotateRobotToShoot());
     }
 
     /*

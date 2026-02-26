@@ -33,9 +33,9 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final double TURRET_ANGLE_TOLERANCE_DEGREES = 5;
 
-    private final double MAX_TURRET_DEGREES = 121;
+    public final double MAX_TURRET_DEGREES = 121;
     private final double TURRET_HOME_DEGREES = 0;
-    private final double MIN_TURRET_DEGREES = -36;
+    public final double MIN_TURRET_DEGREES = -36;
 
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.5;
 

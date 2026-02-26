@@ -33,14 +33,11 @@ public class ShotTrajectoryCalculator {
      * @param targetHeight The max height the fuel will ever reach during flight
      */
     public static void update(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight) {
-        //Scale robot velocity down
-        robotVelocity.times(0.9);
-
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
         fuelExitPose = fuelExitPose.plus(
             new Transform3d(
-                robotVelocity.vxMetersPerSecond * LATENCY_COMPENSATION_SECONDS,
                 robotVelocity.vyMetersPerSecond * LATENCY_COMPENSATION_SECONDS,
+                robotVelocity.vxMetersPerSecond * LATENCY_COMPENSATION_SECONDS,
                 0.0,
                 Rotation3d.kZero
             )
@@ -58,9 +55,9 @@ public class ShotTrajectoryCalculator {
             Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
 
         Translation3d movingShotVelocity = new Translation3d(
-                (targetPose.getX() - fuelExitPose.getX()) / t + robotVelocity.vyMetersPerSecond,
-                (targetPose.getY() - fuelExitPose.getY()) / t + robotVelocity.vxMetersPerSecond,
-                (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
+            (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vyMetersPerSecond,
+            (targetPose.getY() - fuelExitPose.getY()) / t + robotVelocity.vxMetersPerSecond,
+            (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
         );
 
         Translation3d stationaryShotVelocity = new Translation3d(
@@ -71,7 +68,7 @@ public class ShotTrajectoryCalculator {
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
 
-        double baseRPM = distanceToRPM.get(metersToGoal);
+        double baseRPM = distanceToRPM.get(metersToGoal); 
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();
 
         //Scale up the measured RPM by the scale needed to compensate for robot velocity

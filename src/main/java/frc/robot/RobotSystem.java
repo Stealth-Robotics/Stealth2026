@@ -5,7 +5,8 @@ import java.util.function.DoubleSupplier;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -16,7 +17,6 @@ import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
-import frc.robot.util.AllianceUtility;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ShiftTracker;
@@ -31,6 +31,8 @@ public class RobotSystem extends SubsystemBase {
     private final Command driverRumble, operatorRumble;
 
     private final Field2d fieldTelemetry = new Field2d();
+
+    private final static double MIN_TAG_REJECTION_METERS = 4;
 
     public RobotSystem(Command driverRumble, Command operatorRumble) {
         drive = TunerConstants.createDrivetrain();
@@ -68,21 +70,30 @@ public class RobotSystem extends SubsystemBase {
      * @param y The supplier for driving the robot sideways (field centric)
      * @param theta The supplier for rotating the robot
      * @param isFieldCentric Supplier that allows us to toggle between driving modes
+     * 
+     * <p>Makes the wheels brake if no gamepad input is provided. Using the isFieldCentric supplier
+     * allows us to change modes mid match.</p>
      */
     public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta, BooleanSupplier isFieldCentric) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
-                return isFieldCentric.getAsBoolean() ? 
-                    drive.fieldCentric
-                        .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED)
-                        .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED)
-                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
-                    drive.robotCentric
-                        .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
-                        .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
-                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE);
+                return (Math.abs(x.getAsDouble() + y.getAsDouble() + theta.getAsDouble()) > 0) ?
+                    isFieldCentric.getAsBoolean() ?
+                        drive.fieldCentric
+                            .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED)
+                            .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED)
+                            .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
+                        drive.robotCentric
+                            .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
+                            .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
+                            .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
+                    drive.brake;
             })
         );
+    }
+
+    public Command rotateRobotToShoot() {
+        return drive.goToPose(drive.getPose().rotateBy(Rotation2d.fromDegrees(-shooter.turretLockError)));
     }
 
     public Command seedFieldCentric() {
@@ -106,7 +117,7 @@ public class RobotSystem extends SubsystemBase {
         double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
         if (Math.abs(robotAngularVelocity) < Math.PI) {
             PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight-robot");
-            if (poseEstimate != null && poseEstimate.tagCount > 0) {
+            if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
                 //TODO: Tune standard deviations
                 drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7,.7,9999999));
             }
@@ -125,9 +136,10 @@ public class RobotSystem extends SubsystemBase {
         fieldTelemetry.setRobotPose(drive.getPose());
 
         DogLog.log(
-            "Current Zones", (ZoneManager.inHubZone() ? "Hub " : "") +
-            (ZoneManager.inLeftPassingZone() ? "Left Pass " : "") +
-            (ZoneManager.inRightPassingZone() ? "Right Pass" : "")
-        );
+            "Zone", 
+            (ZoneManager.inHubZone() ? "Hub" : 
+            (ZoneManager.inLeftPassingZone() ? "Left Pass" : 
+            (ZoneManager.inRightPassingZone()) ? "Right Pass" : "")
+        ));
     }
 }

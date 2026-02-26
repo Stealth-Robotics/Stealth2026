@@ -34,6 +34,9 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final Supplier<Pose2d> robotPoseSupplier;
     private final Supplier<ChassisSpeeds> robotVelocitySupplier;
 
+    //The error of the turret if the target angle is beyond its limits
+    public double turretLockError = 0;
+
     //TODO: Find maximum time in between shots when rapidly shooting
     private final double MAX_SHOT_SPACING_SECONDS = 0.75;
 
@@ -138,6 +141,12 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
+
+        if (turretTarget > turret.MAX_TURRET_DEGREES)
+            turretLockError = turretTarget - turret.MAX_TURRET_DEGREES;
+        else if (turretTarget < turret.MIN_TURRET_DEGREES)
+            turretLockError = turretTarget + turret.MIN_TURRET_DEGREES;
+        else turretLockError = 0;
     }
 
     /**
