@@ -42,14 +42,13 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 8.0;
 
     //TODO: Find good tolerance
-    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 100;
+    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 25;
 
     private final double MAX_HOOD_DEGREES = 21;
     private final double MIN_HOOD_DEGREES = 0;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;
 
-    //TODO: Tune all PID/Feedforward constants
     private final double SHOOTING_kP = 0.076017;
     private final double SHOOTING_kI = 0.0;
     private final double SHOOTING_kD = 0.0;
@@ -57,7 +56,6 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTING_kV = 0.18437;
     private final double SHOOTING_kS = 0.25233;
 
-    //TODO: Tune kP and kI until satisfactory
     private final double HOOD_kP = 150.0;
     private final double HOOD_kI = 10.0;
     private final double HOOD_kD = 0.0;
@@ -167,6 +165,7 @@ public class ShooterSubsystem extends SubsystemBase {
         DogLog.log("Shooter/shooter_rpm", getRPM());
         DogLog.log("Shooter/shooter_target_rpm", getTargetRPM());
         
-        DogLog.log("Shooter/hood_angle", Math.round(Units.rotationsToDegrees(hoodMotor.getPosition().getValueAsDouble()) * 100) / 100);
+        DogLog.log("Shooter/hood_encoder", hoodEncoder.getAbsolutePosition().getValueAsDouble());
+        DogLog.log("Shooter/hood_angle", Math.round(Units.rotationsToDegrees(hoodMotor.getPosition().getValueAsDouble()) * 100) / 100.0);
     }
 }
