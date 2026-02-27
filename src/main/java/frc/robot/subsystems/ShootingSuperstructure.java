@@ -40,6 +40,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     //TODO: Find maximum time in between shots when rapidly shooting
     private final double MAX_SHOT_SPACING_SECONDS = 0.75;
 
+    private final double SHOOTER_REVERSE_RPM = -2000;
+
     private final CANrange shotSensor;
     private final CANrangeConfiguration shotSensorConfig = new CANrangeConfiguration();
 
@@ -111,9 +113,14 @@ public class ShootingSuperstructure extends SubsystemBase {
         });
     }
 
-    public Command reverseTransfer() {
-        return run(() -> transfer.reverseFeed())
-            .finallyDo(() -> transfer.stopSpinning());
+    public Command clearTransfer() {
+        return run(() -> {
+            transfer.reverseFeed();
+            shooter.spinToRPM(SHOOTER_REVERSE_RPM);
+        }).finallyDo(() -> { 
+            transfer.stopSpinning();
+            shooter.coastShooter();
+        });
     }
 
     /**
@@ -142,11 +149,9 @@ public class ShootingSuperstructure extends SubsystemBase {
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
 
-        if (turretTarget > turret.MAX_TURRET_DEGREES)
-            turretLockError = turretTarget - turret.MAX_TURRET_DEGREES;
-        else if (turretTarget < turret.MIN_TURRET_DEGREES)
-            turretLockError = turretTarget + turret.MIN_TURRET_DEGREES;
-        else turretLockError = 0;
+        turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
+            turretTarget - turret.MAX_TURRET_DEGREES :
+            turretTarget < turret.MIN_TURRET_DEGREES ? turretTarget + turret.MIN_TURRET_DEGREES : 0;
     }
 
     /**
@@ -167,6 +172,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
+
+        turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
+            turretTarget - turret.MAX_TURRET_DEGREES :
+            turretTarget < turret.MIN_TURRET_DEGREES ? turretTarget + turret.MIN_TURRET_DEGREES : 0;
     }
 
     /**

@@ -53,7 +53,15 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command clearTransfer() {
-        return shooter.reverseTransfer();
+        return shooter.clearTransfer();
+    }
+
+    public void setShooterHubTracking() {
+        shooter.setState(ShooterState.HUB_TRACKING);
+    }
+
+    public void setShooterIDLE() {
+        shooter.setState(ShooterState.HUB_TRACKING);
     }
 
     private void updateShootingState() {
@@ -80,13 +88,13 @@ public class RobotSystem extends SubsystemBase {
                 return (Math.abs(x.getAsDouble() + y.getAsDouble() + theta.getAsDouble()) > 0) ?
                     isFieldCentric.getAsBoolean() ?
                         drive.fieldCentric
-                            .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED)
-                            .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED)
-                            .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
-                        drive.robotCentric
                             .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
                             .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
-                            .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
+                            .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
+                        drive.robotCentric
+                            .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED)
+                            .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED)
+                            .withRotationalRate(theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
                     drive.brake;
             })
         );
@@ -128,7 +136,7 @@ public class RobotSystem extends SubsystemBase {
     public void periodic() {
         ZoneManager.updateWithRobotPose(drive.getPose());
 
-        updateShootingState();
+        // updateShootingState();
 
         updateOdometryEstimateWithLimelight();
 

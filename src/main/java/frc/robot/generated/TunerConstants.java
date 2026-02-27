@@ -69,7 +69,7 @@ public class TunerConstants {
     private static final Pigeon2Configuration pigeonConfigs = new Pigeon2Configuration()
         .withMountPose(
             new MountPoseConfigs()
-                .withMountPoseYaw(90)
+                .withMountPoseYaw(-90)
                 .withMountPosePitch(0)
                 .withMountPoseRoll(0)
         );
