@@ -49,11 +49,9 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
 
-    //TODO: Tune these values to actual goal
     private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 4;
     private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2.5;
 
-    //TODO: Tune these values to actual goal
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
     //TODO: Tune these values to actual targets
