@@ -53,9 +53,9 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_ANGLE_TOLERANCE_ROTATIONS = 0.1;
 
     //TODO: Find correct CAN IDs
-    private final int ROLLER_MOTOR_ID = 0;
-    private final int DEPLOY_MOTOR_ID = 0;
-    private final int DEPLOY_ENCODER_ID = 0;
+    private final int ROLLER_MOTOR_ID = 16;
+    private final int DEPLOY_MOTOR_ID = 17;
+    private final int DEPLOY_ENCODER_ID = 18;
 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);

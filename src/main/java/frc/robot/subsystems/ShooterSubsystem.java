@@ -35,7 +35,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.0248;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.02318;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
@@ -101,7 +101,7 @@ public class ShooterSubsystem extends SubsystemBase {
         //Cancoder configuration
         hoodEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = HOOD_ENCODER_DISCONTINUTY_POINT;
         hoodEncoderConfig.MagnetSensor.MagnetOffset = HOOD_ENCODER_MAGNET_OFFSET;
-        hoodEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
+        hoodEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
 
         //Apply device configs
         shooterMotor1.getConfigurator().apply(shooterConfig);
