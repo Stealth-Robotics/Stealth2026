@@ -49,8 +49,8 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
 
-    private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 4;
-    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2.5;
+    private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
+    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
@@ -119,6 +119,10 @@ public class ShootingSuperstructure extends SubsystemBase {
             transfer.stopSpinning();
             shooter.coastShooter();
         });
+    }
+
+    public Command autonomousShoot() {
+        return shoot().until(() -> !isShooting());
     }
 
     /**
