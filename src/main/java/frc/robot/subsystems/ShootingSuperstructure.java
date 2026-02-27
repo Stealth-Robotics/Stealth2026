@@ -37,6 +37,10 @@ public class ShootingSuperstructure extends SubsystemBase {
     //TODO: Find maximum time in between shots when rapidly shooting
     private final double MAX_SHOT_SPACING_SECONDS = 0.75;
 
+    //TODO: Input actual value
+    private final double MAX_HOOD_ANGLE = 0.0;
+    private final double FIXED_HOOD_TIME_OF_FLIGHT_SECONDS = 4.0;
+
     private final CANrange shotSensor;
     private final CANrangeConfiguration shotSensorConfig = new CANrangeConfiguration();
 
@@ -134,6 +138,15 @@ public class ShootingSuperstructure extends SubsystemBase {
             params.maxTrajectoryHeight()
         );
 
+        // Recover trajectory if hood angle is out of range
+        if(ShotTrajectoryCalculator.getHoodAngle() > MAX_HOOD_ANGLE) {
+            ShotTrajectoryCalculator.update(
+                robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
+                robotVelocitySupplier.get(),
+                params.target(), 
+                FIXED_HOOD_TIME_OF_FLIGHT_SECONDS);
+        }
+
         shooter.setHoodDegrees(ShotTrajectoryCalculator.getHoodAngle());
 
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
@@ -153,6 +166,15 @@ public class ShootingSuperstructure extends SubsystemBase {
             params.target(),
             params.maxTrajectoryHeight()
         );
+        
+        // Recover trajectory if hood angle is out of range
+        if(ShotTrajectoryCalculator.getHoodAngle() > MAX_HOOD_ANGLE) {
+            ShotTrajectoryCalculator.update(
+                robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
+                robotVelocitySupplier.get(),
+                params.target(), 
+                FIXED_HOOD_TIME_OF_FLIGHT_SECONDS);
+        }
 
         shooter.setHoodDegrees(ShotTrajectoryCalculator.getHoodAngle());
 

@@ -30,9 +30,9 @@ public class ShotTrajectoryCalculator {
      * @param fuelExitPose The position where the fuel will exit the shooter relative to the field
      * @param robotVelocity The linear velocity of the robot
      * @param targetPose The position of the target we are shooting at
-     * @param targetHeight The max height the fuel will ever reach during flight
+     * @param timeOfFlight The projectile time of flight under vacuum conditions
      */
-    public static void update(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight) {
+    public static void updateTimed(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double timeOfFlight) {
         //Scale robot velocity down
         robotVelocity.times(0.9);
 
@@ -46,27 +46,16 @@ public class ShotTrajectoryCalculator {
             )
         );
 
-        //Cap targetHeight to make sure values don't result in NaN
-        targetHeight = Math.max(targetHeight, Math.max(fuelExitPose.getZ(), targetPose.getZ()));
-
-        /*
-         *  t is calculated to be the seconds needed for the ball to reach desired height, 
-         *  and return to goal height, under vacuum conditions
-        */
-        double t = 
-            Math.sqrt(2.0 * (targetHeight - fuelExitPose.getZ()) / GRAVITATIONAL_CONSTANT) + 
-            Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
-
         Translation3d movingShotVelocity = new Translation3d(
-                (targetPose.getX() - fuelExitPose.getX()) / t + robotVelocity.vyMetersPerSecond,
-                (targetPose.getY() - fuelExitPose.getY()) / t + robotVelocity.vxMetersPerSecond,
-                (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
+                (targetPose.getX() - fuelExitPose.getX()) / timeOfFlight + robotVelocity.vyMetersPerSecond,
+                (targetPose.getY() - fuelExitPose.getY()) / timeOfFlight - robotVelocity.vxMetersPerSecond,
+                (targetPose.getZ() - fuelExitPose.getZ()) / timeOfFlight + GRAVITATIONAL_CONSTANT * timeOfFlight / 2.0
         );
 
         Translation3d stationaryShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t,
-            (targetPose.getY() - fuelExitPose.getY()) / t,
-            (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
+            (targetPose.getX() - fuelExitPose.getX()) / timeOfFlight,
+            (targetPose.getY() - fuelExitPose.getY()) / timeOfFlight,
+            (targetPose.getZ() - fuelExitPose.getZ()) / timeOfFlight + GRAVITATIONAL_CONSTANT * timeOfFlight / 2.0
         );
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
@@ -81,6 +70,19 @@ public class ShotTrajectoryCalculator {
 
         double horizontalSpeed = Math.sqrt(Math.pow(movingShotVelocity.getX(), 2) + Math.pow(movingShotVelocity.getY(), 2));
         targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
+    } 
+
+    /**
+     * @param fuelExitPose The position where the fuel will exit the shooter relative to the field
+     * @param robotVelocity The linear velocity of the robot
+     * @param targetPose The position of the target we are shooting at
+     * @param targetHeight The max height the fuel will ever reach during flight
+     */
+    public static void update(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight) {
+        double t = 
+            Math.sqrt(2.0 * (targetHeight - fuelExitPose.getZ()) / GRAVITATIONAL_CONSTANT) + 
+            Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
+        updateTimed(fuelExitPose, robotVelocity, targetPose, t);
     }
 
     public static double getTargetFlywheelRPM() {
