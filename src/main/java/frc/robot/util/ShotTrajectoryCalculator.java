@@ -11,8 +11,8 @@ import edu.wpi.first.math.util.Units;
 public class ShotTrajectoryCalculator {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
 
-    //TODO: Tune values
-    private static final double LATENCY_COMPENSATION_SECONDS = Units.millisecondsToSeconds(50);
+    private static final double systemLatency = Units.millisecondsToSeconds(20);
+    private static double visionLatency = 0;
 
     private static final InterpolatingDoubleTreeMap distanceToRPM = new InterpolatingDoubleTreeMap() {{
         put(2.18, 2700.0);
@@ -26,6 +26,10 @@ public class ShotTrajectoryCalculator {
     private static double targetTurretAngle = 0.0;
     private static double targetHoodAngle = 0.0;
 
+    public static void updateVisionLatency(double ms) {
+        visionLatency = Units.millisecondsToSeconds(ms);
+    }
+
     /**
      * @param fuelExitPose The position where the fuel will exit the shooter relative to the field
      * @param robotVelocity The linear velocity of the robot
@@ -33,11 +37,13 @@ public class ShotTrajectoryCalculator {
      * @param targetHeight The max height the fuel will ever reach during flight
      */
     public static void update(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight) {
+        double totalLatencySeconds = visionLatency + systemLatency;
+
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
         fuelExitPose = fuelExitPose.plus(
             new Transform3d(
-                robotVelocity.vyMetersPerSecond * LATENCY_COMPENSATION_SECONDS,
-                robotVelocity.vxMetersPerSecond * LATENCY_COMPENSATION_SECONDS,
+                robotVelocity.vxMetersPerSecond * totalLatencySeconds,
+                robotVelocity.vyMetersPerSecond * totalLatencySeconds,
                 0.0,
                 Rotation3d.kZero
             )
@@ -55,8 +61,8 @@ public class ShotTrajectoryCalculator {
             Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
 
         Translation3d movingShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vyMetersPerSecond,
-            (targetPose.getY() - fuelExitPose.getY()) / t + robotVelocity.vxMetersPerSecond,
+            (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond,
+            (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond,
             (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
         );
 
