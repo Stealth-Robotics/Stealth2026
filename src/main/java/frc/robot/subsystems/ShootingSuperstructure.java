@@ -40,6 +40,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     //TODO: Find maximum time in between shots when rapidly shooting
     private final double MAX_SHOT_SPACING_SECONDS = 0.75;
 
+    private final double SHOOTER_REVERSE_RPM = -2000;
+
     private final CANrange shotSensor;
     private final CANrangeConfiguration shotSensorConfig = new CANrangeConfiguration();
 
@@ -47,11 +49,9 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
 
-    //TODO: Tune these values to actual goal
-    private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 4;
-    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2.5;
+    private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
+    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2;
 
-    //TODO: Tune these values to actual goal
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
     //TODO: Tune these values to actual targets
@@ -111,9 +111,18 @@ public class ShootingSuperstructure extends SubsystemBase {
         });
     }
 
-    public Command reverseTransfer() {
-        return run(() -> transfer.reverseFeed())
-            .finallyDo(() -> transfer.stopSpinning());
+    public Command clearTransfer() {
+        return run(() -> {
+            transfer.reverseFeed();
+            shooter.spinToRPM(SHOOTER_REVERSE_RPM);
+        }).finallyDo(() -> { 
+            transfer.stopSpinning();
+            shooter.coastShooter();
+        });
+    }
+
+    public Command autonomousShoot() {
+        return shoot().until(() -> !isShooting());
     }
 
     /**
@@ -142,11 +151,9 @@ public class ShootingSuperstructure extends SubsystemBase {
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
 
-        if (turretTarget > turret.MAX_TURRET_DEGREES)
-            turretLockError = turretTarget - turret.MAX_TURRET_DEGREES;
-        else if (turretTarget < turret.MIN_TURRET_DEGREES)
-            turretLockError = turretTarget + turret.MIN_TURRET_DEGREES;
-        else turretLockError = 0;
+        turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
+            turretTarget - turret.MAX_TURRET_DEGREES :
+            turretTarget < turret.MIN_TURRET_DEGREES ? turretTarget + turret.MIN_TURRET_DEGREES : 0;
     }
 
     /**
@@ -167,6 +174,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
+
+        turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
+            turretTarget - turret.MAX_TURRET_DEGREES :
+            turretTarget < turret.MIN_TURRET_DEGREES ? turretTarget + turret.MIN_TURRET_DEGREES : 0;
     }
 
     /**

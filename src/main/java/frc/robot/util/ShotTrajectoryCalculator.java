@@ -3,6 +3,7 @@ package frc.robot.util;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -11,8 +12,11 @@ import edu.wpi.first.math.util.Units;
 public class ShotTrajectoryCalculator {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
 
-    //TODO: Tune values
-    private static final double LATENCY_COMPENSATION_SECONDS = Units.millisecondsToSeconds(50);
+    private static final double systemLatency = Units.millisecondsToSeconds(20);
+    private static double visionLatency = 0;
+
+    //Time needed for ball to travel through feeder towards the flywheel
+    private static final double mechanismLatency = Units.millisecondsToSeconds(0);
 
     private static final InterpolatingDoubleTreeMap distanceToRPM = new InterpolatingDoubleTreeMap() {{
         put(2.18, 2700.0);
@@ -26,24 +30,41 @@ public class ShotTrajectoryCalculator {
     private static double targetTurretAngle = 0.0;
     private static double targetHoodAngle = 0.0;
 
+    private static double previousRobotVx = 0.0;
+    private static double previousRobotVy = 0.0;
+
+    public static void updateVisionLatency(double ms) {
+        visionLatency = Units.millisecondsToSeconds(ms);
+    }
+
     /**
      * @param fuelExitPose The position where the fuel will exit the shooter relative to the field
-     * @param robotVelocity The linear velocity of the robot
+     * @param robotVelocity The linear velocity of the robot (field relative)
      * @param targetPose The position of the target we are shooting at
      * @param targetHeight The max height the fuel will ever reach during flight
      */
     public static void update(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight) {
+        double totalLatencySeconds = visionLatency + systemLatency + mechanismLatency;
+        
+        //Estimate the robot's velocity assuming a constant 20 ms periodic loop
+        Translation2d robotAcceleration = new Translation2d(
+            (robotVelocity.vxMetersPerSecond - previousRobotVx) / Units.millisecondsToSeconds(20),
+            (robotVelocity.vyMetersPerSecond - previousRobotVy) / Units.millisecondsToSeconds(20)
+        );
+
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
         fuelExitPose = fuelExitPose.plus(
             new Transform3d(
-                robotVelocity.vyMetersPerSecond * LATENCY_COMPENSATION_SECONDS,
-                robotVelocity.vxMetersPerSecond * LATENCY_COMPENSATION_SECONDS,
+                robotVelocity.vxMetersPerSecond * totalLatencySeconds 
+                    + (0.5 * robotAcceleration.getX() * Math.pow(totalLatencySeconds, 2)),
+                robotVelocity.vyMetersPerSecond * totalLatencySeconds 
+                    + (0.5 * robotAcceleration.getY() * Math.pow(totalLatencySeconds, 2)),
                 0.0,
                 Rotation3d.kZero
             )
         );
 
-        //Cap targetHeight to make sure values don't result in NaN
+        //Clamp targetHeight to make sure values don't result in a NaN result
         targetHeight = Math.max(targetHeight, Math.max(fuelExitPose.getZ(), targetPose.getZ()));
 
         /*
@@ -54,18 +75,21 @@ public class ShotTrajectoryCalculator {
             Math.sqrt(2.0 * (targetHeight - fuelExitPose.getZ()) / GRAVITATIONAL_CONSTANT) + 
             Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
 
+        double fuelZVelo = (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0;
+
         Translation3d movingShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vyMetersPerSecond,
-            (targetPose.getY() - fuelExitPose.getY()) / t + robotVelocity.vxMetersPerSecond,
-            (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
+            (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond - (0.5 * robotAcceleration.getX() * t),
+            (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond - (0.5 * robotAcceleration.getY() * t),
+            fuelZVelo
         );
 
         Translation3d stationaryShotVelocity = new Translation3d(
             (targetPose.getX() - fuelExitPose.getX()) / t,
             (targetPose.getY() - fuelExitPose.getY()) / t,
-            (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0
+            fuelZVelo
         );
 
+        //TODO: Not sure whether to use robot pose before or after latency calculations??
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
 
         double baseRPM = distanceToRPM.get(metersToGoal); 
@@ -78,6 +102,10 @@ public class ShotTrajectoryCalculator {
 
         double horizontalSpeed = Math.sqrt(Math.pow(movingShotVelocity.getX(), 2) + Math.pow(movingShotVelocity.getY(), 2));
         targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
+
+        //Store velocities for acceleration calculations each loop
+        previousRobotVx = robotVelocity.vxMetersPerSecond;
+        previousRobotVy = robotVelocity.vyMetersPerSecond;
     }
 
     public static double getTargetFlywheelRPM() {

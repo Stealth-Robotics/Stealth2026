@@ -17,6 +17,8 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.Elastic;
+import frc.robot.util.Elastic.Notification;
 
 public class ShooterSubsystem extends SubsystemBase {
     private final TalonFX shooterMotor1;
@@ -42,14 +44,13 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 8.0;
 
     //TODO: Find good tolerance
-    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 100;
+    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 25;
 
     private final double MAX_HOOD_DEGREES = 21;
     private final double MIN_HOOD_DEGREES = 0;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;
 
-    //TODO: Tune all PID/Feedforward constants
     private final double SHOOTING_kP = 0.076017;
     private final double SHOOTING_kI = 0.0;
     private final double SHOOTING_kD = 0.0;
@@ -57,7 +58,6 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTING_kV = 0.18437;
     private final double SHOOTING_kS = 0.25233;
 
-    //TODO: Tune kP and kI until satisfactory
     private final double HOOD_kP = 150.0;
     private final double HOOD_kI = 10.0;
     private final double HOOD_kD = 0.0;
@@ -67,6 +67,11 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private final int HOOD_MOTOR_ID = 4;
     private final int HOOD_ENCODER_ID = 9;
+
+    private boolean disableHood = false;
+
+    private final Notification hoodLimitExceededError = 
+        new Notification(Elastic.NotificationLevel.ERROR, "Robot Error", "Hood has exceeded its limits. Switching to neutral mode.");
 
     public ShooterSubsystem() {
         shooterMotor1 = new TalonFX(SHOOTER_MOTOR_1_ID);
@@ -125,9 +130,11 @@ public class ShooterSubsystem extends SubsystemBase {
      * Sets the hood to the specified angle in degrees
      */
     public void setHoodDegrees(double degrees) {
-        hoodMotor.setControl(hoodController.withPosition(
-            Units.degreesToRotations(MathUtil.clamp(degrees, MIN_HOOD_DEGREES, MAX_HOOD_DEGREES)))
-        );
+        if (!disableHood) {
+            hoodMotor.setControl(hoodController.withPosition(
+                Units.degreesToRotations(MathUtil.clamp(degrees, MIN_HOOD_DEGREES, MAX_HOOD_DEGREES)))
+            );
+        }
     }
 
     /**
@@ -164,9 +171,20 @@ public class ShooterSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.log("Shooter/shooter_rpm", getRPM());
-        DogLog.log("Shooter/shooter_target_rpm", getTargetRPM());
-        
-        DogLog.log("Shooter/hood_angle", Math.round(Units.rotationsToDegrees(hoodMotor.getPosition().getValueAsDouble()) * 100) / 100);
+        double hoodDegrees = getHoodDegrees();
+
+        if (!disableHood) {
+            if (hoodDegrees < MIN_HOOD_DEGREES - 0.25 || hoodDegrees > MAX_HOOD_DEGREES + 0.25) {
+                hoodMotor.setControl(coast);
+
+                Elastic.sendNotification(hoodLimitExceededError);
+                disableHood = true;
+            }
+        }
+
+        DogLog.log("Shooter/shooter_rpm", (int) getRPM());
+        DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
+
+        DogLog.log("Shooter/hood_angle", Math.round(hoodDegrees * 100.0) / 100.0);
     }
 }
