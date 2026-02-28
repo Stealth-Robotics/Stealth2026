@@ -6,6 +6,7 @@ import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
@@ -27,23 +28,24 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final MotionMagicVoltage deployController = new MotionMagicVoltage(0);
 
+    //TODO: Rezero encoder so that zero is when the intake is horizontal
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.305664;
 
-    //TODO: Figure out actual mechanism ratios
-    // private final double DEPLOY_ENCODER_TO_MECHANISM_RATIO = -1;
-    // private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 0;
+    private final double DEPLOY_ENCODER_TO_MECHANISM_RATIO = 1.0;
+    private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 52.0;
 
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 1;
 
-    private final double DEPLOYED_ROTATIONS = 0.29;
-    private final double RETRACTED_ROTATIONS = 0;
+    private final double DEPLOYED_ROTATIONS = 0;
+    private final double RETRACTED_ROTATIONS = 0.29;
 
     //TODO: Tune MotionMagic & PID constants
-    private final double DEPLOY_kP = 25;
+    private final double DEPLOY_kP = 0.0;
     private final double DEPLOY_kI = 0.0;
     private final double DEPLOY_kD = 0.0;
-    private final double DEPLOY_MOTIONMAGIC_kACCELERATION = 150.0;
-    private final double DEPLOY_MOTIONMAGIC_kVELOCITY = 1000.0;
+    private final double DEPLOY_KG = 0.0;
+    private final double DEPLOY_MOTIONMAGIC_kACCELERATION = 2.0;
+    private final double DEPLOY_MOTIONMAGIC_kVELOCITY = 0.5;
 
     private final int ROLLER_MOTOR_ID = 16;
     private final int DEPLOY_MOTOR_ID = 17;
@@ -57,7 +59,7 @@ public class IntakeSubsystem extends SubsystemBase {
         //CANCoder config
         deployEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = TURRET_ENCODER_DISCONTINUTY_POINT;
         deployEncoderConfig.MagnetSensor.MagnetOffset = DEPLOY_ENCODER_ZERO_OFFSET;
-        deployEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
+        deployEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
 
         //Roller motor config
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
@@ -70,12 +72,15 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.Feedback.FeedbackRemoteSensorID = deployEncoder.getDeviceID();
         deployConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
 
-        // deployConfig.Feedback.SensorToMechanismRatio = DEPLOY_ENCODER_TO_MECHANISM_RATIO;
-        // deployConfig.Feedback.RotorToSensorRatio = DEPLOY_MOTOR_TO_ENCODER_RATIO;
+        deployConfig.Feedback.SensorToMechanismRatio = DEPLOY_ENCODER_TO_MECHANISM_RATIO;
+        deployConfig.Feedback.RotorToSensorRatio = DEPLOY_MOTOR_TO_ENCODER_RATIO;
 
         deployConfig.Slot0.kP = DEPLOY_kP;
         deployConfig.Slot0.kI = DEPLOY_kI;
         deployConfig.Slot0.kD = DEPLOY_kD;
+        deployConfig.Slot0.kG = DEPLOY_KG;
+
+        deployConfig.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
         deployConfig.MotionMagic.MotionMagicAcceleration = DEPLOY_MOTIONMAGIC_kACCELERATION;
         deployConfig.MotionMagic.MotionMagicCruiseVelocity = DEPLOY_MOTIONMAGIC_kVELOCITY;
@@ -83,6 +88,9 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerMotor.getConfigurator().apply(rollerConfig);
         deployMotor.getConfigurator().apply(deployConfig);
         deployEncoder.getConfigurator().apply(deployEncoderConfig);
+
+        //Explictly set the intake's deploy motor position on startup
+        deployMotor.setPosition(deployEncoder.getAbsolutePosition().getValue());
 
         retract();
     }
