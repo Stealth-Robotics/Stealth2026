@@ -37,10 +37,10 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.02318;
-    private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.018310546875;
+    private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.5;
 
-    private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
+    private final double HOOD_ROTOR_TO_SENSOR_RATIO = 1.0; //5.0
     private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 8.0;
 
     //TODO: Find good tolerance
@@ -93,8 +93,8 @@ public class ShooterSubsystem extends SubsystemBase {
         //Hood motor configuration
         hoodConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
-        // hoodConfig.Feedback.RotorToSensorRatio = HOOD_ROTOR_TO_SENSOR_RATIO;
-        // hoodConfig.Feedback.SensorToMechanismRatio = HOOD_SENSOR_TO_MECHANISM_RATIO;
+        hoodConfig.Feedback.RotorToSensorRatio = HOOD_ROTOR_TO_SENSOR_RATIO;
+        hoodConfig.Feedback.SensorToMechanismRatio = HOOD_SENSOR_TO_MECHANISM_RATIO;
 
         hoodConfig.Feedback.FeedbackRemoteSensorID = hoodEncoder.getDeviceID();
         hoodConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
@@ -117,6 +117,9 @@ public class ShooterSubsystem extends SubsystemBase {
 
         //Set the other shooting motor to follow the other (but inverted)
         shooterMotor2.setControl(new Follower(SHOOTER_MOTOR_1_ID, MotorAlignmentValue.Opposed));
+
+        //Home to zero
+        setHoodDegrees(0.0);
     }
 
     /**
@@ -174,7 +177,7 @@ public class ShooterSubsystem extends SubsystemBase {
         double hoodDegrees = getHoodDegrees();
 
         if (!disableHood) {
-            if (hoodDegrees < MIN_HOOD_DEGREES - 0.25 || hoodDegrees > MAX_HOOD_DEGREES + 0.25) {
+            if (hoodDegrees < MIN_HOOD_DEGREES - 2 || hoodDegrees > MAX_HOOD_DEGREES + 2) {
                 hoodMotor.setControl(coast);
 
                 Elastic.sendNotification(hoodLimitExceededError);

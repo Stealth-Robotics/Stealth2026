@@ -35,19 +35,15 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 1;
 
-    //TODO: Tune rotation setpoints
-    private final double DEPLOYED_ROTATIONS = 0.292;
+    private final double DEPLOYED_ROTATIONS = 0.29;
     private final double RETRACTED_ROTATIONS = 0;
 
     //TODO: Tune MotionMagic & PID constants
-    private final double DEPLOY_kP = 0.01;
+    private final double DEPLOY_kP = 25;
     private final double DEPLOY_kI = 0.0;
     private final double DEPLOY_kD = 0.0;
-    private final double DEPLOY_MOTIONMAGIC_kACCELERATION = 100.0;
-    private final double DEPLOY_MOTIONMAGIC_kVELOCITY = 100.0;
-
-    //TODO: Tune tolerance
-    private final double DEPLOY_ANGLE_TOLERANCE_ROTATIONS = 0.1;
+    private final double DEPLOY_MOTIONMAGIC_kACCELERATION = 150.0;
+    private final double DEPLOY_MOTIONMAGIC_kVELOCITY = 1000.0;
 
     private final int ROLLER_MOTOR_ID = 16;
     private final int DEPLOY_MOTOR_ID = 17;
@@ -68,7 +64,7 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         
         //Deploy motor config
-        deployConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        deployConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
         deployConfig.Feedback.FeedbackRemoteSensorID = deployEncoder.getDeviceID();
@@ -87,6 +83,8 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerMotor.getConfigurator().apply(rollerConfig);
         deployMotor.getConfigurator().apply(deployConfig);
         deployEncoder.getConfigurator().apply(deployEncoderConfig);
+
+        retract();
     }
 
     public void setRollerSpeed(double speed) {
@@ -105,21 +103,15 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.setControl(deployController.withPosition(RETRACTED_ROTATIONS));
     }
 
-    private boolean isIntakeAtPosition() {
-        return Math.abs(getIntakeRotations() - getTargetIntakeRotations()) < DEPLOY_ANGLE_TOLERANCE_ROTATIONS;
-    }
-
     private double getIntakeRotations() {
         return deployMotor.getPosition().getValueAsDouble();
     }
 
-    private double getTargetIntakeRotations() {
-        return deployController.Position;
-    }
-
     @Override
     public void periodic() {
-        DogLog.forceNt.log("Intake/roller_speed", rollerMotor.get());
-        DogLog.forceNt.log("Intake/intake_rotations", getIntakeRotations());
+        DogLog.log("Intake/roller_speed", rollerMotor.get());
+        DogLog.log("Intake/target_position", getIntakeRotations());
+
+        DogLog.log("Intake/intake_rotations", getIntakeRotations());
     }
 }

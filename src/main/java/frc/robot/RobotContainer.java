@@ -71,9 +71,7 @@ public class RobotContainer {
         driverController.leftBumper().whileTrue(robot.clearTransfer());
 
         driverController.a().whileTrue(robot.rotateRobotToShoot());
-        driverController.b()
-            .toggleOnTrue(new InstantCommand(() -> robot.setShooterIDLE()))
-            .toggleOnFalse(new InstantCommand(() -> robot.setShooterHubTracking()));
+        driverController.y().whileTrue(robot.driveToClimb());
     }
 
     /*

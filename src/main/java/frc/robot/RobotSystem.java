@@ -10,7 +10,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
@@ -50,18 +49,19 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy) {
-        intake.setDefaultCommand(
-            run(() -> {
-                if (deploy.getAsBoolean()) {
-                    intake.deploy();
-                    intake.setRollerSpeed(rollerSpeed.getAsDouble());
-                }
-                else {
-                    intake.retract();
-                    intake.stop();
-                }
-            })
-        );
+        Command intakeDefaultCommand = run(() -> {
+            if (deploy.getAsBoolean()) {
+                intake.deploy();
+                intake.setRollerSpeed(rollerSpeed.getAsDouble() * 0.75);
+            }
+            else {
+                intake.retract();
+                intake.stop();
+            }
+        });
+
+        intakeDefaultCommand.addRequirements(intake);
+        intake.setDefaultCommand(intakeDefaultCommand);
     }
 
     public Command shoot() {
@@ -71,14 +71,6 @@ public class RobotSystem extends SubsystemBase {
 
     public Command clearTransfer() {
         return shooter.clearTransfer();
-    }
-
-    public void setShooterHubTracking() {
-        shooter.setState(ShooterState.HUB_TRACKING);
-    }
-
-    public void setShooterIDLE() {
-        shooter.setState(ShooterState.HUB_TRACKING);
     }
 
     private void updateShootingState() {
@@ -117,8 +109,13 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
+    //TODO: Temporary method for testing
+    public Command driveToClimb() {
+        return drive.goToPose(() -> new Pose2d(14.922, 3.891, Rotation2d.kZero));
+    }
+
     public Command rotateRobotToShoot() {
-        return drive.goToPose(drive.getPose().rotateBy(Rotation2d.fromDegrees(-shooter.turretLockError)));
+        return drive.goToPose(() -> drive.getPose().rotateBy(Rotation2d.fromDegrees(-shooter.turretLockError)));
     }
 
     public Command seedFieldCentric() {
@@ -136,7 +133,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateOdometryEstimateWithLimelight() {
-        double imuAngle = drive.getPigeon2().getRotation2d().getDegrees();
+        double imuAngle = drive.getPose().getRotation().getDegrees();
         LimelightHelpers.SetRobotOrientation("limelight-robot", imuAngle, 0, 0, 0, 0, 0);
 
         double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
@@ -154,8 +151,7 @@ public class RobotSystem extends SubsystemBase {
     public void periodic() {
         ZoneManager.updateWithRobotPose(drive.getPose());
 
-        // updateShootingState();
-
+        updateShootingState();
         updateOdometryEstimateWithLimelight();
 
         //Update the field telemetry's robot pose
@@ -165,7 +161,7 @@ public class RobotSystem extends SubsystemBase {
             "Zone", 
             (ZoneManager.inHubZone() ? "Hub" : 
             (ZoneManager.inLeftPassingZone() ? "Left Pass" : 
-            (ZoneManager.inRightPassingZone()) ? "Right Pass" : "")
+            (ZoneManager.inRightPassingZone()) ? "Right Pass" : "n/a")
         ));
     }
 }

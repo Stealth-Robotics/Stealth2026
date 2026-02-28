@@ -270,25 +270,25 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         );
     }
 
-    public Command goToPose(Pose2d targetPose) {
+    public Command goToPose(Supplier<Pose2d> targetPose) {
         return run(() -> {
             var pose = getPose();
             ChassisSpeeds targetSpeeds = new ChassisSpeeds();
 
             targetSpeeds.vxMetersPerSecond += m_pathXController.calculate(
-                pose.getX(), targetPose.getX()
+                pose.getX(), targetPose.get().getX()
             );
             targetSpeeds.vyMetersPerSecond += m_pathYController.calculate(
-                pose.getY(), targetPose.getY()
+                pose.getY(), targetPose.get().getY()
             );
             targetSpeeds.omegaRadiansPerSecond += m_pathThetaController.calculate(
-                pose.getRotation().getRadians(), targetPose.getRotation().getRadians()
+                pose.getRotation().getRadians(), targetPose.get().getRotation().getRadians()
             );
 
             setControl(
                 m_pathApplyFieldSpeeds.withSpeeds(targetSpeeds)
             );
-        }).until(() -> robotNearPose(targetPose));
+        }).until(() -> robotNearPose(targetPose.get()));
     }
 
     private boolean robotNearPose(Pose2d targetPose) {
