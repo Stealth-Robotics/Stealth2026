@@ -29,12 +29,20 @@ public class Autos {
     public AutoRoutine testAuto() {
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
-        AutoTrajectory testPath = routine.trajectory("testPath");
+        AutoTrajectory start = routine.trajectory("ShootingAuto");
+        AutoTrajectory goToCenter = routine.trajectory("ShootingAuto", 0);
+        AutoTrajectory goBackToShoot = routine.trajectory("ShootingAuto", 1);
+        AutoTrajectory goClimb = routine.trajectory("ShootingAuto", 2);
 
         routine.active().onTrue(
             new SequentialCommandGroup(
-                testPath.resetOdometry(),
-                testPath.cmd()
+                start.resetOdometry(),
+                shooter.autonomousShoot(),
+                start.cmd(),
+                goToCenter.cmd(), //Along with deploying intake
+                goBackToShoot.cmd(), //Along with retracting intake
+                shooter.autonomousShoot(),
+                goClimb.cmd()
             )
         );
 
