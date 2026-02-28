@@ -58,6 +58,12 @@ public class RobotContainer {
             () -> driveFieldCentric
         );
 
+        robot.setIntakeDefaultCommand(
+            () -> driverController.getLeftTriggerAxis() > 0.01
+                ? -driverController.getLeftTriggerAxis() : driverController.getRightTriggerAxis(), 
+            () -> driverController.getRightTriggerAxis() > 0.01
+        );
+
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
 

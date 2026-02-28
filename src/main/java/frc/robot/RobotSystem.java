@@ -10,6 +10,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
@@ -45,6 +46,21 @@ public class RobotSystem extends SubsystemBase {
 
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
+    }
+
+    public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy) {
+        intake.setDefaultCommand(
+            run(() -> {
+                if (deploy.getAsBoolean()) {
+                    intake.deploy();
+                    intake.setRollerSpeed(rollerSpeed.getAsDouble());
+                }
+                else {
+                    intake.retract();
+                    intake.stop();
+                }
+            })
+        );
     }
 
     public Command shoot() {
@@ -105,7 +121,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command seedFieldCentric() {
-        return runOnce(() -> drive.seedFieldCentric());
+        return runOnce(() -> drive.seedFieldCentric()).andThen(() -> shooter.setState(ShooterState.IDLE));
     }
 
     public Autos getAutos() {
