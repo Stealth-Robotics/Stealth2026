@@ -26,8 +26,14 @@ public class TransferSubsystem extends SubsystemBase {
         spindexerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         spindexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
+        spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        spindexerConfig.CurrentLimits.StatorCurrentLimit = 60;
+
         feederConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+
+        feederConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        feederConfig.CurrentLimits.StatorCurrentLimit = 60;
 
         spindexerMotor.getConfigurator().apply(spindexerConfig);
         feederMotor.getConfigurator().apply(feederConfig);

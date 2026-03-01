@@ -12,6 +12,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
@@ -59,6 +60,9 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         rollerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
+        rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        rollerConfig.CurrentLimits.StatorCurrentLimit = 30;
+
         rollerMotor.getConfigurator().apply(rollerConfig);
 
         //CANCoder config
@@ -78,6 +82,9 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.Feedback.SensorToMechanismRatio = DEPLOY_ENCODER_TO_MECHANISM_RATIO;
         deployConfig.Feedback.RotorToSensorRatio = DEPLOY_MOTOR_TO_ENCODER_RATIO;
 
+        deployConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        deployConfig.CurrentLimits.StatorCurrentLimit = 40;
+
         deployConfig.Slot0.kP = DEPLOY_kP;
         deployConfig.Slot0.kI = DEPLOY_kI;
         deployConfig.Slot0.kD = DEPLOY_kD;
@@ -91,7 +98,7 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.getConfigurator().apply(deployConfig);
 
         //Explictly set the deploy motor position
-        deployMotor.setPosition(deployEncoder.getAbsolutePosition().getValue());
+        deployMotor.setPosition(deployEncoder.getAbsolutePosition().getValue().times(DEPLOY_MOTOR_TO_ENCODER_RATIO));
 
         retract();
     }

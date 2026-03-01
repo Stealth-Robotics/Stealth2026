@@ -83,6 +83,9 @@ public class ShooterSubsystem extends SubsystemBase {
         //Shooter motors configuration
         shooterConfig.Feedback.SensorToMechanismRatio = SHOOTER_MOTOR_TO_FLYWHEEL_RATIO;
 
+        shooterConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        shooterConfig.CurrentLimits.StatorCurrentLimit = 80;
+
         shooterConfig.Slot0.kP = SHOOTING_kP;
         shooterConfig.Slot0.kI = SHOOTING_kI;
         shooterConfig.Slot0.kD = SHOOTING_kD;
@@ -108,6 +111,9 @@ public class ShooterSubsystem extends SubsystemBase {
 
         hoodConfig.Feedback.FeedbackRemoteSensorID = hoodEncoder.getDeviceID();
         hoodConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+
+        hoodConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        hoodConfig.CurrentLimits.StatorCurrentLimit = 30;
 
         hoodConfig.Slot0.kP = HOOD_kP;
         hoodConfig.Slot0.kI = HOOD_kI;

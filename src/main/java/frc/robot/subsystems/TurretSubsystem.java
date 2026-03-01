@@ -54,6 +54,9 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig.Feedback.RotorToSensorRatio = TURRET_ROTOR_TO_SENSOR_RATIO;
         turretConfig.Feedback.SensorToMechanismRatio = TURRET_SENSOR_TO_MECHANISM_RATIO;
 
+        turretConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        turretConfig.CurrentLimits.StatorCurrentLimit = 60;
+
         turretConfig.Slot0.kP = kP;
         turretConfig.Slot0.kI = kI;
         turretConfig.Slot0.kD = kD;
