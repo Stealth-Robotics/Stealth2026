@@ -37,8 +37,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.018310546875;
-    private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.5;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.01806640625;
+    private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.75;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
     private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 8.0;
@@ -46,7 +46,7 @@ public class ShooterSubsystem extends SubsystemBase {
     //TODO: Find good tolerance
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 25;
 
-    private final double MAX_HOOD_DEGREES = 21;
+    private final double MAX_HOOD_DEGREES = 20.5;
     private final double MIN_HOOD_DEGREES = 0;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;
@@ -90,6 +90,16 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterConfig.Slot0.kS = SHOOTING_kS;
         shooterConfig.Slot0.kA = SHOOTING_kA;
 
+        shooterMotor1.getConfigurator().apply(shooterConfig);
+        shooterMotor2.getConfigurator().apply(shooterConfig);
+
+        //Cancoder configuration
+        hoodEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = HOOD_ENCODER_DISCONTINUTY_POINT;
+        hoodEncoderConfig.MagnetSensor.MagnetOffset = HOOD_ENCODER_MAGNET_OFFSET;
+        hoodEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
+
+        hoodEncoder.getConfigurator().apply(hoodEncoderConfig);
+
         //Hood motor configuration
         hoodConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
@@ -102,24 +112,14 @@ public class ShooterSubsystem extends SubsystemBase {
         hoodConfig.Slot0.kP = HOOD_kP;
         hoodConfig.Slot0.kI = HOOD_kI;
         hoodConfig.Slot0.kD = HOOD_kD;
-        
-        //Cancoder configuration
-        hoodEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = HOOD_ENCODER_DISCONTINUTY_POINT;
-        hoodEncoderConfig.MagnetSensor.MagnetOffset = HOOD_ENCODER_MAGNET_OFFSET;
-        hoodEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
 
-        //Apply device configs
-        shooterMotor1.getConfigurator().apply(shooterConfig);
-        shooterMotor2.getConfigurator().apply(shooterConfig);
-        
         hoodMotor.getConfigurator().apply(hoodConfig);
-        hoodEncoder.getConfigurator().apply(hoodEncoderConfig);
 
         //Set the other shooting motor to follow the other (but inverted)
-        shooterMotor2.setControl(new Follower(SHOOTER_MOTOR_1_ID, MotorAlignmentValue.Opposed));
+        shooterMotor2.setControl(new Follower(SHOOTER_MOTOR_1_ID, MotorAlignmentValue.Opposed)); 
 
-       //Explictly set the hood motor position on startup
-        hoodMotor.setPosition(hoodEncoder.getAbsolutePosition().getValue().div(HOOD_SENSOR_TO_MECHANISM_RATIO));
+        //Explictly set the hood motor position on startup
+        hoodMotor.setPosition(hoodEncoder.getAbsolutePosition().getValue().times(HOOD_ROTOR_TO_SENSOR_RATIO));
 
         //Home to zero
         setHoodDegrees(0.0);
@@ -190,7 +190,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
         DogLog.log("Shooter/shooter_rpm", (int) getRPM());
         DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
+        DogLog.log("Shooter/rpm_error", Math.abs(getRPM() - getTargetRPM()));
 
-        DogLog.log("Shooter/hood_angle", Math.round(hoodDegrees * 100.0) / 100.0);
+        DogLog.log("Shooter/hood_angle", hoodDegrees);
     }
 }

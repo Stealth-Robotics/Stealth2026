@@ -28,24 +28,23 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final MotionMagicVoltage deployController = new MotionMagicVoltage(0);
 
-    //TODO: Rezero encoder so that zero is when the intake is horizontal
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.305664;
 
     private final double DEPLOY_ENCODER_TO_MECHANISM_RATIO = 1.0;
     private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 52.0;
 
-    private final double TURRET_ENCODER_DISCONTINUTY_POINT = 1;
+    private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.651;
 
     private final double DEPLOYED_ROTATIONS = 0;
-    private final double RETRACTED_ROTATIONS = 0.29;
+    private final double RETRACTED_ROTATIONS = 0.302;
 
     //TODO: Tune MotionMagic & PID constants
-    private final double DEPLOY_kP = 0.0;
-    private final double DEPLOY_kI = 0.0;
+    private final double DEPLOY_kP = 10.0;
+    private final double DEPLOY_kI = 1.0;
     private final double DEPLOY_kD = 0.0;
     private final double DEPLOY_KG = 0.0;
-    private final double DEPLOY_MOTIONMAGIC_kACCELERATION = 2.0;
-    private final double DEPLOY_MOTIONMAGIC_kVELOCITY = 0.5;
+    private final double DEPLOY_MOTIONMAGIC_kACCELERATION = 100;
+    private final double DEPLOY_MOTIONMAGIC_kVELOCITY = 200;
 
     private final int ROLLER_MOTOR_ID = 16;
     private final int DEPLOY_MOTOR_ID = 17;
@@ -56,17 +55,21 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor = new TalonFX(DEPLOY_MOTOR_ID);
         deployEncoder = new CANcoder(DEPLOY_ENCODER_ID);
 
-        //CANCoder config
-        deployEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = TURRET_ENCODER_DISCONTINUTY_POINT;
-        deployEncoderConfig.MagnetSensor.MagnetOffset = DEPLOY_ENCODER_ZERO_OFFSET;
-        deployEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
-
         //Roller motor config
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         rollerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+
+        rollerMotor.getConfigurator().apply(rollerConfig);
+
+        //CANCoder config
+        deployEncoderConfig.MagnetSensor.MagnetOffset = DEPLOY_ENCODER_ZERO_OFFSET;
+        deployEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
+        deployEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = TURRET_ENCODER_DISCONTINUTY_POINT;
+
+        deployEncoder.getConfigurator().apply(deployEncoderConfig);
         
         //Deploy motor config
-        deployConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        deployConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
         deployConfig.Feedback.FeedbackRemoteSensorID = deployEncoder.getDeviceID();
@@ -85,11 +88,9 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.MotionMagic.MotionMagicAcceleration = DEPLOY_MOTIONMAGIC_kACCELERATION;
         deployConfig.MotionMagic.MotionMagicCruiseVelocity = DEPLOY_MOTIONMAGIC_kVELOCITY;
 
-        rollerMotor.getConfigurator().apply(rollerConfig);
         deployMotor.getConfigurator().apply(deployConfig);
-        deployEncoder.getConfigurator().apply(deployEncoderConfig);
 
-        //Explictly set the intake's deploy motor position on startup
+        //Explictly set the deploy motor position
         deployMotor.setPosition(deployEncoder.getAbsolutePosition().getValue());
 
         retract();
@@ -111,15 +112,15 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.setControl(deployController.withPosition(RETRACTED_ROTATIONS));
     }
 
-    private double getIntakeRotations() {
-        return deployMotor.getPosition().getValueAsDouble();
-    }
-
     @Override
     public void periodic() {
-        DogLog.log("Intake/roller_speed", rollerMotor.get());
-        DogLog.log("Intake/target_position", getIntakeRotations());
+        // DogLog.log("Intake/roller_speed", rollerMotor.get());
+        // DogLog.log("Intake/target_position", getIntakeRotations());
 
-        DogLog.log("Intake/intake_rotations", getIntakeRotations());
+        // DogLog.log("Intake/intake_rotations", getIntakeRotations());
+
+        DogLog.log("absolute_raw", deployEncoder.getAbsolutePosition().getValue());
+        DogLog.log("integrated", deployEncoder.getPosition().getValue());
+        DogLog.log("motor_position", deployMotor.getPosition().getValue());
     }
 }
