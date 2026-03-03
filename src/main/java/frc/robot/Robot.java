@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
 
 public class Robot extends TimedRobot {
@@ -40,6 +41,8 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledPeriodic() {
+        //Seed the Limelight 4's internal imu
+        LimelightHelpers.SetIMUMode("limelight-robot", 1);
     }
 
     @Override
@@ -48,6 +51,8 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousInit() {
+        LimelightHelpers.SetIMUMode("limelight-robot", 4);
+        
         ShiftTracker.start();
         
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();
@@ -67,6 +72,8 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopInit() {
+        LimelightHelpers.SetIMUMode("limelight-robot", 4);
+
         if (!ShiftTracker.isRunning()) {
             ShiftTracker.start();
         }
