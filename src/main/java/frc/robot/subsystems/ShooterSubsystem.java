@@ -37,7 +37,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.01806640625;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.01611328125;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.75;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
@@ -46,7 +46,7 @@ public class ShooterSubsystem extends SubsystemBase {
     //TODO: Find good tolerance
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 25;
 
-    private final double MAX_HOOD_DEGREES = 20.5;
+    private final double MAX_HOOD_DEGREES = 21;
     private final double MIN_HOOD_DEGREES = 0;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;
