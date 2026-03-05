@@ -19,6 +19,7 @@ import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
+import frc.robot.util.ZoneManager.FieldZone;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotTrajectoryCalculator;
 import frc.robot.util.ZoneManager;
@@ -78,13 +79,14 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateShootingState() {
-        shooter.setState(ShooterState.IDLE);
-        // if (ZoneManager.inHubZone())
-        //     shooter.setState(ShooterState.HUB_TRACKING);
-        // else if (ZoneManager.inPassingZone())
-        //     shooter.setState(ShooterState.PASSING);
-        // else
-        //     shooter.setState(ShooterState.IDLE);
+        FieldZone zone = ZoneManager.getZone();
+
+        if (zone.equals(FieldZone.HUB))
+            shooter.setState(ShooterState.HUB_TRACKING);
+        else if (zone.equals(FieldZone.LEFT_PASS) || zone.equals(FieldZone.RIGHT_PASS))
+            shooter.setState(ShooterState.PASSING);
+        else
+            shooter.setState(ShooterState.IDLE);
     }
 
     /**
@@ -120,7 +122,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command rotateRobotToShoot() {
-        return drive.goToPose(() -> drive.getPose().rotateBy(Rotation2d.fromDegrees(-shooter.turretLockError)));
+        return drive.goToPose(() -> drive.getPose().rotateBy(Rotation2d.fromDegrees(shooter.turretLockError)));
     }
 
     public Command seedFieldCentric() {
@@ -162,11 +164,7 @@ public class RobotSystem extends SubsystemBase {
         //Update the field telemetry's robot pose
         fieldTelemetry.setRobotPose(drive.getPose());
 
-        DogLog.log(
-            "Zone", 
-            (ZoneManager.inHubZone() ? "Hub" : 
-            (ZoneManager.inLeftPassingZone() ? "Left Pass" : 
-            (ZoneManager.inRightPassingZone()) ? "Right Pass" : "n/a")
-        ));
+        DogLog.log("Current Zone", ZoneManager.getZone().name());
+        DogLog.log("Turret Lock Error", shooter.turretLockError);
     }
 }

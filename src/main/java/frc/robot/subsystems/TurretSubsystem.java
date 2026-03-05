@@ -42,7 +42,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final double TURRET_SENSOR_TO_MECHANISM_RATIO = 1;
     private final double TURRET_ROTOR_TO_SENSOR_RATIO = 45;
 
-    private final double TURRET_ENCODER_MAGNET_OFFSET = 0.439697;
+    private final double TURRET_ENCODER_MAGNET_OFFSET = 0.22900390625;
 
     private final int TURRET_MOTOR_ID = 7;
     private final int TURRET_ENCODER_ID = 8;

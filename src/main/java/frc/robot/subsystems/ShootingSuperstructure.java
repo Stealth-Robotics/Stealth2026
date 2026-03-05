@@ -22,10 +22,11 @@ import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotTrajectoryCalculator;
 import frc.robot.util.ZoneManager;
+import frc.robot.util.ZoneManager.FieldZone;
 
 public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
-    private boolean applyIdle = false;
+    private boolean applyIdle = true;
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -160,7 +161,10 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
     private void pass() {
-        ShotParams params = ZoneManager.inLeftPassingZone() ? AllianceUtility.flipPose(leftPass) : AllianceUtility.flipPose(rightPass);
+        ShotParams params = 
+            ZoneManager.getZone().equals(FieldZone.LEFT_PASS) ? 
+            AllianceUtility.flipPose(leftPass) : AllianceUtility.flipPose(rightPass);
+            
         Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
         ShotTrajectoryCalculator.update(
@@ -200,7 +204,6 @@ public class ShootingSuperstructure extends SubsystemBase {
             case IDLE -> {
                 if (applyIdle) {
                     idleSubsystems();
-                    applyIdle = false;
                 }
             }
 

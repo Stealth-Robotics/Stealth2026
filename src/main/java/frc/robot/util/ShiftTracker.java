@@ -14,7 +14,10 @@ public class ShiftTracker {
     private static Alliance ourAlliance = null;
     private static Alliance allianceThatWonAuto = null;
 
-    private static final double MIN_SHOOT_TIME_SECONDS = 0.8;
+    /* This constant stands for the amount of time that you can shoot before it's legal
+     * And still have the fuel count in the hub
+    */
+    private static final double SCORING_DELAY_SECONDS = 0.8;
 
     //Just in case we start teleop without auto and we need to correctly offset the time
     private static double timeOffset = 0;
@@ -87,23 +90,23 @@ public class ShiftTracker {
             case AUTO -> { return true; }
 
             case AUTO_TELE_TRANSITION -> {
-                if (!weWonAuto() && getTimeLeftInShift() <= MIN_SHOOT_TIME_SECONDS) return true;
+                if (!weWonAuto() && getTimeLeftInShift() <= SCORING_DELAY_SECONDS) return true;
                 else return false;
             }
 
             case TRANSITION_SHIFT -> {
-                if (weWonAuto()) return getTimeLeftInShift() >= MIN_SHOOT_TIME_SECONDS;
+                if (weWonAuto()) return getTimeLeftInShift() >= SCORING_DELAY_SECONDS;
                 else return true;
             }
 
             case SHIFT1, SHIFT3 -> {
-                if (weWonAuto()) return getTimeLeftInShift() <= MIN_SHOOT_TIME_SECONDS;
-                else return getTimeLeftInShift() >= MIN_SHOOT_TIME_SECONDS;
+                if (weWonAuto()) return getTimeLeftInShift() <= SCORING_DELAY_SECONDS;
+                else return getTimeLeftInShift() >= SCORING_DELAY_SECONDS;
             }
 
             case SHIFT2, SHIFT4 -> {
-                if (weWonAuto()) return getTimeLeftInShift() >= MIN_SHOOT_TIME_SECONDS;
-                else return getTimeLeftInShift() <= MIN_SHOOT_TIME_SECONDS;
+                if (weWonAuto()) return getTimeLeftInShift() >= SCORING_DELAY_SECONDS;
+                else return getTimeLeftInShift() <= SCORING_DELAY_SECONDS;
             }
 
             case ENDGAME, UNKNOWN -> { return true; }

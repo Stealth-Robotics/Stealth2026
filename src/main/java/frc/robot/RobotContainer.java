@@ -78,7 +78,7 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selecting on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addRoutine("TestAuto", () -> autos.testAuto());
+        autoChooser.addRoutine("OneCycleWin", () -> autos.oneCycle());
     }
 
     private Command driverRumble() {

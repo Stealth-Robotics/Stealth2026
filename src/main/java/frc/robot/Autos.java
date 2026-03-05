@@ -26,7 +26,11 @@ public class Autos {
         this.climb = climb;
     }
 
-    public AutoRoutine testAuto() {
+    /*
+     * Goes to center and does one sweep and then comes back and shoots on the move 
+     * and ends up in climb position.
+     */
+    public AutoRoutine oneCycle() {
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
         AutoTrajectory start = routine.trajectory("ShootingAuto");
