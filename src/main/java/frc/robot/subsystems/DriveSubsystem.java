@@ -256,7 +256,7 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     }
 
     public ChassisSpeeds getFieldRelativeVelocity() {
-        return ChassisSpeeds.fromRobotRelativeSpeeds(getState().Speeds, getPigeon2().getRotation2d());
+        return ChassisSpeeds.fromRobotRelativeSpeeds(getState().Speeds, getPose().getRotation());
     }
 
     public AutoFactory createAutoFactory() {

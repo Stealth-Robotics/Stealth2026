@@ -67,8 +67,8 @@ public class RobotContainer {
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
 
-        driverController.rightBumper().whileTrue(robot.shoot());
-        driverController.leftBumper().whileTrue(robot.clearTransfer());
+        operatorController.rightBumper().whileTrue(robot.shoot());
+        operatorController.leftBumper().whileTrue(robot.clearTransfer());
 
         driverController.a().whileTrue(robot.rotateRobotToShoot());
         driverController.y().whileTrue(robot.driveToClimb());

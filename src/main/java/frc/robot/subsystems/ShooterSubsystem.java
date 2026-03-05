@@ -43,8 +43,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
     private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 8.0;
 
-    //TODO: Find good tolerance
-    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 25;
+    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 60;
+    private final double MAX_POSSIBLE_RPM = 3800;
 
     private final double MAX_HOOD_DEGREES = 21.3;
     private final double MIN_HOOD_DEGREES = 0;
@@ -160,7 +160,7 @@ public class ShooterSubsystem extends SubsystemBase {
      * @return Whether or not the shooter is at its target velocity (within a tolerance)
      */
     public boolean isShooterAtVelocity() {
-        return Math.abs(getRPM() - getTargetRPM()) < SHOOTER_VELOCITY_TOLERANCE_RPM;
+        return MathUtil.clamp(Math.abs(getRPM() - getTargetRPM()), 0, MAX_POSSIBLE_RPM) < SHOOTER_VELOCITY_TOLERANCE_RPM;
     }
 
     /**

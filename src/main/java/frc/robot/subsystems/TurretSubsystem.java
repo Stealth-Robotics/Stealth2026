@@ -28,7 +28,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kACCELERATION = 100.0;
     private final double kCRUISE_VELOCITY = 200.0;
     private final double kP = 80.0;
-    private final double kI = 1.0;
+    private final double kI = 15.0;
     private final double kD = 0.0;
 
     private final double TURRET_ANGLE_TOLERANCE_DEGREES = 5;

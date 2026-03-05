@@ -19,6 +19,12 @@ public class ShotTrajectoryCalculator {
     private static final double mechanismLatency = Units.millisecondsToSeconds(0);
 
     private static final InterpolatingDoubleTreeMap distanceToRPM = new InterpolatingDoubleTreeMap() {{
+        // put(2.03, 2700.0);
+        // put(2.5, 2700.0);
+        // put(3.0, 2700.0);
+        // put(3.25, 2900.0);
+        // put(3.59, 3000.0);
+        // put(5.25, 3700.0);
         put(2.18, 2700.0);
         put(2.89, 3000.0);
         put(4.299, 3400.0);
@@ -48,8 +54,11 @@ public class ShotTrajectoryCalculator {
         
         //Estimate the robot's velocity assuming a constant 20 ms periodic loop
         Translation2d robotAcceleration = new Translation2d(
-            (robotVelocity.vxMetersPerSecond - previousRobotVx) / Units.millisecondsToSeconds(20),
-            (robotVelocity.vyMetersPerSecond - previousRobotVy) / Units.millisecondsToSeconds(20)
+            //TODO: Commented out until regular SOTM is working
+            // (robotVelocity.vxMetersPerSecond - previousRobotVx) / Units.millisecondsToSeconds(20),
+            // (robotVelocity.vyMetersPerSecond - previousRobotVy) / Units.millisecondsToSeconds(20)
+            0,
+            0
         );
 
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)

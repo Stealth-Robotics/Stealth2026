@@ -13,8 +13,8 @@ public class TransferSubsystem extends SubsystemBase {
     private final TalonFXConfiguration spindexerConfig = new TalonFXConfiguration();
     private final TalonFXConfiguration feederConfig = new TalonFXConfiguration();
 
-    private final double SPINNING_SPEED = 0.75;
-    private final double FEEDING_SPEED = 1;
+    private final double SPINNING_SPEED = 1.0;
+    private final double FEEDING_SPEED = 1.0;
 
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
@@ -26,14 +26,8 @@ public class TransferSubsystem extends SubsystemBase {
         spindexerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         spindexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
-        spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        spindexerConfig.CurrentLimits.StatorCurrentLimit = 60;
-
         feederConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
-
-        feederConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        feederConfig.CurrentLimits.StatorCurrentLimit = 60;
 
         spindexerMotor.getConfigurator().apply(spindexerConfig);
         feederMotor.getConfigurator().apply(feederConfig);
