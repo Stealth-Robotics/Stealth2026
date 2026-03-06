@@ -2,6 +2,8 @@ package frc.robot.subsystems;
 
 import java.util.function.Supplier;
 
+import javax.lang.model.util.ElementScanner14;
+
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
 import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.signals.UpdateModeValue;
@@ -16,9 +18,11 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.AllianceUtility;
+import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotTrajectoryCalculator;
 import frc.robot.util.ZoneManager;
@@ -55,7 +59,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    //TODO: Tune these values to actual targets
     private final ShotParams leftPass = new ShotParams(new Translation3d(1.098, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(1.098, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
@@ -105,10 +108,17 @@ public class ShootingSuperstructure extends SubsystemBase {
                 transfer.stopFeeding();
             }
 
-        }).finallyDo(() -> {
+        })
+        .finallyDo(() -> {
             shooter.coastShooter();
             transfer.stopSpinning();
             transfer.stopFeeding();
+        })
+        .onlyWhile(() -> {
+            if (SmartDashboard.getBoolean("Override ShiftTracker", false))
+                return true;
+
+            return (state.equals(ShooterState.HUB_TRACKING) && ShiftTracker.canScore()) || state.equals(ShooterState.PASSING);
         });
     }
 

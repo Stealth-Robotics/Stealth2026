@@ -98,7 +98,6 @@ public class ShotTrajectoryCalculator {
             fuelZVelo
         );
 
-        //TODO: Not sure whether to use robot pose before or after latency calculations??
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
 
         double baseRPM = distanceToRPM.get(metersToGoal); 
