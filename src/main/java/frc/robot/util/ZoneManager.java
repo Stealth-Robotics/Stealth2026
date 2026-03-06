@@ -1,9 +1,12 @@
 package frc.robot.util;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 
 public class ZoneManager {
     private static Pose2d robotPose = new Pose2d();
+    private static ChassisSpeeds robotFieldSpeeds = new ChassisSpeeds();
 
     /* All RectZones should be defined on the Blue Alliance 
      * and are automatically flipped to the Red Alliance if needed 
@@ -17,6 +20,8 @@ public class ZoneManager {
     private static final RectZone leftTrench = new RectZone(4, 6.87, 5.2, 8.07);
     private static final RectZone rightTrench = new RectZone(4, 0, 5.2, 1.25);
 
+    private static final double ROBOT_FUTURE_POSE_PREDICTION_SECONDS = 0.5;
+
     public enum FieldZone {
         HUB,
         LEFT_PASS,
@@ -25,8 +30,9 @@ public class ZoneManager {
         UNKNOWN
     }
     
-    public static void updateWithRobotPose(Pose2d newRobotPose) {
+    public static void updateRobotPositionAndVelocity(Pose2d newRobotPose, ChassisSpeeds newRobotSpeeds) {
         robotPose = newRobotPose;
+        robotFieldSpeeds = newRobotSpeeds;
     }
 
     public static FieldZone getZone() {
@@ -36,7 +42,9 @@ public class ZoneManager {
             return FieldZone.LEFT_PASS;
         else if (inRightPassingZone())
             return FieldZone.RIGHT_PASS;
-        else if (inLeftTrenchZone() || inRightTrenchZone())
+        else if
+                (inLeftTrenchZone() || inRightTrenchZone() ||
+                inLeftTrenchZoneFuture() || inRightTrenchZoneFuture())
             return FieldZone.TRENCH;
         else
             return FieldZone.UNKNOWN;
@@ -60,5 +68,28 @@ public class ZoneManager {
 
     private static boolean inRightTrenchZone() {
         return AllianceUtility.flipRectZone(rightTrench).contains(robotPose.getTranslation());
+    }
+
+    /*
+     * Checks if we are heading towards the trench zone in the next fraction of a second
+     */
+    private static boolean inLeftTrenchZoneFuture() {
+        return AllianceUtility.flipRectZone(leftTrench).contains(getFutureRobotPose());
+    }
+
+    /*
+     * Checks if we are heading towards the trench zone in the next fraction of a second
+     */
+    private static boolean inRightTrenchZoneFuture() {
+        return AllianceUtility.flipRectZone(rightTrench).contains(getFutureRobotPose());
+    }
+
+    private static Translation2d getFutureRobotPose() {
+        return robotPose.getTranslation().plus(
+            new Translation2d(
+                robotFieldSpeeds.vxMetersPerSecond * ROBOT_FUTURE_POSE_PREDICTION_SECONDS,
+                robotFieldSpeeds.vyMetersPerSecond * ROBOT_FUTURE_POSE_PREDICTION_SECONDS
+            )
+        );
     }
 }

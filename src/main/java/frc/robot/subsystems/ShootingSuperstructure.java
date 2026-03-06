@@ -21,6 +21,8 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotParams;
@@ -133,7 +135,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command autonomousShoot() {
-        return shoot().until(() -> !isShooting());
+        Command stopCondition = new WaitCommand(MAX_SHOT_SPACING_SECONDS).andThen(new WaitUntilCommand(() -> !isShooting()));
+        return shoot().withDeadline(stopCondition);
     }
 
     /**
@@ -198,7 +201,7 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
     private boolean readyToShoot() {
-        return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isTurretNearAngle();
+        return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady();
     }
 
     /**

@@ -7,10 +7,16 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.RepeatCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
@@ -35,7 +41,8 @@ public class RobotSystem extends SubsystemBase {
 
     private final Field2d fieldTelemetry = new Field2d();
 
-    private final static double MIN_TAG_REJECTION_METERS = 4;
+    private final double MIN_TAG_REJECTION_METERS = 4;
+    private final String LOCALIZATION_LIMELIGHT = "limelight-robot";
 
     public RobotSystem(Command driverRumble, Command operatorRumble) {
         drive = TunerConstants.createDrivetrain();
@@ -48,17 +55,30 @@ public class RobotSystem extends SubsystemBase {
 
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
+
+        //Trigger to rumble gamepad when it is okay to shoot into our hub
+        Trigger scoreRumble = new Trigger(() -> DriverStation.isTeleop() && ShiftTracker.canScore())
+            .whileTrue(
+                new RepeatCommand(
+                    new ParallelCommandGroup(
+                        operatorRumble.andThen(new WaitCommand(1.5)),
+                        driverRumble.andThen(new WaitCommand(1.5))
+                    )
+                )
+            );
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy) {
+        final double INTAKE_SPEED_PERCENTAGE = 0.8;
+
         Command intakeDefaultCommand = run(() -> {
             if (deploy.getAsBoolean()) {
                 intake.deploy();
-                intake.setRollerSpeed(rollerSpeed.getAsDouble() * 0.8);
+                intake.setRollerSpeed(rollerSpeed.getAsDouble() * INTAKE_SPEED_PERCENTAGE);
             }
             else {
-                if (rollerSpeed.getAsDouble() < -0.01) {
-                    intake.setRollerSpeed(rollerSpeed.getAsDouble() * 0.8);
+                if (rollerSpeed.getAsDouble() < -0.5) {
+                    intake.setRollerSpeed(rollerSpeed.getAsDouble() * INTAKE_SPEED_PERCENTAGE);
                 }
                 else intake.stop();
                 
@@ -122,7 +142,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command rotateRobotToShoot() {
-        return drive.goToPose(() -> drive.getPose().rotateBy(Rotation2d.fromDegrees(shooter.turretLockError)));
+        return drive.rotateToAngle(() -> new Rotation2d(Math.toRadians(shooter.turretLockError)));
     }
 
     public Command seedFieldCentric() {
@@ -141,11 +161,11 @@ public class RobotSystem extends SubsystemBase {
 
     private void updateOdometryEstimateWithLimelight() {
         double imuAngle = drive.getPose().getRotation().getDegrees();
-        LimelightHelpers.SetRobotOrientation("limelight-robot", imuAngle, 0, 0, 0, 0, 0);
+        LimelightHelpers.SetRobotOrientation(LOCALIZATION_LIMELIGHT, imuAngle, 0, 0, 0, 0, 0);
 
         double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
         if (Math.abs(robotAngularVelocity) < Math.PI) {
-            PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight-robot");
+            PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LOCALIZATION_LIMELIGHT);
             if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
                 //TODO: Tune standard deviations
                 drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7,.7,9999999));
@@ -156,7 +176,7 @@ public class RobotSystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        ZoneManager.updateWithRobotPose(drive.getPose());
+        ZoneManager.updateRobotPositionAndVelocity(drive.getPose(), drive.getFieldRelativeVelocity());
 
         updateShootingState();
         updateOdometryEstimateWithLimelight();

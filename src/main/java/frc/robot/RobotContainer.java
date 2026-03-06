@@ -59,9 +59,9 @@ public class RobotContainer {
         );
 
         robot.setIntakeDefaultCommand(
-            () -> driverController.getLeftTriggerAxis() > 0.01
+            () -> driverController.rightTrigger().getAsBoolean()
                 ? -driverController.getLeftTriggerAxis() : driverController.getRightTriggerAxis(), 
-            () -> driverController.getRightTriggerAxis() > 0.01
+            () -> driverController.rightTrigger().getAsBoolean()
         );
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
@@ -70,7 +70,7 @@ public class RobotContainer {
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
 
-        driverController.a().whileTrue(robot.rotateRobotToShoot());
+        operatorController.a().whileTrue(robot.rotateRobotToShoot());
         driverController.y().whileTrue(robot.driveToClimb());
     }
 
