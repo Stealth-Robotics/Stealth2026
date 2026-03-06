@@ -270,6 +270,21 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         );
     }
 
+    public Command rotateToAngle(Supplier<Rotation2d> targetRot) {
+        return run(() -> {
+            var pose = getPose();
+            ChassisSpeeds targetSpeeds = new ChassisSpeeds();
+
+            targetSpeeds.omegaRadiansPerSecond += m_pathThetaController.calculate(
+                pose.getRotation().getRadians(), targetRot.get().getRadians()
+            );
+
+            setControl(
+                m_pathApplyFieldSpeeds.withSpeeds(targetSpeeds)
+            );
+        }).until(() -> Math.abs(getPose().getRotation().getDegrees() - targetRot.get().getDegrees()) < ANGLE_TOLERANCE_DEGREES);
+    }
+
     public Command goToPose(Supplier<Pose2d> targetPose) {
         return run(() -> {
             var pose = getPose();

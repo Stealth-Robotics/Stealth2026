@@ -55,7 +55,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    //TODO: Tune these values to actual targets
     private final ShotParams leftPass = new ShotParams(new Translation3d(1.098, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(1.098, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
@@ -188,7 +187,7 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
     private boolean readyToShoot() {
-        return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isTurretNearAngle();
+        return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady();
     }
 
     /**

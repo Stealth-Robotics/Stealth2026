@@ -1,5 +1,7 @@
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Radians;
+
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
@@ -122,7 +124,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command rotateRobotToShoot() {
-        return drive.goToPose(() -> drive.getPose().rotateBy(Rotation2d.fromDegrees(shooter.turretLockError)));
+        return drive.rotateToAngle(() -> new Rotation2d(Math.toRadians(shooter.turretLockError)));
     }
 
     public Command seedFieldCentric() {

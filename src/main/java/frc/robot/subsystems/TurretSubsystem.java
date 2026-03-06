@@ -31,7 +31,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kI = 15.0;
     private final double kD = 0.0;
 
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 5;
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 2;
 
     public final double MAX_TURRET_DEGREES = 121;
     private final double TURRET_HOME_DEGREES = 0;
@@ -88,8 +88,12 @@ public class TurretSubsystem extends SubsystemBase {
         ));
     }
 
-    public boolean isTurretNearAngle() {
-        return Math.abs(getTurretAngleDegrees() - getTargetAngleDegrees()) < TURRET_ANGLE_TOLERANCE_DEGREES;
+    public boolean isReady() {
+        var target = getTargetAngleDegrees();
+        boolean targetInRange = target < MAX_TURRET_DEGREES && target > MIN_TURRET_DEGREES;
+
+        return targetInRange &&
+            Math.abs(getTurretAngleDegrees() - target) < TURRET_ANGLE_TOLERANCE_DEGREES;
     }
 
     public double getTurretAngleDegrees() {
