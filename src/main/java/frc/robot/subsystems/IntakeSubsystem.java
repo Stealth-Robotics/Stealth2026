@@ -6,6 +6,7 @@ import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
@@ -35,10 +36,11 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOYED_ROTATIONS = 0;
     private final double RETRACTED_ROTATIONS = 0.3;
 
-    private final double DEPLOY_kP = 25.0;
+    private final double DEPLOY_kP = 20.0;
     private final double DEPLOY_kI = 0.0;
-    private final double DEPLOY_kD = 0.0;
+    private final double DEPLOY_kD = 0.25;
     private final double DEPLOY_kV = 100;
+    private final double DEPLOY_kG = 0.25;
 
     private final int ROLLER_MOTOR_ID = 16;
     private final int DEPLOY_MOTOR_ID = 17;
@@ -64,7 +66,7 @@ public class IntakeSubsystem extends SubsystemBase {
         
         //Deploy motor config
         deployConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
-        deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         deployConfig.Feedback.FeedbackRemoteSensorID = deployEncoder.getDeviceID();
         deployConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
@@ -75,15 +77,15 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         deployConfig.CurrentLimits.StatorCurrentLimit = 100;
 
+        deployConfig.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
+
         deployConfig.Slot0.kP = DEPLOY_kP;
         deployConfig.Slot0.kI = DEPLOY_kI;
         deployConfig.Slot0.kD = DEPLOY_kD;
         deployConfig.Slot0.kV = DEPLOY_kV;
+        deployConfig.Slot0.kG = DEPLOY_kG;
 
         deployMotor.getConfigurator().apply(deployConfig);
-
-        //Explictly set the deploy motor position
-        deployMotor.setPosition(deployEncoder.getAbsolutePosition().getValue().times(DEPLOY_MOTOR_TO_ENCODER_RATIO));
 
         retract();
     }

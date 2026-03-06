@@ -18,6 +18,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotTrajectoryCalculator;
@@ -122,7 +124,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command autonomousShoot() {
-        return shoot().until(() -> !isShooting());
+        Command stopCondition = new WaitCommand(MAX_SHOT_SPACING_SECONDS).andThen(new WaitUntilCommand(() -> !isShooting()));
+        return shoot().withDeadline(stopCondition);
     }
 
     /**
