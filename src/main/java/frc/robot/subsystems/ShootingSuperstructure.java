@@ -54,11 +54,14 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
     private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2;
+    private final double UPPER_PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 5;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private final ShotParams leftPass = new ShotParams(new Translation3d(1.098, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams rightPass = new ShotParams(new Translation3d(1.098, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams driverStation1Low = new ShotParams(new Translation3d(0.734,7.00,0.200), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams driverStation2Low = new ShotParams(new Translation3d(0.734,5.10,0.200), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams driverStation3Low = new ShotParams(new Translation3d(0.734,2.20,0.200), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private PassingTarget passingTarget = PassingTarget.DRIVER_STATION_1;
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
@@ -68,6 +71,12 @@ public class ShootingSuperstructure extends SubsystemBase {
         IDLE,
         PASSING,
         HUB_TRACKING
+    }
+
+    public enum PassingTarget {
+        DRIVER_STATION_1,
+        DRIVER_STATION_2,
+        DRIVER_STATION_3
     }
 
     public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier) {
@@ -163,9 +172,16 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
     private void pass() {
-        ShotParams params = 
-            ZoneManager.getZone().equals(FieldZone.LEFT_PASS) ? 
-            AllianceUtility.flipPose(leftPass) : AllianceUtility.flipPose(rightPass);
+        ShotParams params = driverStation1Low;
+        switch(passingTarget) {
+            case DRIVER_STATION_1: params = AllianceUtility.flipPose(driverStation1Low); break;
+            case DRIVER_STATION_2: params = AllianceUtility.flipPose(driverStation2Low); break;
+            case DRIVER_STATION_3: params = AllianceUtility.flipPose(driverStation3Low); break;
+        }
+        //TODO: replace collision logic
+        if(false) {
+            params = new ShotParams(params.target(), UPPER_PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+        }
             
         Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
