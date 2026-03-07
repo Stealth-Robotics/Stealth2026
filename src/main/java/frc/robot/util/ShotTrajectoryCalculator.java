@@ -30,20 +30,14 @@ public class ShotTrajectoryCalculator {
     private static final InterpolatingDoubleTreeMap timeOfFlightSecondsMap = new InterpolatingDoubleTreeMap();
 
     static {
-        hoodAngleDegreesMap.put(2.18, 8.0);
-        hoodAngleDegreesMap.put(2.89, 12.0);
-        hoodAngleDegreesMap.put(4.30, 17.0);
-        hoodAngleDegreesMap.put(5.30, 21.0);
+        hoodAngleDegreesMap.put(1.112, 8.0);
+        hoodAngleDegreesMap.put(4.438, 21.0);
 
-        flywheelRPMMap.put(2.18, 2700.0);
-        flywheelRPMMap.put(2.89, 3000.0);
-        flywheelRPMMap.put(4.30, 3400.0);
-        flywheelRPMMap.put(5.30, 3800.0);
+        flywheelRPMMap.put(1.112, 2700.0);
+        flywheelRPMMap.put(4.438, 3800.0);
 
-        timeOfFlightSecondsMap.put(2.18, 0.45);
-        timeOfFlightSecondsMap.put(2.89, 0.60);
-        timeOfFlightSecondsMap.put(4.30, 0.85);
-        timeOfFlightSecondsMap.put(5.30, 1.05);
+        timeOfFlightSecondsMap.put(1.112, 0.90);
+        timeOfFlightSecondsMap.put(4.438, 1.16);
     }
 
     public record ShotParameters(
@@ -110,8 +104,12 @@ public class ShotTrajectoryCalculator {
         // Field-relative angle from the lookahead turret position toward the target
         double turretAngleDegrees = target.minus(lookaheadTurretPos).getAngle().getDegrees();
 
-        DogLog.log("ShotCalculator/lookaheadTurretX", lookaheadTurretPos.getX());
-        DogLog.log("ShotCalculator/lookaheadTurretY", lookaheadTurretPos.getY());
+        // Reverse the turret offset to get the robot center at lookahead time
+        Translation2d robotToTurretField = ROBOT_TO_TURRET.rotateBy(phasedPose.getRotation());
+        Translation2d lookaheadRobotCenter = lookaheadTurretPos.minus(robotToTurretField);
+        Pose2d lookaheadPose = new Pose2d(lookaheadRobotCenter, phasedPose.getRotation());
+
+        DogLog.log("ShotCalculator/LookaheadPose", lookaheadPose);
         DogLog.log("ShotCalculator/lookaheadDistance", lookaheadDistance);
 
         return new ShotParameters(
