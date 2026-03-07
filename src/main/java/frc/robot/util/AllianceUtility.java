@@ -2,7 +2,7 @@ package frc.robot.util;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
@@ -33,12 +33,11 @@ public class AllianceUtility {
         return original;
     }
 
-    public static Translation3d flipPose(Translation3d original) {
+    public static Translation2d flipPose(Translation2d original) {
         if (latestAlliance.equals(Alliance.Red)) {
-            return new Translation3d(
+            return new Translation2d(
                 FIELD_CENTER_POINT.getX() + (FIELD_CENTER_POINT.getX() - original.getX()),
-                FIELD_CENTER_POINT.getY() + (FIELD_CENTER_POINT.getY() - original.getY()), 
-                original.getZ()
+                FIELD_CENTER_POINT.getY() + (FIELD_CENTER_POINT.getY() - original.getY())
             );
         }
         return original;
@@ -46,7 +45,7 @@ public class AllianceUtility {
 
     public static ShotParams flipPose(ShotParams original) {
         if (latestAlliance.equals(Alliance.Red)) {
-            return new ShotParams(flipPose(original.target()), original.maxTrajectoryHeight());
+            return new ShotParams(flipPose(original.target()));
         }
         return original;
     }

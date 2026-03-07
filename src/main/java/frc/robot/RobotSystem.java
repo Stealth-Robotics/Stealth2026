@@ -34,7 +34,6 @@ import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
 import frc.robot.util.ShiftTracker;
-import frc.robot.util.ShotTrajectoryCalculator;
 import frc.robot.util.ZoneManager;
 
 public class RobotSystem extends SubsystemBase {
@@ -54,7 +53,7 @@ public class RobotSystem extends SubsystemBase {
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
-        shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
+        shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getRobotRelativeVelocity());
         climb = new ClimbSubsystem();
         led = new LEDSubsystem();
 
@@ -182,7 +181,6 @@ public class RobotSystem extends SubsystemBase {
             if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
                 //TODO: Tune standard deviations
                 drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7,.7,9999999));
-                ShotTrajectoryCalculator.updateVisionLatency(poseEstimate.latency);
             }
         }
     }

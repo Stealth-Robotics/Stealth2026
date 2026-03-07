@@ -2,8 +2,6 @@ package frc.robot.subsystems;
 
 import java.util.function.Supplier;
 
-import javax.lang.model.util.ElementScanner14;
-
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
 import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.signals.UpdateModeValue;
@@ -12,10 +10,7 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -27,6 +22,7 @@ import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotTrajectoryCalculator;
+import frc.robot.util.ShotTrajectoryCalculator.ShotParameters;
 import frc.robot.util.ZoneManager;
 import frc.robot.util.ZoneManager.FieldZone;
 
@@ -41,8 +37,11 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final Supplier<Pose2d> robotPoseSupplier;
     private final Supplier<ChassisSpeeds> robotVelocitySupplier;
 
-    //The error of the turret if the target angle is beyond its limits
+    // The error of the turret if the target angle is beyond its limits
     public double turretLockError = 0;
+
+    // Tracks whether the last computed shot was within a valid distance range
+    private boolean lastShotValid = false;
 
     //TODO: Find maximum time in between shots when rapidly shooting
     private final double MAX_SHOT_SPACING_SECONDS = 0.75;
@@ -56,15 +55,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
 
-    private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
-    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2;
+    private final ShotParams hub = new ShotParams(new Translation2d(4.645, 4.034));
 
-    private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
-
-    private final ShotParams leftPass = new ShotParams(new Translation3d(1.098, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams rightPass = new ShotParams(new Translation3d(1.098, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-
-    private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
+    private final ShotParams leftPass = new ShotParams(new Translation2d(1.098, 6.84));
+    private final ShotParams rightPass = new ShotParams(new Translation2d(1.098, 1.16));
 
     private final int CAN_RANGE_ID = 15;
 
@@ -99,8 +93,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public Command shoot() {
         return run(() -> {
-            shooter.spinToRPM(ShotTrajectoryCalculator.getTargetFlywheelRPM());
-
             if (readyToShoot()) {
                 transfer.spin();
                 transfer.feed();
@@ -151,18 +143,19 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private void trackHub() {
         ShotParams params = AllianceUtility.flipPose(hub);
-        Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
+        Pose2d robotPose = robotPoseSupplier.get();
 
-        ShotTrajectoryCalculator.update(
-            robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
+        ShotParameters shot = ShotTrajectoryCalculator.getInstance().calculate(
+            robotPose,
             robotVelocitySupplier.get(),
-            params.target(),
-            params.maxTrajectoryHeight()
+            params.target()
         );
 
-        shooter.setHoodDegrees(ShotTrajectoryCalculator.getHoodAngle());
+        lastShotValid = shot.isValid();
+        shooter.spinToRPM(shot.flywheelRPM());
+        shooter.setHoodDegrees(shot.hoodAngleDegrees());
 
-        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
+        double turretTarget = robotPose.getRotation().getDegrees() - shot.turretAngleDegrees();
         turret.setTargetDegrees(turretTarget);
 
         calculateTurretLockError(turretTarget);
@@ -172,22 +165,23 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
     private void pass() {
-        ShotParams params = 
-            ZoneManager.getZone().equals(FieldZone.LEFT_PASS) ? 
+        ShotParams params =
+            ZoneManager.getZone().equals(FieldZone.LEFT_PASS) ?
             AllianceUtility.flipPose(leftPass) : AllianceUtility.flipPose(rightPass);
-            
-        Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
-        ShotTrajectoryCalculator.update(
-            robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
+        Pose2d robotPose = robotPoseSupplier.get();
+
+        ShotParameters shot = ShotTrajectoryCalculator.getInstance().calculate(
+            robotPose,
             robotVelocitySupplier.get(),
-            params.target(),
-            params.maxTrajectoryHeight()
+            params.target()
         );
 
-        shooter.setHoodDegrees(ShotTrajectoryCalculator.getHoodAngle());
+        lastShotValid = shot.isValid();
+        shooter.spinToRPM(shot.flywheelRPM());
+        shooter.setHoodDegrees(shot.hoodAngleDegrees());
 
-        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
+        double turretTarget = robotPose.getRotation().getDegrees() - shot.turretAngleDegrees();
         turret.setTargetDegrees(turretTarget);
 
         calculateTurretLockError(turretTarget);
@@ -200,10 +194,11 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     /**
-     * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
+     * Make sure that we are in a shooting mode, within a valid shot distance,
+     * and the subsystems are within an acceptable tolerance.
      */
     private boolean readyToShoot() {
-        return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady();
+        return !state.equals(ShooterState.IDLE) && lastShotValid && shooter.isShooterAtVelocity() && turret.isReady();
     }
 
     /**

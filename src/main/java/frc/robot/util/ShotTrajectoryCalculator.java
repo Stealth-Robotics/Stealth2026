@@ -1,130 +1,124 @@
 package frc.robot.util;
 
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
+import dev.doglog.DogLog;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.util.Units;
 
 public class ShotTrajectoryCalculator {
-    private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
+    private static ShotTrajectoryCalculator instance;
 
-    private static final double systemLatency = Units.millisecondsToSeconds(20);
-    private static double visionLatency = 0;
+    // Offset from robot center to turret center, in robot-relative frame (meters).
+    // x = 0.19m forward, y = -0.2m right.
+    public static final Translation2d ROBOT_TO_TURRET = new Translation2d(0.19, -0.2);
 
-    //Time needed for ball to travel through feeder towards the flywheel
-    private static final double mechanismLatency = Units.millisecondsToSeconds(0);
+    // Accounts for processing/CAN latency before the shot is taken
+    private static final double PHASE_DELAY_SECONDS = 0.03;
 
-    private static final InterpolatingDoubleTreeMap distanceToRPM = new InterpolatingDoubleTreeMap() {{
-        // put(2.03, 2700.0);
-        // put(2.5, 2700.0);
-        // put(3.0, 2700.0);
-        // put(3.25, 2900.0);
-        // put(3.59, 3000.0);
-        // put(5.25, 3700.0);
-        put(2.18, 2700.0);
-        put(2.89, 3000.0);
-        put(4.299, 3400.0);
-        put(5.3, 3800.0);
-    }};
+    // Turret-to-target distance (meters) bounds for a valid shot
+    private static final double MIN_DISTANCE = 1.5;
+    private static final double MAX_DISTANCE = 6.0;
 
-    //Variables that store the latest calculated values needed to perform a shot
-    private static double targetFlywheelRPM = 0.0;
-    private static double targetTurretAngle = 0.0;
-    private static double targetHoodAngle = 0.0;
+    // Empirical tables indexed by 2D turret-to-target distance (meters).
+    // TODO: Replace with tuned values from on-field testing.
+    private static final InterpolatingDoubleTreeMap hoodAngleDegreesMap = new InterpolatingDoubleTreeMap();
+    private static final InterpolatingDoubleTreeMap flywheelRPMMap = new InterpolatingDoubleTreeMap();
+    private static final InterpolatingDoubleTreeMap timeOfFlightSecondsMap = new InterpolatingDoubleTreeMap();
 
-    private static double previousRobotVx = 0.0;
-    private static double previousRobotVy = 0.0;
+    static {
+        hoodAngleDegreesMap.put(2.18, 8.0);
+        hoodAngleDegreesMap.put(2.89, 12.0);
+        hoodAngleDegreesMap.put(4.30, 17.0);
+        hoodAngleDegreesMap.put(5.30, 21.0);
 
-    public static void updateVisionLatency(double ms) {
-        visionLatency = Units.millisecondsToSeconds(ms);
+        flywheelRPMMap.put(2.18, 2700.0);
+        flywheelRPMMap.put(2.89, 3000.0);
+        flywheelRPMMap.put(4.30, 3400.0);
+        flywheelRPMMap.put(5.30, 3800.0);
+
+        timeOfFlightSecondsMap.put(2.18, 0.45);
+        timeOfFlightSecondsMap.put(2.89, 0.60);
+        timeOfFlightSecondsMap.put(4.30, 0.85);
+        timeOfFlightSecondsMap.put(5.30, 1.05);
+    }
+
+    public record ShotParameters(
+        boolean isValid,
+        double turretAngleDegrees,   // field-relative angle to aim the turret
+        double hoodAngleDegrees,
+        double flywheelRPM
+    ) {}
+
+    private ShotTrajectoryCalculator() {}
+
+    public static ShotTrajectoryCalculator getInstance() {
+        if (instance == null) instance = new ShotTrajectoryCalculator();
+        return instance;
     }
 
     /**
-     * @param fuelExitPose The position where the fuel will exit the shooter relative to the field
-     * @param robotVelocity The linear velocity of the robot (field relative)
-     * @param targetPose The position of the target we are shooting at
-     * @param targetHeight The max height the fuel will ever reach during flight
+     * Calculate shot parameters given the current robot state and a field target.
+     *
+     * @param robotPose             Estimated robot pose in the field frame
+     * @param robotRelativeVelocity Robot-relative chassis speeds (from drive odometry)
+     * @param target                2D field position of the scoring target
+     * @return Shot parameters with hood angle, flywheel RPM, and turret aim angle
      */
-    public static void update(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight) {
-        double totalLatencySeconds = visionLatency + systemLatency + mechanismLatency;
-        
-        //Estimate the robot's velocity assuming a constant 20 ms periodic loop
-        Translation2d robotAcceleration = new Translation2d(
-            //TODO: Commented out until regular SOTM is working
-            // (robotVelocity.vxMetersPerSecond - previousRobotVx) / Units.millisecondsToSeconds(20),
-            // (robotVelocity.vyMetersPerSecond - previousRobotVy) / Units.millisecondsToSeconds(20)
-            0,
-            0
+    public ShotParameters calculate(Pose2d robotPose, ChassisSpeeds robotRelativeVelocity, Translation2d target) {
+        // Advance the estimated pose by the phase delay using the robot-relative twist,
+        // which correctly accounts for the robot's rotation during the delay.
+        Pose2d phasedPose = robotPose.exp(new Twist2d(
+            robotRelativeVelocity.vxMetersPerSecond * PHASE_DELAY_SECONDS,
+            robotRelativeVelocity.vyMetersPerSecond * PHASE_DELAY_SECONDS,
+            robotRelativeVelocity.omegaRadiansPerSecond * PHASE_DELAY_SECONDS
+        ));
+
+        // Compute turret position in the field frame by rotating the robot-relative
+        // offset by the robot's heading and adding it to the robot's field position.
+        Pose2d turretPose = phasedPose.transformBy(new Transform2d(ROBOT_TO_TURRET, Rotation2d.kZero));
+        Translation2d turretPos = turretPose.getTranslation();
+
+        // Compute field-relative turret velocity.
+        // v_turret = v_robot_field + omega x r_turret_field
+        // In 2D: v_x += -omega * r_fy,  v_y += omega * r_fx
+        ChassisSpeeds fieldVelocity = ChassisSpeeds.fromRobotRelativeSpeeds(
+            robotRelativeVelocity, phasedPose.getRotation());
+        double omega = robotRelativeVelocity.omegaRadiansPerSecond;
+        double rTurretFieldX = turretPos.getX() - phasedPose.getX();
+        double rTurretFieldY = turretPos.getY() - phasedPose.getY();
+        double turretVx = fieldVelocity.vxMetersPerSecond - omega * rTurretFieldY;
+        double turretVy = fieldVelocity.vyMetersPerSecond + omega * rTurretFieldX;
+
+        // Iterative lookahead convergence: project the turret's position forward by
+        // the expected time of flight, then re-evaluate the distance, repeating until
+        // the estimate converges (20 iterations is sufficient in practice).
+        Translation2d lookaheadTurretPos = turretPos;
+        double lookaheadDistance = target.getDistance(turretPos);
+        for (int i = 0; i < 20; i++) {
+            double tof = timeOfFlightSecondsMap.get(lookaheadDistance);
+            lookaheadTurretPos = new Translation2d(
+                turretPos.getX() + turretVx * tof,
+                turretPos.getY() + turretVy * tof
+            );
+            lookaheadDistance = target.getDistance(lookaheadTurretPos);
+        }
+
+        // Field-relative angle from the lookahead turret position toward the target
+        double turretAngleDegrees = target.minus(lookaheadTurretPos).getAngle().getDegrees();
+
+        DogLog.log("ShotCalculator/lookaheadTurretX", lookaheadTurretPos.getX());
+        DogLog.log("ShotCalculator/lookaheadTurretY", lookaheadTurretPos.getY());
+        DogLog.log("ShotCalculator/lookaheadDistance", lookaheadDistance);
+
+        return new ShotParameters(
+            lookaheadDistance >= MIN_DISTANCE && lookaheadDistance <= MAX_DISTANCE,
+            turretAngleDegrees,
+            hoodAngleDegreesMap.get(lookaheadDistance),
+            flywheelRPMMap.get(lookaheadDistance)
         );
-
-        //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
-        fuelExitPose = fuelExitPose.plus(
-            new Transform3d(
-                robotVelocity.vxMetersPerSecond * totalLatencySeconds 
-                    + (0.5 * robotAcceleration.getX() * Math.pow(totalLatencySeconds, 2)),
-                robotVelocity.vyMetersPerSecond * totalLatencySeconds 
-                    + (0.5 * robotAcceleration.getY() * Math.pow(totalLatencySeconds, 2)),
-                0.0,
-                Rotation3d.kZero
-            )
-        );
-
-        //Clamp targetHeight to make sure values don't result in a NaN result
-        targetHeight = Math.max(targetHeight, Math.max(fuelExitPose.getZ(), targetPose.getZ()));
-
-        /*
-         *  t is calculated to be the seconds needed for the ball to reach desired height, 
-         *  and return to goal height, under vacuum conditions
-        */
-        double t = 
-            Math.sqrt(2.0 * (targetHeight - fuelExitPose.getZ()) / GRAVITATIONAL_CONSTANT) + 
-            Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
-
-        double fuelZVelo = (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0;
-
-        Translation3d movingShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond - (0.5 * robotAcceleration.getX() * t),
-            (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond - (0.5 * robotAcceleration.getY() * t),
-            fuelZVelo
-        );
-
-        Translation3d stationaryShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t,
-            (targetPose.getY() - fuelExitPose.getY()) / t,
-            fuelZVelo
-        );
-
-        double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
-
-        double baseRPM = distanceToRPM.get(metersToGoal); 
-        double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();
-
-        //Scale up the measured RPM by the scale needed to compensate for robot velocity
-        targetFlywheelRPM = baseRPM * veloScale;
-
-        targetTurretAngle = Units.radiansToDegrees(Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()));
-
-        double horizontalSpeed = Math.sqrt(Math.pow(movingShotVelocity.getX(), 2) + Math.pow(movingShotVelocity.getY(), 2));
-        targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
-
-        //Store velocities for acceleration calculations each loop
-        previousRobotVx = robotVelocity.vxMetersPerSecond;
-        previousRobotVy = robotVelocity.vyMetersPerSecond;
-    }
-
-    public static double getTargetFlywheelRPM() {
-        return targetFlywheelRPM;
-    }
-
-    public static double getTurretAngle() {
-        return targetTurretAngle; 
-    }
-
-    public static double getHoodAngle() { 
-        return targetHoodAngle; 
     }
 }
