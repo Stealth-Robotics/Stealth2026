@@ -27,7 +27,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
 
     private final double kACCELERATION = 100.0;
-    private final double kCRUISE_VELOCITY = 200.0;
+    private final double kCRUISE_VELOCITY = 400.0;
     private final double kP = 80.0;
     private final double kI = 15.0;
     private final double kD = 0.0;

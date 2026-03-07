@@ -40,7 +40,7 @@ public class RobotContainer {
         // camera.setFPS(30);
 
         //Allows us to bypass the shift tracker for testing/emergency situations
-        SmartDashboard.putBoolean("Force Allow Shooting", true);
+        SmartDashboard.putBoolean("Override ShiftTracker", false);
 
         configureBindings();
         addAutosToChooser();
@@ -59,9 +59,9 @@ public class RobotContainer {
         );
 
         robot.setIntakeDefaultCommand(
-            () -> driverController.getRightTriggerAxis() > 0.01
+            () -> driverController.getLeftTriggerAxis() > 0.01
                 ? -driverController.getLeftTriggerAxis() : driverController.getRightTriggerAxis(), 
-            () -> driverController.rightTrigger().getAsBoolean()
+            () -> driverController.getRightTriggerAxis() > 0.01
         );
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());

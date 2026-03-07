@@ -37,10 +37,10 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOYED_ROTATIONS = 0;
     private final double RETRACTED_ROTATIONS = 0.3;
 
-    private final double DEPLOY_kP = 25.0;
+    private final double DEPLOY_kP = 20.0;
     private final double DEPLOY_kI = 1.0;
     private final double DEPLOY_kD = 0.0;
-    private final double DEPLOY_kV = 100;
+    private final double DEPLOY_kV = 10;
 
     private final int ROLLER_MOTOR_ID = 16;
     private final int DEPLOY_MOTOR_ID = 17;

@@ -65,30 +65,31 @@ public class RobotSystem extends SubsystemBase {
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
 
         //Trigger to rumble gamepad when it is okay to shoot into our hub
-        new Trigger(() -> DriverStation.isTeleop() && ShiftTracker.canScore())
-            .onTrue(
-                new SequentialCommandGroup(
-                    new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5)),
-                    new WaitCommand(200),
-                    new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5)),
-                    new WaitCommand(200),
-                    new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5)),
-                    new WaitCommand(200),
-                    new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5))
-                )
-            );
+        var rumbleTrigger = new Trigger(() -> DriverStation.isTeleop() && ShiftTracker.canScore());
+            // .onTrue(
+            //     new SequentialCommandGroup(
+            //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5)),
+            //         new WaitCommand(200),
+            //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5)),
+            //         new WaitCommand(200),
+            //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5)),
+            //         new WaitCommand(200),
+            //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5))
+            //     )
+            // );
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy) {
-        final double INTAKE_SPEED_COEFFICIENT = 0.80;
+        final double INTAKE_SPEED = 0.75;
+
         Command intakeDefaultCommand = run(() -> {
             if (deploy.getAsBoolean()) {
                 intake.deploy();
-                intake.setRollerSpeed(rollerSpeed.getAsDouble() * INTAKE_SPEED_COEFFICIENT);
+                intake.setRollerSpeed(INTAKE_SPEED);
             }
             else {
                 if (rollerSpeed.getAsDouble() < -0.01) {
-                    intake.setRollerSpeed(rollerSpeed.getAsDouble() * INTAKE_SPEED_COEFFICIENT);
+                    intake.setRollerSpeed(-INTAKE_SPEED);
                 }
                 else intake.stop();
                 
@@ -131,17 +132,15 @@ public class RobotSystem extends SubsystemBase {
     public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta, BooleanSupplier isFieldCentric) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
-                return (Math.abs(x.getAsDouble() + y.getAsDouble() + theta.getAsDouble()) > 0) ?
-                    isFieldCentric.getAsBoolean() ?
-                        drive.fieldCentric
-                            .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED)
-                            .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED)
-                            .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
-                        drive.robotCentric
-                            .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
-                            .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
-                            .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
-                    drive.brake;
+                return isFieldCentric.getAsBoolean() ?
+                    drive.fieldCentric
+                        .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED)
+                        .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED)
+                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
+                    drive.robotCentric
+                        .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
+                        .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
+                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE);
             })
         );
     }
@@ -151,8 +150,12 @@ public class RobotSystem extends SubsystemBase {
         return drive.goToPose(() -> new Pose2d(14.922, 3.891, Rotation2d.kZero));
     }
 
+    /*
+     * Macro that rotates the robot into the turret's operating range (plus a little extra for tolerance)
+     */
     public Command rotateRobotToShoot() {
-        return drive.rotateToAngle(() -> new Rotation2d(Math.toRadians(shooter.turretLockError)));
+        return drive.rotateToAngle(() -> drive.getPose().getRotation()
+            .plus(Rotation2d.fromDegrees(shooter.turretLockError + (5 * Math.signum(shooter.turretLockError)))));
     }
 
     public Command seedFieldCentric() {
@@ -196,5 +199,10 @@ public class RobotSystem extends SubsystemBase {
 
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLogUtil.logDouble("Turret Lock Error", shooter.turretLockError);
+
+        //TODO: Drive telemetry for testing
+        DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
+        DogLog.log("Drive/ModuleStates", drive.getModuleStates());
+        DogLog.log("Drive/Rotation", drive.getPose().getRotation());
     }
 }

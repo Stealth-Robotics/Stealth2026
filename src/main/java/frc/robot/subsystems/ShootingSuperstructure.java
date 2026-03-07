@@ -165,9 +165,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
 
-        turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
-            turretTarget - turret.MAX_TURRET_DEGREES :
-            (turretTarget < turret.MIN_TURRET_DEGREES) ? turretTarget + turret.MIN_TURRET_DEGREES : 0;
+        calculateTurretLockError(turretTarget);
     }
 
     /**
@@ -192,9 +190,13 @@ public class ShootingSuperstructure extends SubsystemBase {
         double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
 
+        calculateTurretLockError(turretTarget);
+    }
+
+    private void calculateTurretLockError(double turretTarget) {
         turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
-            turretTarget - turret.MAX_TURRET_DEGREES :
-            turretTarget < turret.MIN_TURRET_DEGREES ? turretTarget + turret.MIN_TURRET_DEGREES : 0;
+            turret.MAX_TURRET_DEGREES - turretTarget :
+            (turretTarget < turret.MIN_TURRET_DEGREES) ? turret.MIN_TURRET_DEGREES - turretTarget  : 0;
     }
 
     /**
