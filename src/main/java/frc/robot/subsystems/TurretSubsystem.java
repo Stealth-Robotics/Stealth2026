@@ -15,6 +15,7 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.DogLogUtil;
 
 public class TurretSubsystem extends SubsystemBase {
     private final TalonFX turretMotor;
@@ -106,7 +107,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.log("Turret/turret_degrees", Math.round(getTurretAngleDegrees() * 100) / 100.0);
-        DogLog.log("Turret/turret_target_degrees", Math.round(getTargetAngleDegrees() * 100) / 100.0);
+        DogLogUtil.logDouble("Turret/turret_degrees", getTurretAngleDegrees());
+        DogLogUtil.logDouble("Turret/turret_target_degrees", getTargetAngleDegrees());
     }
 }

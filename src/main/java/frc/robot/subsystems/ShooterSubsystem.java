@@ -17,6 +17,7 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.DogLogUtil;
 import frc.robot.util.Elastic;
 import frc.robot.util.Elastic.Notification;
 
@@ -196,8 +197,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
         DogLog.log("Shooter/shooter_rpm", (int) getRPM());
         DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
-        DogLog.log("Shooter/rpm_error", Math.abs(getRPM() - getTargetRPM()));
 
-        DogLog.log("Shooter/hood_angle", hoodDegrees);
+        DogLogUtil.logDouble("Shooter/hood_angle", hoodDegrees);
     }
 }

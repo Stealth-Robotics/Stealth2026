@@ -167,7 +167,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
             turretTarget - turret.MAX_TURRET_DEGREES :
-            turretTarget < turret.MIN_TURRET_DEGREES ? turretTarget + turret.MIN_TURRET_DEGREES : 0;
+            (turretTarget < turret.MIN_TURRET_DEGREES) ? turretTarget + turret.MIN_TURRET_DEGREES : 0;
     }
 
     /**

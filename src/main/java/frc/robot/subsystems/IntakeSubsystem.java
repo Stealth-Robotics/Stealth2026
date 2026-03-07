@@ -13,6 +13,7 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.DogLogUtil;
 
 public class IntakeSubsystem extends SubsystemBase {
     private final TalonFX rollerMotor;
@@ -36,11 +37,10 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOYED_ROTATIONS = 0;
     private final double RETRACTED_ROTATIONS = 0.3;
 
-    private final double DEPLOY_kP = 20.0;
-    private final double DEPLOY_kI = 0.0;
-    private final double DEPLOY_kD = 0.25;
+    private final double DEPLOY_kP = 25.0;
+    private final double DEPLOY_kI = 1.0;
+    private final double DEPLOY_kD = 0.0;
     private final double DEPLOY_kV = 100;
-    private final double DEPLOY_kG = 0.25;
 
     private final int ROLLER_MOTOR_ID = 16;
     private final int DEPLOY_MOTOR_ID = 17;
@@ -66,7 +66,7 @@ public class IntakeSubsystem extends SubsystemBase {
         
         //Deploy motor config
         deployConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
-        deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
         deployConfig.Feedback.FeedbackRemoteSensorID = deployEncoder.getDeviceID();
         deployConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
@@ -77,17 +77,14 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         deployConfig.CurrentLimits.StatorCurrentLimit = 100;
 
-        deployConfig.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
-
         deployConfig.Slot0.kP = DEPLOY_kP;
         deployConfig.Slot0.kI = DEPLOY_kI;
         deployConfig.Slot0.kD = DEPLOY_kD;
         deployConfig.Slot0.kV = DEPLOY_kV;
-        deployConfig.Slot0.kG = DEPLOY_kG;
 
         deployMotor.getConfigurator().apply(deployConfig);
 
-        retract();
+        deployMotor.setControl(deployController.withPosition(deployMotor.getPosition().getValue()));
     }
 
     public void setRollerSpeed(double speed) {
@@ -109,6 +106,6 @@ public class IntakeSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         DogLog.log("Intake/roller_speed", rollerMotor.get());
-        DogLog.log("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
+        DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
     }
 }

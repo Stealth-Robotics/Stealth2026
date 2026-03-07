@@ -25,7 +25,7 @@ public class RobotContainer {
     private boolean driveFieldCentric = true;
     
     public RobotContainer() {
-        robot = new RobotSystem(driverRumble(), operatorRumble());
+        robot = new RobotSystem(driverController, operatorController);
 
         //Add the auto chooser to our dashboard
         autos = robot.getAutos();
@@ -59,7 +59,7 @@ public class RobotContainer {
         );
 
         robot.setIntakeDefaultCommand(
-            () -> driverController.rightTrigger().getAsBoolean()
+            () -> driverController.getRightTriggerAxis() > 0.01
                 ? -driverController.getLeftTriggerAxis() : driverController.getRightTriggerAxis(), 
             () -> driverController.rightTrigger().getAsBoolean()
         );
@@ -79,14 +79,6 @@ public class RobotContainer {
      */
     private void addAutosToChooser() {
         autoChooser.addRoutine("OneCycleWin", () -> autos.oneCycle());
-    }
-
-    private Command driverRumble() {
-        return new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1));
-    }
-
-    private Command operatorRumble() {
-        return new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 1));
     }
 
     //Used mostly for telemetry and logging general match info
