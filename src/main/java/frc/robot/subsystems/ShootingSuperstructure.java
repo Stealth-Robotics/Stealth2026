@@ -16,7 +16,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -31,7 +31,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private boolean applyIdle = true;
 
-    private PassingTarget passingTarget = PassingTarget.MIDDLE;
+    private PassingTarget passingTarget = null;
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -139,7 +139,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             transfer.reverseFeed();
             shooter.spinToRPM(SHOOTER_REVERSE_RPM);
         }).finallyDo(() -> { 
-            transfer.stopSpinning();
+            transfer.stopFeeding();
             shooter.coastShooter();
         });
     }
@@ -182,6 +182,11 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
     private void pass() {
+        if (passingTarget == null) {
+            //Attempts to read the driver station location from the FMS and defaults to the MIDDLE if none is found
+            passingTarget = PassingTarget.values()[DriverStation.getLocation().orElse(2) - 1];
+        }
+
         ShotParams params = AllianceUtility.flipPose(
             (passingTarget.equals(PassingTarget.LEFT) ? leftPass : 
             passingTarget.equals(PassingTarget.MIDDLE) ? middlePass : rightPass)
