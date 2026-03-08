@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
+import frc.robot.subsystems.DriveSubsystem.FieldPose;
 import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 
 public class RobotContainer {
@@ -67,8 +68,6 @@ public class RobotContainer {
             () -> driverController.y().getAsBoolean()
         );
 
-        driverController.x().onTrue(robot.kickFuel());
-
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
 
@@ -76,7 +75,8 @@ public class RobotContainer {
         driverController.leftBumper().whileTrue(robot.clearTransfer());
 
         driverController.a().whileTrue(robot.rotateRobotToShoot());
-        // driverController.y().whileTrue(robot.driveToClimb());
+        driverController.x().onTrue(robot.kickFuel());
+        driverController.y().whileTrue(robot.driveToPose(FieldPose.CLIMB_LEFT));
 
         //Passing target changing
         driverController.povLeft().onTrue(robot.setPassingTarget(PassingTarget.LEFT));

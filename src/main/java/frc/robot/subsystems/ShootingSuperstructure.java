@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.AllianceUtility;
+import frc.robot.util.RectZone;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator;
@@ -56,13 +57,15 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
 
     private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
-    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 4;
+    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private final ShotParams leftPass = new ShotParams(new Translation3d(1.098, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams middlePass = new ShotParams(new Translation3d(1.098, 4, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(1.098, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+
+    private final RectZone hubRect = new RectZone(4.06, 3.4, 5.2, 4.6);
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
@@ -161,10 +164,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private void trackHub() {
         ShotParams params = AllianceUtility.flipPose(hub);
-        Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
+        Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
 
         ShotCalculator.update(
-            robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
+            turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
             params.maxTrajectoryHeight()
@@ -172,7 +175,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
 
-        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotCalculator.getTurretAngle();
+        double turretTarget = Units.radiansToDegrees(turretPose3d.getRotation().getZ()) - ShotCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
 
         calculateTurretLockError(turretTarget);
@@ -192,18 +195,25 @@ public class ShootingSuperstructure extends SubsystemBase {
             passingTarget.equals(PassingTarget.MIDDLE) ? middlePass : rightPass)
         );
             
-        Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
+        Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
+
+        //Account for if the hub is blocking our shot
+        double heightOffset = 0;
+
+        if (hubIsBlockingPass(turretPose3d.getTranslation(), params.target())) {
+            heightOffset = 3; //Some large arbitrary number to make the shooter aim high enough to shoot over the hub
+        }
 
         ShotCalculator.update(
-            robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
+            turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
-            params.maxTrajectoryHeight()
+            params.maxTrajectoryHeight() + heightOffset
         );
 
         shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
 
-        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotCalculator.getTurretAngle();
+        double turretTarget = Units.radiansToDegrees(turretPose3d.getRotation().getZ()) - ShotCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
 
         calculateTurretLockError(turretTarget);
@@ -227,6 +237,31 @@ public class ShootingSuperstructure extends SubsystemBase {
      */
     private boolean isShooting() {
         return shotDebouncer.calculate(Units.metersToInches(shotSensor.getDistance().getValueAsDouble()) < FUEL_DETECTED_THRESHOLD_INCHES);
+    }
+
+    /**
+     * Checks whether our passing shot might collide with the hub, this allows us to make our trajectory higher to be more effective.
+     * Uses the AABB intersection test
+     */
+    private boolean hubIsBlockingPass(Translation3d startPose, Translation3d endPose) {
+        RectZone hub = AllianceUtility.flipRectZone(hubRect);
+
+        double deltaX = endPose.getX() - startPose.getX();
+        double deltaY = endPose.getY() - startPose.getY();
+
+        double scaleX = (deltaX != 0) ? 1.0 / deltaX : Double.POSITIVE_INFINITY;
+        double scaleY = (deltaY != 0) ? 1.0 / deltaY : Double.POSITIVE_INFINITY;
+        
+        double tx1 = (hub.minX - startPose.getX()) * scaleX;
+        double tx2 = (hub.maxX - startPose.getX()) * scaleX;
+
+        double ty1 = (hub.minY - startPose.getY()) * scaleY;
+        double ty2 = (hub.maxY - startPose.getY()) * scaleY;
+
+        double tNear = Math.max(Math.min(tx1, tx2), Math.min(ty1, ty2));
+        double tFar  = Math.min(Math.max(tx1, tx2), Math.max(ty1, ty2));
+
+        return !(tNear > tFar || tNear > 1 || tFar < 0);
     }
 
     @Override
