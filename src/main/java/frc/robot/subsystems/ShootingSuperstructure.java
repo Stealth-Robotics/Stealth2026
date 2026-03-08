@@ -2,8 +2,6 @@ package frc.robot.subsystems;
 
 import java.util.function.Supplier;
 
-import javax.lang.model.util.ElementScanner14;
-
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
 import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.signals.UpdateModeValue;
@@ -18,6 +16,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -27,12 +26,12 @@ import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator;
-import frc.robot.util.ZoneManager;
-import frc.robot.util.ZoneManager.FieldZone;
 
 public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private boolean applyIdle = true;
+
+    private PassingTarget passingTarget = PassingTarget.MIDDLE;
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -57,11 +56,12 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
 
     private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
-    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2;
+    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 4;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private final ShotParams leftPass = new ShotParams(new Translation3d(1.098, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams middlePass = new ShotParams(new Translation3d(1.098, 4, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(1.098, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
@@ -72,6 +72,12 @@ public class ShootingSuperstructure extends SubsystemBase {
         IDLE,
         PASSING,
         HUB_TRACKING
+    }
+
+    public enum PassingTarget {
+        LEFT,
+        MIDDLE,
+        RIGHT
     }
 
     public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier) {
@@ -95,6 +101,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public void setState(ShooterState state) {
         this.state = state;
+    }
+
+    public void setPassingTarget(PassingTarget newTarget) {
+        passingTarget = newTarget;
     }
 
     public Command shoot() {
@@ -172,9 +182,10 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
     private void pass() {
-        ShotParams params = 
-            ZoneManager.getZone().equals(FieldZone.LEFT_PASS) ? 
-            AllianceUtility.flipPose(leftPass) : AllianceUtility.flipPose(rightPass);
+        ShotParams params = AllianceUtility.flipPose(
+            (passingTarget.equals(PassingTarget.LEFT) ? leftPass : 
+            passingTarget.equals(PassingTarget.MIDDLE) ? middlePass : rightPass)
+        );
             
         Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
@@ -235,5 +246,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         DogLog.log("ShootingSuperstructure/state", state.name());
         DogLog.log("ShootingSuperstructure/is_shooting", isShooting());
+        DogLog.log("ShootingSuperstructure/passing_target", passingTarget.name());
     }
 }

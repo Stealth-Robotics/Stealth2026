@@ -11,7 +11,12 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.DogLogUtil;
 
 public class IntakeSubsystem extends SubsystemBase {
@@ -35,6 +40,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final double DEPLOYED_ROTATIONS = 0;
     private final double RETRACTED_ROTATIONS = 0.3;
+    private final double KICK_ROTATIONS = 0.25;
 
     private final double DEPLOY_kP = 42;
     private final double DEPLOY_kACCEL = 10;
@@ -82,6 +88,22 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.getConfigurator().apply(deployConfig);
 
         deployMotor.setControl(deployController.withPosition(deployMotor.getPosition().getValue()));
+    }
+
+    public Command kickFuel() {
+        return new SequentialCommandGroup(
+            new InstantCommand(() -> deployMotor.setControl(deployController.withPosition(KICK_ROTATIONS))),
+            new WaitCommand(0.5),
+            new InstantCommand(() -> deploy())
+        );
+    }
+
+    public boolean isDeployed() {
+        return !MathUtil.isNear(
+            deployMotor.getPosition().getValueAsDouble(), 
+            RETRACTED_ROTATIONS, 
+            0.2
+        );
     }
 
     public void setRollerSpeed(double speed) {

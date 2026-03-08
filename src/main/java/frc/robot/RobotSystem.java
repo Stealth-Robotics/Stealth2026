@@ -1,12 +1,12 @@
 package frc.robot;
 
-import java.util.HashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -81,25 +82,29 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy) {
-        final double INTAKE_SPEED = 0.75;
-
         Command intakeDefaultCommand = run(() -> {
-            if (deploy.getAsBoolean()) {
-                intake.deploy();
-                intake.setRollerSpeed(INTAKE_SPEED);
-            }
-            else {
-                if (rollerSpeed.getAsDouble() < -0.01) {
-                    intake.setRollerSpeed(-INTAKE_SPEED);
-                }
-                else intake.stop();
-                
-                intake.retract();
-            }
+            intake.setRollerSpeed(rollerSpeed.getAsDouble());
+        }).beforeStarting(() -> {
+            Trigger deployToggle = new Trigger(deploy);
+            deployToggle.toggleOnTrue(
+                new ConditionalCommand(
+                    new InstantCommand(() -> intake.retract()),
+                    new InstantCommand(() -> intake.deploy()),
+                    () -> intake.isDeployed()
+                )
+            );
         });
 
         intakeDefaultCommand.addRequirements(intake);
         intake.setDefaultCommand(intakeDefaultCommand);
+    }
+
+    public Command setPassingTarget(PassingTarget newTarget) {
+        return runOnce(() -> shooter.setPassingTarget(newTarget));
+    }
+
+    public Command kickFuel() {
+        return intake.kickFuel();
     }
 
     public Command shoot() {
@@ -115,7 +120,7 @@ public class RobotSystem extends SubsystemBase {
 
         if (zone.equals(FieldZone.HUB))
             shooter.setState(ShooterState.HUB_TRACKING);
-        else if (zone.equals(FieldZone.LEFT_PASS) || zone.equals(FieldZone.RIGHT_PASS))
+        else if (zone.equals(FieldZone.PASS))
             shooter.setState(ShooterState.PASSING);
         else
             shooter.setState(ShooterState.IDLE);
@@ -182,7 +187,7 @@ public class RobotSystem extends SubsystemBase {
             PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LOCALIZATION_LIMELIGHT);
             if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
                 var stdDevs = (drive.isDriving())
-                    ? VecBuilder.fill(.7, .7, 9999999) : VecBuilder.fill(9999999, 9999999, 9999999);
+                    ? VecBuilder.fill(.7, .7, 9999999) : VecBuilder.fill(0.05, 0.05, 0.05);
 
                 drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, stdDevs);
                 ShotCalculator.updateVisionLatency(poseEstimate.latency);

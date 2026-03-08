@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
+import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 
 public class RobotContainer {
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -62,10 +63,11 @@ public class RobotContainer {
         );
 
         robot.setIntakeDefaultCommand(
-            () -> driverController.getLeftTriggerAxis() > 0.01
-                ? -driverController.getLeftTriggerAxis() : driverController.getRightTriggerAxis(), 
-            () -> driverController.getRightTriggerAxis() > 0.01
+            () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+            () -> driverController.y().getAsBoolean()
         );
+
+        driverController.x().onTrue(robot.kickFuel());
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
@@ -75,6 +77,11 @@ public class RobotContainer {
 
         driverController.a().whileTrue(robot.rotateRobotToShoot());
         // driverController.y().whileTrue(robot.driveToClimb());
+
+        //Passing target changing
+        driverController.povLeft().onTrue(robot.setPassingTarget(PassingTarget.LEFT));
+        driverController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
+        driverController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
     }
 
     /*
