@@ -32,7 +32,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private boolean applyIdle = true;
 
-    private PassingTarget passingTarget = null;
+    private PassingTarget passingTarget = PassingTarget.NONE;
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -78,6 +78,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public enum PassingTarget {
+        NONE,
         LEFT,
         MIDDLE,
         RIGHT
@@ -185,7 +186,7 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
     private void pass() {
-        if (passingTarget == null) {
+        if (passingTarget.equals(PassingTarget.NONE)) {
             //Attempts to read the driver station location from the FMS and defaults to the MIDDLE if none is found
             passingTarget = PassingTarget.values()[DriverStation.getLocation().orElse(2) - 1];
         }
