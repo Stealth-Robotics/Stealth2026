@@ -5,13 +5,15 @@ package frc.robot;
 
 import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
+import frc.robot.subsystems.DriveSubsystem.FieldPose;
+import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 
 public class RobotContainer {
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -42,6 +44,9 @@ public class RobotContainer {
         //Allows us to bypass the shift tracker for testing/emergency situations
         SmartDashboard.putBoolean("Override ShiftTracker", false);
 
+        //Hahaha stopped the annoying warnings
+        DriverStation.silenceJoystickConnectionWarning(true);
+
         configureBindings();
         addAutosToChooser();
     }
@@ -59,19 +64,24 @@ public class RobotContainer {
         );
 
         robot.setIntakeDefaultCommand(
-            () -> driverController.getLeftTriggerAxis() > 0.01
-                ? -driverController.getLeftTriggerAxis() : driverController.getRightTriggerAxis(), 
-            () -> driverController.getRightTriggerAxis() > 0.01
+            () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+            () -> driverController.y().getAsBoolean()
         );
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
 
-        operatorController.rightBumper().whileTrue(robot.shoot());
-        operatorController.leftBumper().whileTrue(robot.clearTransfer());
+        driverController.rightBumper().whileTrue(robot.shoot());
+        driverController.leftBumper().whileTrue(robot.clearTransfer());
 
-        operatorController.a().whileTrue(robot.rotateRobotToShoot());
-        driverController.y().whileTrue(robot.driveToClimb());
+        driverController.a().whileTrue(robot.rotateRobotToShoot());
+        driverController.x().onTrue(robot.kickFuel());
+        driverController.y().whileTrue(robot.driveToPose(FieldPose.CLIMB_LEFT));
+
+        //Passing target changing
+        driverController.povLeft().onTrue(robot.setPassingTarget(PassingTarget.LEFT));
+        driverController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
+        driverController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
     }
 
     /*
@@ -88,6 +98,14 @@ public class RobotContainer {
 
         DogLog.log("Alliance", AllianceUtility.getAlliance().name());
         DogLog.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
+
+        String timeString = String.format(
+            "%d:%02d",
+            (int) ShiftTracker.getTimeLeftInShift() / 60,
+            (int) ShiftTracker.getTimeLeftInShift() % 60
+        );
+        DogLog.log("Shift Time Left", timeString);
+
         DogLog.log("Hub Scorable", ShiftTracker.canScore());
         DogLog.log("Driving Mode", driveFieldCentric ? "Field Centric" : "Robot Centric");
     }

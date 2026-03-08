@@ -4,6 +4,7 @@ import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.MotionMagicVelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -36,7 +37,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final CoastOut coast = new CoastOut();
 
     private final PositionVoltage hoodController = new PositionVoltage(0);
-    private final VelocityVoltage shooterController = new VelocityVoltage(0);
+    private final VelocityVoltage shooterController = new VelocityVoltage(0)
+        .withEnableFOC(false);
 
     private final double HOOD_ENCODER_MAGNET_OFFSET = -0.016357421875;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.75;

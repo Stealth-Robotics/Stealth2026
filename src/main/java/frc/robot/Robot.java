@@ -5,6 +5,8 @@ package frc.robot;
 
 import com.ctre.phoenix6.SignalLogger;
 
+import dev.doglog.DogLog;
+import dev.doglog.DogLogOptions;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.TimedRobot;
