@@ -5,6 +5,7 @@ package frc.robot;
 
 import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -40,6 +41,9 @@ public class RobotContainer {
 
         //Allows us to bypass the shift tracker for testing/emergency situations
         SmartDashboard.putBoolean("Override ShiftTracker", false);
+
+        //Hahaha stopped the annoying warnings
+        DriverStation.silenceJoystickConnectionWarning(true);
 
         configureBindings();
         addAutosToChooser();

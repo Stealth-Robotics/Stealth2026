@@ -1,12 +1,17 @@
 package frc.robot;
 
+import java.util.HashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -45,6 +50,8 @@ public class RobotSystem extends SubsystemBase {
 
     private final double MIN_TAG_REJECTION_METERS = 4;
     private final String LOCALIZATION_LIMELIGHT = "limelight-robot";
+
+    private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -180,6 +187,18 @@ public class RobotSystem extends SubsystemBase {
                 ShotCalculator.updateVisionLatency(poseEstimate.latency);
             }
         }
+
+        //Advantagescope logging
+        var currentTags = LimelightHelpers.getLatestResults(LOCALIZATION_LIMELIGHT).targets_Fiducials;
+        
+        Pose3d[] visibleTags = new Pose3d[currentTags.length];
+        for (int i = 0; i < currentTags.length; i++) {
+            Pose3d tagPose =  tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
+            if (tagPose != null)
+                visibleTags[i] = tagPose;
+        }
+
+        DogLog.log("VisibleTagPoses", visibleTags);
     }
 
     @Override
