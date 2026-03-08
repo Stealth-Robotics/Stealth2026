@@ -26,7 +26,7 @@ import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotParams;
-import frc.robot.util.ShotTrajectoryCalculator;
+import frc.robot.util.ShotCalculator;
 import frc.robot.util.ZoneManager;
 import frc.robot.util.ZoneManager.FieldZone;
 
@@ -99,7 +99,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public Command shoot() {
         return run(() -> {
-            shooter.spinToRPM(ShotTrajectoryCalculator.getTargetFlywheelRPM());
+            shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
 
             if (readyToShoot()) {
                 transfer.spin();
@@ -153,16 +153,16 @@ public class ShootingSuperstructure extends SubsystemBase {
         ShotParams params = AllianceUtility.flipPose(hub);
         Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
-        ShotTrajectoryCalculator.update(
+        ShotCalculator.update(
             robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
             robotVelocitySupplier.get(),
             params.target(),
             params.maxTrajectoryHeight()
         );
 
-        shooter.setHoodDegrees(ShotTrajectoryCalculator.getHoodAngle());
+        shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
 
-        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
+        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
 
         calculateTurretLockError(turretTarget);
@@ -178,16 +178,16 @@ public class ShootingSuperstructure extends SubsystemBase {
             
         Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
 
-        ShotTrajectoryCalculator.update(
+        ShotCalculator.update(
             robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
             robotVelocitySupplier.get(),
             params.target(),
             params.maxTrajectoryHeight()
         );
 
-        shooter.setHoodDegrees(ShotTrajectoryCalculator.getHoodAngle());
+        shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
 
-        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
+        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotCalculator.getTurretAngle();
         turret.setTargetDegrees(turretTarget);
 
         calculateTurretLockError(turretTarget);

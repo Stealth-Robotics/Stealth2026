@@ -9,7 +9,7 @@ import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 
-public class ShotTrajectoryCalculator {
+public class ShotCalculator {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
 
     private static final double systemLatency = Units.millisecondsToSeconds(20);
@@ -54,11 +54,8 @@ public class ShotTrajectoryCalculator {
         
         //Estimate the robot's velocity assuming a constant 20 ms periodic loop
         Translation2d robotAcceleration = new Translation2d(
-            //TODO: Commented out until regular SOTM is working
-            // (robotVelocity.vxMetersPerSecond - previousRobotVx) / Units.millisecondsToSeconds(20),
-            // (robotVelocity.vyMetersPerSecond - previousRobotVy) / Units.millisecondsToSeconds(20)
-            0,
-            0
+            (robotVelocity.vxMetersPerSecond - previousRobotVx) / Units.millisecondsToSeconds(20),
+            (robotVelocity.vyMetersPerSecond - previousRobotVy) / Units.millisecondsToSeconds(20)
         );
 
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
@@ -87,8 +84,8 @@ public class ShotTrajectoryCalculator {
         double fuelZVelo = (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0;
 
         Translation3d movingShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond - (0.5 * robotAcceleration.getX() * t),
-            (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond - (0.5 * robotAcceleration.getY() * t),
+            (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond,
+            (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond,
             fuelZVelo
         );
 

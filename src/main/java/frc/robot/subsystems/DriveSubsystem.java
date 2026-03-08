@@ -14,6 +14,7 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import choreo.auto.AutoFactory;
 import choreo.trajectory.SwerveSample;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -41,7 +42,7 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
  */
 public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    private final double POSITION_TOLERANCE_METERS = 0.1;
+    private final double POSITION_TOLERANCE_METERS = 0.01;
     private final double ANGLE_TOLERANCE_DEGREES = 0.25;
 
     public double MAX_SPEED = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
@@ -61,7 +62,7 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     private final SwerveRequest.ApplyFieldSpeeds m_pathApplyFieldSpeeds = new SwerveRequest.ApplyFieldSpeeds();
     private final PIDController m_pathXController = new PIDController(8, 0, 0);
     private final PIDController m_pathYController = new PIDController(8, 0, 0);
-    private final PIDController m_pathThetaController = new PIDController(5, 0, 0);
+    private final PIDController m_pathThetaController = new PIDController(7, 0, 0);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -254,6 +255,12 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Pose2d getPose() {
         return getState().Pose;
+    }
+
+    public boolean isDriving() {
+        return MathUtil.isNear(getRobotRelativeVelocity().vxMetersPerSecond, 0, 0.1) &&
+               MathUtil.isNear(getRobotRelativeVelocity().vyMetersPerSecond, 0, 0.1) &&
+               MathUtil.isNear(getRobotRelativeVelocity().omegaRadiansPerSecond, 0, 0.1);
     }
 
     public SwerveModuleState[] getModuleStates() {

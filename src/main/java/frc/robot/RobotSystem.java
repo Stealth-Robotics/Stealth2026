@@ -13,9 +13,6 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
-import edu.wpi.first.wpilibj2.command.RepeatCommand;
-import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -28,13 +25,11 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
-import frc.robot.util.DogLogUtil;
-import frc.robot.util.Elastic;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
 import frc.robot.util.ShiftTracker;
-import frc.robot.util.ShotTrajectoryCalculator;
+import frc.robot.util.ShotCalculator;
 import frc.robot.util.ZoneManager;
 
 public class RobotSystem extends SubsystemBase {
@@ -65,18 +60,16 @@ public class RobotSystem extends SubsystemBase {
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
 
         //Trigger to rumble gamepad when it is okay to shoot into our hub
-        var rumbleTrigger = new Trigger(() -> DriverStation.isTeleop() && ShiftTracker.canScore());
-            // .onTrue(
-            //     new SequentialCommandGroup(
-            //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5)),
-            //         new WaitCommand(200),
-            //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5)),
-            //         new WaitCommand(200),
-            //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5)),
-            //         new WaitCommand(200),
-            //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.5))
-            //     )
-            // );
+        Trigger rumbleTrigger = new Trigger(() -> DriverStation.isTeleop() && ShiftTracker.canScore())
+            .onTrue(
+                new SequentialCommandGroup(
+                    new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1)),
+                    new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 1)),
+                    new WaitCommand(500),
+                    new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0)),
+                    new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0))
+                )
+            );
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy) {
@@ -180,9 +173,11 @@ public class RobotSystem extends SubsystemBase {
         if (Math.abs(robotAngularVelocity) < Math.PI) {
             PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LOCALIZATION_LIMELIGHT);
             if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
-                //TODO: Tune standard deviations
-                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7,.7,9999999));
-                ShotTrajectoryCalculator.updateVisionLatency(poseEstimate.latency);
+                var stdDevs = (drive.isDriving())
+                    ? VecBuilder.fill(.7, .7, 9999999) : VecBuilder.fill(9999999, 9999999, 9999999);
+
+                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, stdDevs);
+                ShotCalculator.updateVisionLatency(poseEstimate.latency);
             }
         }
     }
@@ -198,7 +193,6 @@ public class RobotSystem extends SubsystemBase {
         fieldTelemetry.setRobotPose(drive.getPose());
 
         DogLog.log("Current Zone", ZoneManager.getZone().name());
-        DogLogUtil.logDouble("Turret Lock Error", shooter.turretLockError);
 
         //TODO: Drive telemetry for testing
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
