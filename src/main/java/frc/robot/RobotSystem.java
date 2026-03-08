@@ -67,12 +67,13 @@ public class RobotSystem extends SubsystemBase {
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
 
         //Trigger to rumble gamepad when it is okay to shoot into our hub
-        Trigger rumbleTrigger = new Trigger(() -> DriverStation.isTeleop() && ShiftTracker.canScore())
+        Trigger rumbleTrigger = new Trigger(() -> DriverStation.isTeleop() && ShiftTracker.canScore());
+        rumbleTrigger
             .onTrue(
                 new SequentialCommandGroup(
                     new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1)),
                     new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 1)),
-                    new WaitCommand(500),
+                    new WaitCommand(0.25),
                     new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0)),
                     new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0))
                 )

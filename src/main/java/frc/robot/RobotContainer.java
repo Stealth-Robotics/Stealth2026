@@ -70,11 +70,11 @@ public class RobotContainer {
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
 
-        operatorController.rightBumper().whileTrue(robot.shoot());
-        operatorController.leftBumper().whileTrue(robot.clearTransfer());
+        driverController.rightBumper().whileTrue(robot.shoot());
+        driverController.leftBumper().whileTrue(robot.clearTransfer());
 
-        operatorController.a().whileTrue(robot.rotateRobotToShoot());
-        driverController.y().whileTrue(robot.driveToClimb());
+        driverController.a().whileTrue(robot.rotateRobotToShoot());
+        // driverController.y().whileTrue(robot.driveToClimb());
     }
 
     /*
@@ -91,6 +91,14 @@ public class RobotContainer {
 
         DogLog.log("Alliance", AllianceUtility.getAlliance().name());
         DogLog.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
+
+        String timeString = String.format(
+            "%d:%02d",
+            (int) ShiftTracker.getTimeLeftInShift() / 60,
+            (int) ShiftTracker.getTimeLeftInShift() % 60
+        );
+        DogLog.log("Shift Time Left", timeString);
+
         DogLog.log("Hub Scorable", ShiftTracker.canScore());
         DogLog.log("Driving Mode", driveFieldCentric ? "Field Centric" : "Robot Centric");
     }
