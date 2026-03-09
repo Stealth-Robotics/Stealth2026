@@ -54,8 +54,8 @@ public class RobotSystem extends SubsystemBase {
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
-    private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.5;
-    private final double INTAKE_TOSS_PERCENTAGE_UP = 0.5;
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = 1;
+    private final double INTAKE_TOSS_PERCENTAGE_UP = 0.3;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
