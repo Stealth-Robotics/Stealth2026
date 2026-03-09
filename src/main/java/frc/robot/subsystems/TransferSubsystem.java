@@ -33,10 +33,10 @@ public class TransferSubsystem extends SubsystemBase {
         feederMotor = new TalonFX(FEEDER_MOTOR_ID);
 
         spindexerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-        spindexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        spindexerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
         feederConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-        feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
         spindexerMotor.getConfigurator().apply(spindexerConfig);
         feederMotor.getConfigurator().apply(feederConfig);

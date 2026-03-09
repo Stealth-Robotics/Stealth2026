@@ -44,20 +44,16 @@ public class ShootingSuperstructure extends SubsystemBase {
     //The error of the turret if the target angle is beyond its limits
     public double turretLockError = 0;
 
-    //TODO: Find maximum time in between shots when rapidly shooting
-    private final double MAX_SHOT_SPACING_SECONDS = 0.75;
-
     private final double SHOOTER_REVERSE_RPM = -2000;
 
     private final CANrange shotSensor;
     private final CANrangeConfiguration shotSensorConfig = new CANrangeConfiguration();
 
-    private final double FUEL_DETECTED_THRESHOLD_INCHES = 0.5;
-
-    private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
-
     private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
-    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2;
+    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 6;
+
+    //The target pose that we are currently aiming at
+    private Translation3d aimingTarget = Translation3d.kZero;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
@@ -148,11 +144,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         });
     }
 
-    public Command autonomousShoot() {
-        Command stopCondition = new WaitCommand(MAX_SHOT_SPACING_SECONDS).andThen(new WaitUntilCommand(() -> !isShooting()));
-        return shoot().withDeadline(stopCondition);
-    }
-
     /**
      * Set the hood, turret, and flywheel to their homed/idle states (zeroed and unpowered)
      */
@@ -180,6 +171,8 @@ public class ShootingSuperstructure extends SubsystemBase {
         turret.setTargetDegrees(turretTarget);
 
         calculateTurretLockError(turretTarget);
+
+        aimingTarget = params.target();
     }
 
     /**
@@ -198,18 +191,11 @@ public class ShootingSuperstructure extends SubsystemBase {
             
         Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
 
-        //Account for if the hub is blocking our shot
-        double heightOffset = 0;
-
-        if (hubIsBlockingPass(turretPose3d.getTranslation(), params.target())) {
-            heightOffset = 3; //Some large arbitrary number to make the shooter aim high enough to shoot over the hub
-        }
-
         ShotCalculator.update(
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
-            params.maxTrajectoryHeight() + heightOffset
+            params.maxTrajectoryHeight()
         );
 
         shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
@@ -218,6 +204,8 @@ public class ShootingSuperstructure extends SubsystemBase {
         turret.setTargetDegrees(turretTarget);
 
         calculateTurretLockError(turretTarget);
+
+        aimingTarget = params.target();
     }
 
     private void calculateTurretLockError(double turretTarget) {
@@ -231,38 +219,6 @@ public class ShootingSuperstructure extends SubsystemBase {
      */
     private boolean readyToShoot() {
         return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady();
-    }
-
-    /**
-     * @return If the shot sensor detects that a fuel hasn't been shot for MAX_SHOT_SPACING_SECONDS
-     */
-    private boolean isShooting() {
-        return shotDebouncer.calculate(Units.metersToInches(shotSensor.getDistance().getValueAsDouble()) < FUEL_DETECTED_THRESHOLD_INCHES);
-    }
-
-    /**
-     * Checks whether our passing shot might collide with the hub, this allows us to make our trajectory higher to be more effective.
-     * Uses the AABB intersection test
-     */
-    private boolean hubIsBlockingPass(Translation3d startPose, Translation3d endPose) {
-        RectZone hub = AllianceUtility.flipRectZone(hubRect);
-
-        double deltaX = endPose.getX() - startPose.getX();
-        double deltaY = endPose.getY() - startPose.getY();
-
-        double scaleX = (deltaX != 0) ? 1.0 / deltaX : Double.POSITIVE_INFINITY;
-        double scaleY = (deltaY != 0) ? 1.0 / deltaY : Double.POSITIVE_INFINITY;
-        
-        double tx1 = (hub.minX - startPose.getX()) * scaleX;
-        double tx2 = (hub.maxX - startPose.getX()) * scaleX;
-
-        double ty1 = (hub.minY - startPose.getY()) * scaleY;
-        double ty2 = (hub.maxY - startPose.getY()) * scaleY;
-
-        double tNear = Math.max(Math.min(tx1, tx2), Math.min(ty1, ty2));
-        double tFar  = Math.min(Math.max(tx1, tx2), Math.max(ty1, ty2));
-
-        return !(tNear > tFar || tNear > 1 || tFar < 0);
     }
 
     @Override
@@ -286,7 +242,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         }
 
         DogLog.log("ShootingSuperstructure/state", state.name());
-        DogLog.log("ShootingSuperstructure/is_shooting", isShooting());
         DogLog.log("ShootingSuperstructure/passing_target", passingTarget.name());
+        DogLog.log("ShootingSuperstructure/aiming_target", aimingTarget);
     }
 }

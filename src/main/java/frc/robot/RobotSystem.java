@@ -185,10 +185,7 @@ public class RobotSystem extends SubsystemBase {
         if (Math.abs(robotAngularVelocity) < Math.PI) {
             PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LOCALIZATION_LIMELIGHT);
             if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
-                var stdDevs = (drive.isDriving())
-                    ? VecBuilder.fill(.7, .7, 9999999) : VecBuilder.fill(0.05, 0.05, 0.05);
-
-                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, stdDevs);
+                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 9999999));
                 ShotCalculator.updateVisionLatency(poseEstimate.latency);
             }
         }
@@ -208,7 +205,7 @@ public class RobotSystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        ZoneManager.updateRobotPositionAndVelocity(drive.getPose(), drive.getFieldRelativeVelocity());
+        ZoneManager.updateRobotPositionAndVelocity(drive.getPose());
 
         updateShootingState();
         updateOdometryEstimateWithLimelight();
