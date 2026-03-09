@@ -11,6 +11,7 @@ import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -167,10 +168,14 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
 
-        double turretTarget = Units.radiansToDegrees(turretPose3d.getRotation().getZ()) - ShotCalculator.getTurretAngle();
-        turret.setTargetDegrees(turretTarget);
+        Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
+        Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
 
-        calculateTurretLockError(turretTarget);
+        Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
+
+        turret.setTargetDegrees(turretTargetRot.getDegrees());
+
+        calculateTurretLockError(turretTargetRot.getDegrees());
 
         aimingTarget = params.target();
     }
@@ -200,10 +205,14 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
 
-        double turretTarget = Units.radiansToDegrees(turretPose3d.getRotation().getZ()) - ShotCalculator.getTurretAngle();
-        turret.setTargetDegrees(turretTarget);
+        Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
+        Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
 
-        calculateTurretLockError(turretTarget);
+        Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
+
+        turret.setTargetDegrees(turretTargetRot.getDegrees());
+
+        calculateTurretLockError(turretTargetRot.getDegrees());
 
         aimingTarget = params.target();
     }

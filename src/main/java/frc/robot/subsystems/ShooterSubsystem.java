@@ -129,9 +129,6 @@ public class ShooterSubsystem extends SubsystemBase {
 
         //Explictly set the hood motor position on startup
         hoodMotor.setPosition(hoodEncoder.getAbsolutePosition().getValue().times(HOOD_ROTOR_TO_SENSOR_RATIO));
-
-        //Home to zero
-        setHoodDegrees(0.0);
     }
 
     /**
