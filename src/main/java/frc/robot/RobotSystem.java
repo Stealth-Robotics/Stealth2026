@@ -13,9 +13,11 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
@@ -45,8 +47,6 @@ public class RobotSystem extends SubsystemBase {
     private final ClimbSubsystem climb;
     private final LEDSubsystem led;
 
-    private final CommandXboxController driverController, operatorController;
-
     private final Field2d fieldTelemetry = new Field2d();
 
     private final double MIN_TAG_REJECTION_METERS = 4;
@@ -54,15 +54,15 @@ public class RobotSystem extends SubsystemBase {
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.5;
+    private final double INTAKE_TOSS_PERCENTAGE_UP = 0.5;
+
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
         shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
         climb = new ClimbSubsystem();
         led = new LEDSubsystem();
-
-        this.driverController = driverController;
-        this.operatorController = operatorController;
 
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
@@ -103,12 +103,25 @@ public class RobotSystem extends SubsystemBase {
         return runOnce(() -> shooter.setPassingTarget(newTarget));
     }
 
-    public Command kickFuel() {
-        return intake.kickFuel();
-    }
-
     public Command shoot() {
-        return shooter.shoot();
+        Timer tossTimer = new Timer();
+
+        return shooter.shoot().alongWith(
+            run(() -> {
+                if (tossTimer.hasElapsed(INTAKE_TOSS_INTERVAL_SECONDS)) {
+                    tossTimer.reset();
+
+                    CommandScheduler.getInstance().schedule(intake.toss(INTAKE_TOSS_PERCENTAGE_UP));
+                }
+            })
+            .beforeStarting(() -> {
+                tossTimer.start();
+            })
+            .finallyDo(() -> {
+                tossTimer.stop();
+                tossTimer.reset();
+            })
+        );        
     }
 
     public Command clearTransfer() {

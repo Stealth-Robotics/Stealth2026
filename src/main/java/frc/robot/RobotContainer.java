@@ -75,7 +75,6 @@ public class RobotContainer {
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
 
         operatorController.a().whileTrue(robot.rotateRobotToShoot());
-        operatorController.x().onTrue(robot.kickFuel());
         driverController.a().whileTrue(robot.driveToPose(FieldPose.CLIMB_LEFT));
 
         //Passing target changing

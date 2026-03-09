@@ -46,7 +46,6 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final double DEPLOYED_ROTATIONS = 0;
     private final double RETRACTED_ROTATIONS = 0.3;
-    private final double KICK_ROTATIONS = 0.25;
 
     private final double DEPLOY_kP = 42;
     private final double DEPLOY_kACCEL = 10;
@@ -96,10 +95,14 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.setControl(deployController.withPosition(deployMotor.getPosition().getValue()));
     }
 
-    public Command kickFuel() {
+    /**
+     * Moves the intake up to the desired percentage of the fully up position and 
+     * then back down to toss the fuel into the spindexer.
+     */
+    public Command toss(double upPercentage) {
         return new SequentialCommandGroup(
-            new InstantCommand(() -> deployMotor.setControl(deployController.withPosition(KICK_ROTATIONS))),
-            new WaitCommand(0.5),
+            new InstantCommand(() -> deployMotor.setControl(deployController.withPosition(RETRACTED_ROTATIONS * upPercentage))),
+            new WaitCommand(0.1),
             new InstantCommand(() -> deploy())
         );
     }
