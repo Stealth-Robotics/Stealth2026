@@ -71,25 +71,26 @@ public class RobotContainer {
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
 
-        driverController.rightBumper().whileTrue(robot.shoot());
-        driverController.leftBumper().whileTrue(robot.clearTransfer());
+        operatorController.rightBumper().whileTrue(robot.shoot());
+        operatorController.leftBumper().whileTrue(robot.clearTransfer());
 
-        driverController.a().whileTrue(robot.rotateRobotToShoot());
-        driverController.x().onTrue(robot.kickFuel());
-        driverController.y().whileTrue(robot.driveToPose(FieldPose.CLIMB_LEFT));
+        operatorController.a().whileTrue(robot.rotateRobotToShoot());
+        operatorController.x().onTrue(robot.kickFuel());
+        driverController.a().whileTrue(robot.driveToPose(FieldPose.CLIMB_LEFT));
 
         //Passing target changing
-        driverController.povLeft().onTrue(robot.setPassingTarget(PassingTarget.LEFT));
-        driverController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
-        driverController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
+        operatorController.povLeft().onTrue(robot.setPassingTarget(PassingTarget.LEFT));
+        operatorController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
+        operatorController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
     }
 
     /*
      * Add all our working autonomous routines to the chooser for selecting on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addRoutine("OneCycleWin", () -> autos.oneCycle());
-    }
+        // autoChooser.addRoutine("OneCycleWin", () -> autos.oneCycle());
+        autoChooser.addRoutine("RightOneCyclePlusOutpost", () -> autos.rightOneCyclePlusOutpost());
+    } 
 
     //Used mostly for telemetry and logging general match info
     public void periodic() {

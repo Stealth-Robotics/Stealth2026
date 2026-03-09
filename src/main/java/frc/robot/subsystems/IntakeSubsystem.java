@@ -106,6 +106,22 @@ public class IntakeSubsystem extends SubsystemBase {
         );
     }
 
+    public Command intakeCommand() {
+        return runOnce(() -> setRollerSpeed(0.8));
+    }
+
+    public Command stopCommand() {
+        return runOnce(() -> stop());
+    }
+
+    public Command deployCommand() {
+        return runOnce(() -> deploy());
+    }
+
+    public Command retractCommand() {
+        return runOnce(() -> deploy());
+    }
+
     public void setRollerSpeed(double speed) {
         rollerMotor.set(speed);
     }

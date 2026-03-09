@@ -3,7 +3,9 @@ package frc.robot;
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
@@ -24,6 +26,45 @@ public class Autos {
         this.intake = intake;
         this.shooter = shooter;
         this.climb = climb;
+    }
+
+    public AutoRoutine rightOneCyclePlusOutpost() {
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        String pathName = "RightOneCyclePlusOutpost";
+
+        AutoTrajectory goToCenter = routine.trajectory(pathName, 0);
+        AutoTrajectory startIntaking = routine.trajectory(pathName, 1);
+        AutoTrajectory stopIntaking = routine.trajectory(pathName, 2);
+        AutoTrajectory startShooting = routine.trajectory(pathName, 3);
+        AutoTrajectory goToOutpost = routine.trajectory(pathName, 4);
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                goToCenter.resetOdometry(),
+                goToCenter.cmd(),
+
+                intake.deployCommand(),
+                intake.intakeCommand(),
+
+                startIntaking.cmd(),
+                stopIntaking.cmd(),
+
+                intake.stopCommand(),
+
+                new ParallelDeadlineGroup(
+                    startShooting.cmd(),
+                    shooter.shoot()
+                ),
+
+                goToOutpost.cmd(),
+                new WaitCommand(2),
+                drive.applyRequest(() -> drive.brake),
+                shooter.shoot()
+            )
+        );
+
+        return routine;
     }
 
     /*
