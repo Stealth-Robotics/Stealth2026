@@ -66,31 +66,4 @@ public class Autos {
 
         return routine;
     }
-
-    /*
-     * Goes to center and does one sweep and then comes back and shoots on the move 
-     * and ends up in climb position.
-     */
-    public AutoRoutine oneCycle() {
-        AutoRoutine routine = autoFactory.newRoutine("routine");
-
-        AutoTrajectory start = routine.trajectory("ShootingAuto");
-        AutoTrajectory goToCenter = routine.trajectory("ShootingAuto", 0);
-        AutoTrajectory goBackToShoot = routine.trajectory("ShootingAuto", 1);
-        AutoTrajectory goClimb = routine.trajectory("ShootingAuto", 2);
-
-        routine.active().onTrue(
-            new SequentialCommandGroup(
-                start.resetOdometry(),
-                shooter.autonomousShoot(),
-                start.cmd(),
-                goToCenter.cmd(), //Along with deploying intake
-                goBackToShoot.cmd(), //Along with retracting intake
-                shooter.autonomousShoot(),
-                goClimb.cmd()
-            )
-        );
-
-        return routine;
-    }
 }
