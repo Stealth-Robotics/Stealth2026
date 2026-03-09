@@ -153,15 +153,25 @@ public class RobotSystem extends SubsystemBase {
             drive.applyRequest(() -> {
                 return isFieldCentric.getAsBoolean() ?
                     drive.fieldCentric
-                        .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED)
-                        .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED)
-                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE) :
+                        .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
+                        .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
+                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE * getDrivingSpeedScaleFactor()) :
                     drive.robotCentric
-                        .withVelocityX(y.getAsDouble() * drive.MAX_SPEED)
-                        .withVelocityY(x.getAsDouble() * drive.MAX_SPEED)
-                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE);
+                        .withVelocityX(y.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
+                        .withVelocityY(x.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
+                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE * getDrivingSpeedScaleFactor());
             })
         );
+    }
+
+    /**
+     * Allows us to slow down when performing certain actions like shooting or climbing
+     */
+    public double getDrivingSpeedScaleFactor() {
+        if (shooter.isShooting())
+            return 0.35;
+
+        return 1.0;
     }
 
     public Command driveToPose(FieldPose targetPose) {

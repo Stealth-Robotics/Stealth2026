@@ -36,6 +36,8 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private PassingTarget passingTarget = PassingTarget.NONE;
 
+    private boolean isShooting = false;
+
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
     private final TransferSubsystem transfer;
@@ -62,8 +64,6 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final ShotParams leftPass = new ShotParams(new Translation3d(1.098, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams middlePass = new ShotParams(new Translation3d(1.098, 4, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(1.098, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-
-    private final RectZone hubRect = new RectZone(4.06, 3.4, 5.2, 4.6);
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
@@ -121,11 +121,15 @@ public class ShootingSuperstructure extends SubsystemBase {
                 transfer.stopSpinning();
                 transfer.stopFeeding();
             }
+
+            isShooting = true;
         })
         .finallyDo(() -> {
             shooter.coastShooter();
             transfer.stopSpinning();
             transfer.stopFeeding();
+
+            isShooting = false;
         })
         .onlyWhile(() -> {
             if (SmartDashboard.getBoolean("Override ShiftTracker", false))
@@ -228,6 +232,10 @@ public class ShootingSuperstructure extends SubsystemBase {
      */
     private boolean readyToShoot() {
         return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady();
+    }
+
+    public boolean isShooting() {
+        return isShooting;
     }
 
     @Override
