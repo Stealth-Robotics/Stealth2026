@@ -5,8 +5,6 @@ package frc.robot;
 
 import com.ctre.phoenix6.SignalLogger;
 
-import dev.doglog.DogLog;
-import dev.doglog.DogLogOptions;
 import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -27,6 +25,9 @@ public class Robot extends TimedRobot {
 
         //Stop hoot replay logging
         SignalLogger.enableAutoLogging(false);
+
+        //Set Limelight to use the robot's imu
+        LimelightHelpers.SetIMUMode("limelight-robot", 0);
     }
 
     @Override
@@ -43,8 +44,6 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledPeriodic() {
-        //Seed the Limelight 4's internal imu
-        LimelightHelpers.SetIMUMode("limelight-robot", 1);
     }
 
     @Override
@@ -52,9 +51,7 @@ public class Robot extends TimedRobot {
     }
 
     @Override
-    public void autonomousInit() {
-        LimelightHelpers.SetIMUMode("limelight-robot", 4);
-        
+    public void autonomousInit() {        
         ShiftTracker.start();
         
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();
@@ -74,8 +71,6 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopInit() {
-        LimelightHelpers.SetIMUMode("limelight-robot", 4);
-
         if (!ShiftTracker.isRunning()) {
             ShiftTracker.start();
         }

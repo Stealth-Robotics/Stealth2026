@@ -19,16 +19,12 @@ public class ShotCalculator {
     private static final double mechanismLatency = Units.millisecondsToSeconds(0);
 
     private static final InterpolatingDoubleTreeMap distanceToRPM = new InterpolatingDoubleTreeMap() {{
-        // put(2.03, 2700.0);
-        // put(2.5, 2700.0);
-        // put(3.0, 2700.0);
-        // put(3.25, 2900.0);
-        // put(3.59, 3000.0);
-        // put(5.25, 3700.0);
-        put(2.18, 2700.0);
-        put(2.89, 3000.0);
-        put(4.299, 3400.0);
-        put(5.3, 3800.0);
+        put(2.03, 2700.0);
+        put(2.5, 2700.0);
+        put(3.0, 2700.0);
+        put(3.25, 2900.0);
+        put(3.59, 3000.0);
+        put(5.25, 3700.0);
     }};
 
     //Variables that store the latest calculated values needed to perform a shot
