@@ -2,7 +2,9 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
@@ -30,6 +32,10 @@ public class IntakeSubsystem extends SubsystemBase {
     private final TalonFXConfiguration deployConfig = new TalonFXConfiguration();
 
     private final MotionMagicVoltage deployController = new MotionMagicVoltage(0);
+    private final VoltageOut rollerController = new VoltageOut(0)
+        .withEnableFOC(true);
+
+    private final double INTAKE_ROLLER_VOLTAGE = 12;
 
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.4013671875;
 
@@ -106,28 +112,8 @@ public class IntakeSubsystem extends SubsystemBase {
         );
     }
 
-    public Command intakeCommand() {
-        return runOnce(() -> setRollerSpeed(0.8));
-    }
-
-    public Command stopCommand() {
-        return runOnce(() -> stop());
-    }
-
-    public Command deployCommand() {
-        return runOnce(() -> deploy());
-    }
-
-    public Command retractCommand() {
-        return runOnce(() -> deploy());
-    }
-
-    public void setRollerSpeed(double speed) {
-        rollerMotor.set(speed);
-    }
-
-    public void stop() {
-        rollerMotor.set(0);
+    public void setRollerSpeed(double percentOfVoltage) {
+        rollerMotor.setControl(rollerController.withOutput(INTAKE_ROLLER_VOLTAGE * percentOfVoltage));
     }
 
     public void deploy() {
@@ -136,6 +122,24 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public void retract() {
         deployMotor.setControl(deployController.withPosition(RETRACTED_ROTATIONS));
+    }
+
+    // AUTO COMMANDS
+
+    public Command intakeCommand() {
+        return runOnce(() -> setRollerSpeed(0.8));
+    }
+
+    public Command stopCommand() {
+        return runOnce(() -> setRollerSpeed(0));
+    }
+
+    public Command deployCommand() {
+        return runOnce(() -> deploy());
+    }
+
+    public Command retractCommand() {
+        return runOnce(() -> deploy());
     }
 
     @Override
