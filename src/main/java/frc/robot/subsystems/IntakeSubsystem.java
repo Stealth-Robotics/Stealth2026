@@ -35,7 +35,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final VoltageOut rollerController = new VoltageOut(0)
         .withEnableFOC(true);
 
-    private final double INTAKE_ROLLER_VOLTAGE = 12;
+    private final double INTAKE_ROLLER_VOLTAGE = 7;
 
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.4013671875;
 
