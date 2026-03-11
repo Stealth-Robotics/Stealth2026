@@ -11,11 +11,11 @@ public class ZoneManager {
 
     private static final RectZone hub = new RectZone(-0.5, -0.5, 4, 8.07);
 
-    private static final RectZone leftPassing = new RectZone(5.2, 8.07, 16.5, 4);
-    private static final RectZone rightPassing = new RectZone(5.2, 0, 16.5, 4);
+    private static final RectZone leftPassing = new RectZone(5.4, 8.07, 16.5, 4);
+    private static final RectZone rightPassing = new RectZone(5.4, 0, 16.5, 4);
 
-    private static final RectZone leftTrench = new RectZone(4, 6.87, 5.2, 8.07);
-    private static final RectZone rightTrench = new RectZone(4, 0, 5.2, 1.25);
+    private static final RectZone leftTrench = new RectZone(3.8, 6.87, 5.4, 8.07);
+    private static final RectZone rightTrench = new RectZone(3.8, 0, 5.4, 1.25);
 
     public enum FieldZone {
         HUB,

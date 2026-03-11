@@ -33,12 +33,17 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.651;
 
     private final double DEPLOYED_ROTATIONS = 0;
-    private final double RETRACTED_ROTATIONS = 0.3;
+    private final double RETRACTED_ROTATIONS = 0.31;
 
     private final double DEPLOY_kP = 25.0;
     private final double DEPLOY_kI = 0.0;
     private final double DEPLOY_kD = 0.0;
     private final double DEPLOY_kV = 100;
+
+    private final double RETRACT_kP = 35.0;
+    private final double RETRACT_kI = 0.1;
+    private final double RETRACT_kD = 0;
+    private final double RETRACT_kV = 100;
 
     private final int ROLLER_MOTOR_ID = 16;
     private final int DEPLOY_MOTOR_ID = 17;
@@ -75,10 +80,15 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         deployConfig.CurrentLimits.StatorCurrentLimit = 100;
 
-        deployConfig.Slot0.kP = DEPLOY_kP;
-        deployConfig.Slot0.kI = DEPLOY_kI;
-        deployConfig.Slot0.kD = DEPLOY_kD;
-        deployConfig.Slot0.kV = DEPLOY_kV;
+        deployConfig.Slot0.kP = RETRACT_kP;
+        deployConfig.Slot0.kI = RETRACT_kI;
+        deployConfig.Slot0.kD = RETRACT_kD;
+        deployConfig.Slot0.kV = RETRACT_kV;
+        
+        deployConfig.Slot1.kP = DEPLOY_kP;
+        deployConfig.Slot1.kI = DEPLOY_kI;
+        deployConfig.Slot1.kD = DEPLOY_kD;
+        deployConfig.Slot1.kV = DEPLOY_kV;
 
         deployMotor.getConfigurator().apply(deployConfig);
 
@@ -97,11 +107,11 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void deploy() {
-        deployMotor.setControl(deployController.withPosition(DEPLOYED_ROTATIONS));
+        deployMotor.setControl(deployController.withSlot(1).withPosition(DEPLOYED_ROTATIONS));
     }
 
     public void retract() {
-        deployMotor.setControl(deployController.withPosition(RETRACTED_ROTATIONS));
+        deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS));
     }
 
     @Override

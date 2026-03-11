@@ -69,9 +69,11 @@ public class RobotContainer {
 
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
+        operatorController.a().whileTrue(robot.slowDown());
 
         driverController.a().whileTrue(robot.rotateRobotToShoot());
         driverController.y().whileTrue(robot.driveToClimb());
+        driverController.x().onTrue(robot.toggleIntake());
     }
 
     /*

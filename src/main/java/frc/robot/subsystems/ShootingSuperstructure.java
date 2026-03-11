@@ -27,6 +27,7 @@ import frc.robot.util.ZoneManager.FieldZone;
 public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private boolean applyIdle = true;
+    private boolean isShotRequested = false;
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -92,10 +93,14 @@ public class ShootingSuperstructure extends SubsystemBase {
         this.state = state;
     }
 
+    public boolean isActiveShooter() {
+        return this.isShotRequested;
+    }
+
     public Command shoot() {
         return run(() -> {
             shooter.spinToRPM(ShotTrajectoryCalculator.getTargetFlywheelRPM());
-
+            this.isShotRequested = true;
             if (readyToShoot()) {
                 transfer.spin();
                 transfer.feed();
@@ -109,6 +114,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             shooter.coastShooter();
             transfer.stopSpinning();
             transfer.stopFeeding();
+            this.isShotRequested = false;
         });
     }
 
