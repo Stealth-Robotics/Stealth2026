@@ -82,7 +82,6 @@ public class RobotContainer {
         operatorController.povLeft().onTrue(robot.setPassingTarget(PassingTarget.LEFT));
         operatorController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
         operatorController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
-        driverController.x().onTrue(robot.toggleIntake());
     }
 
     /*
