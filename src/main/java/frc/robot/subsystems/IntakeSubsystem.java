@@ -36,6 +36,7 @@ public class IntakeSubsystem extends SubsystemBase {
         .withEnableFOC(true);
 
     private final double INTAKE_ROLLER_VOLTAGE = 7;
+    private final double MAX_ROLLER_SPEED = 0.8;
 
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.4013671875;
 
@@ -45,9 +46,12 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.651;
 
     private final double DEPLOYED_ROTATIONS = 0;
-    private final double RETRACTED_ROTATIONS = 0.3;
+    private final double RETRACTED_ROTATIONS = 0.308;
 
-    private final double DEPLOY_kP = 42;
+    private final double DEPLOY_kP = 30;
+    private final double RETRACT_kP = 35;
+    private final double DEPLOY_kI = 0;
+    private final double RETRACT_kI = 0.09;
     private final double DEPLOY_kACCEL = 10;
     private final double DEPLOY_kVELO = 50;
 
@@ -86,13 +90,18 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         deployConfig.CurrentLimits.StatorCurrentLimit = 80;
 
-        deployConfig.Slot0.kP = DEPLOY_kP;
+        deployConfig.Slot0.kP = RETRACT_kP;
+        deployConfig.Slot0.kI = RETRACT_kI;
+
+        deployConfig.Slot1.kP = DEPLOY_kP;
+        deployConfig.Slot1.kI = DEPLOY_kI;
+        
         deployConfig.MotionMagic.MotionMagicAcceleration = DEPLOY_kACCEL;
         deployConfig.MotionMagic.MotionMagicCruiseVelocity = DEPLOY_kVELO;
 
         deployMotor.getConfigurator().apply(deployConfig);
 
-        deployMotor.setControl(deployController.withPosition(deployMotor.getPosition().getValue()));
+        deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
     }
 
     /**
@@ -101,7 +110,7 @@ public class IntakeSubsystem extends SubsystemBase {
      */
     public Command toss(double upPercentage) {
         return new SequentialCommandGroup(
-            new InstantCommand(() -> deployMotor.setControl(deployController.withPosition(RETRACTED_ROTATIONS * upPercentage))),
+            new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
             new WaitCommand(0.1),
             new InstantCommand(() -> deploy())
         );
@@ -119,18 +128,22 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerMotor.setControl(rollerController.withOutput(INTAKE_ROLLER_VOLTAGE * percentOfVoltage));
     }
 
+    private void bumpDeploy(double rotations) {
+        deployMotor.setControl(deployController.withSlot(0).withPosition(rotations));
+    }
+
     public void deploy() {
-        deployMotor.setControl(deployController.withPosition(DEPLOYED_ROTATIONS));
+        deployMotor.setControl(deployController.withSlot(1).withPosition(DEPLOYED_ROTATIONS));
     }
 
     public void retract() {
-        deployMotor.setControl(deployController.withPosition(RETRACTED_ROTATIONS));
+        deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS));
     }
 
     // AUTO COMMANDS
 
     public Command intakeCommand() {
-        return runOnce(() -> setRollerSpeed(0.8));
+        return runOnce(() -> setRollerSpeed(MAX_ROLLER_SPEED));
     }
 
     public Command stopCommand() {

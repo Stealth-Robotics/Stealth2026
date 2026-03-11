@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -46,6 +47,7 @@ public class RobotSystem extends SubsystemBase {
     private final ShootingSuperstructure shooter;
     private final ClimbSubsystem climb;
     private final LEDSubsystem led;
+    private boolean isSlowMoActive = false;
 
     private final Field2d fieldTelemetry = new Field2d();
 
@@ -56,6 +58,8 @@ public class RobotSystem extends SubsystemBase {
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 1;
     private final double INTAKE_TOSS_PERCENTAGE_UP = 0.3;
+    private final double DRIVE_SHOOT_SLOWDOWN_FACTOR = 0.25;
+    private final double DRIVE_USER_SLOWDOWN_FACTOR = 0.2;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -168,14 +172,25 @@ public class RobotSystem extends SubsystemBase {
      * Allows us to slow down when performing certain actions like shooting or climbing
      */
     public double getDrivingSpeedScaleFactor() {
-        if (shooter.isShooting())
-            return 0.35;
+        if (shooter.isShooting()) {
+            return DRIVE_SHOOT_SLOWDOWN_FACTOR;
+        } else if (this.isSlowMoActive) {
+            return DRIVE_USER_SLOWDOWN_FACTOR;
+        }
 
         return 1.0;
     }
 
     public Command driveToPose(FieldPose targetPose) {
         return drive.goToPose(() -> targetPose);
+    }
+
+    public Command activateSlowMo() {
+         return new StartEndCommand(
+            () -> { isSlowMoActive = true; DogLog.log("SlowMo:", "Active"); },
+            () -> { isSlowMoActive = false; DogLog.log("SlowMo:", "Inactive"); },
+            this
+        );
     }
 
     /*
