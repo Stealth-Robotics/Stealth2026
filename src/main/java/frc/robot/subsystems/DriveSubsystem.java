@@ -14,11 +14,13 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import choreo.auto.AutoFactory;
 import choreo.trajectory.SwerveSample;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -40,11 +42,38 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
  */
 public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
-    private final double POSITION_TOLERANCE_METERS = 0.1;
-    private final double ANGLE_TOLERANCE_DEGREES = 0.25;
+    public enum FieldPose {
+        CLIMB_LEFT(new Pose2d(14.922, 3.891, Rotation2d.kZero)),
+        CLIMB_RIGHT(new Pose2d(0, 0, Rotation2d.kZero));
+
+        private final Pose2d pose;
+
+        FieldPose(Pose2d pose) {
+            this.pose = pose;
+        }
+
+        Pose2d getPose() {
+            return pose;
+        }
+
+        double getX() {
+            return pose.getX();
+        }
+
+        double getY() {
+            return pose.getY();
+        }
+
+        Rotation2d getRotation() {
+            return pose.getRotation();
+        }
+    }
+
+    private final double POSITION_TOLERANCE_METERS = 0.01;
+    private final double ANGLE_TOLERANCE_DEGREES = 0.1;
 
     public double MAX_SPEED = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
-    public double MAX_ANGULAR_RATE = RotationsPerSecond.of(1).in(RadiansPerSecond); // 1 rotation per second max angular velocity
+    public double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.8).in(RadiansPerSecond); // 1 rotation per second max angular velocity
 
     public final SwerveRequest.FieldCentric fieldCentric = new SwerveRequest.FieldCentric()
             .withDeadband(MAX_SPEED * 0.1).withRotationalDeadband(MAX_ANGULAR_RATE * 0.1) // Add a 10% deadband
@@ -58,9 +87,9 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
 
     /** Swerve request to apply during field-centric path following */
     private final SwerveRequest.ApplyFieldSpeeds m_pathApplyFieldSpeeds = new SwerveRequest.ApplyFieldSpeeds();
-    private final PIDController m_pathXController = new PIDController(10, 0, 0);
-    private final PIDController m_pathYController = new PIDController(10, 0, 0);
-    private final PIDController m_pathThetaController = new PIDController(7, 0, 0);
+    private final PIDController m_pathXController = new PIDController(8, 0, 0);
+    private final PIDController m_pathYController = new PIDController(8, 0, 0);
+    private final PIDController m_pathThetaController = new PIDController(10, 0, 0);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -255,6 +284,20 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         return getState().Pose;
     }
 
+    public boolean isDriving() {
+        return MathUtil.isNear(getRobotRelativeVelocity().vxMetersPerSecond, 0, 0.1) &&
+               MathUtil.isNear(getRobotRelativeVelocity().vyMetersPerSecond, 0, 0.1) &&
+               MathUtil.isNear(getRobotRelativeVelocity().omegaRadiansPerSecond, 0, 0.1);
+    }
+
+    public SwerveModuleState[] getModuleStates() {
+        return getState().ModuleStates;
+    }
+
+    public ChassisSpeeds getRobotRelativeVelocity() {
+        return getState().Speeds;
+    }
+
     public ChassisSpeeds getFieldRelativeVelocity() {
         return ChassisSpeeds.fromRobotRelativeSpeeds(getState().Speeds, getPose().getRotation());
     }
@@ -270,7 +313,22 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         );
     }
 
-    public Command goToPose(Supplier<Pose2d> targetPose) {
+    public Command rotateToAngle(Supplier<Rotation2d> targetRot) {
+        return run(() -> {
+            var pose = getPose();
+            ChassisSpeeds targetSpeeds = new ChassisSpeeds();
+
+            targetSpeeds.omegaRadiansPerSecond += m_pathThetaController.calculate(
+                pose.getRotation().getRadians(), targetRot.get().getRadians()
+            );
+
+            setControl(
+                m_pathApplyFieldSpeeds.withSpeeds(targetSpeeds)
+            );
+        }).until(() -> Math.abs(getPose().getRotation().getDegrees() - targetRot.get().getDegrees()) < ANGLE_TOLERANCE_DEGREES);
+    }
+
+    public Command goToPose(Supplier<FieldPose> targetPose) {
         return run(() -> {
             var pose = getPose();
             ChassisSpeeds targetSpeeds = new ChassisSpeeds();
@@ -288,7 +346,7 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
             setControl(
                 m_pathApplyFieldSpeeds.withSpeeds(targetSpeeds)
             );
-        }).until(() -> robotNearPose(targetPose.get()));
+        }).until(() -> robotNearPose(targetPose.get().getPose()));
     }
 
     private boolean robotNearPose(Pose2d targetPose) {

@@ -2,7 +2,6 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -11,10 +10,10 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
-import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.DogLogUtil;
 
 public class TurretSubsystem extends SubsystemBase {
     private final TalonFX turretMotor;
@@ -26,12 +25,12 @@ public class TurretSubsystem extends SubsystemBase {
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
 
     private final double kACCELERATION = 100.0;
-    private final double kCRUISE_VELOCITY = 200.0;
+    private final double kCRUISE_VELOCITY = 400.0;
     private final double kP = 80.0;
     private final double kI = 15.0;
     private final double kD = 0.0;
 
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 5;
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 2;
 
     public final double MAX_TURRET_DEGREES = 121;
     private final double TURRET_HOME_DEGREES = 0;
@@ -88,8 +87,12 @@ public class TurretSubsystem extends SubsystemBase {
         ));
     }
 
-    public boolean isTurretNearAngle() {
-        return Math.abs(getTurretAngleDegrees() - getTargetAngleDegrees()) < TURRET_ANGLE_TOLERANCE_DEGREES;
+    public boolean isReady() {
+        var target = getTargetAngleDegrees();
+        boolean targetInRange = target < MAX_TURRET_DEGREES && target > MIN_TURRET_DEGREES;
+
+        return targetInRange &&
+            Math.abs(getTurretAngleDegrees() - target) < TURRET_ANGLE_TOLERANCE_DEGREES;
     }
 
     public double getTurretAngleDegrees() {
@@ -102,7 +105,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.log("Turret/turret_degrees", Math.round(getTurretAngleDegrees() * 100) / 100.0);
-        DogLog.log("Turret/turret_target_degrees", Math.round(getTargetAngleDegrees() * 100) / 100.0);
+        DogLogUtil.logDouble("Turret/turret_degrees", getTurretAngleDegrees());
+        DogLogUtil.logDouble("Turret/turret_target_degrees", getTargetAngleDegrees());
     }
 }

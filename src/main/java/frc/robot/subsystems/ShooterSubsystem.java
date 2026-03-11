@@ -4,6 +4,7 @@ import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.MotionMagicVelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -17,6 +18,7 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.DogLogUtil;
 import frc.robot.util.Elastic;
 import frc.robot.util.Elastic.Notification;
 
@@ -35,7 +37,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final CoastOut coast = new CoastOut();
 
     private final PositionVoltage hoodController = new PositionVoltage(0);
-    private final VelocityVoltage shooterController = new VelocityVoltage(0);
+    private final VelocityVoltage shooterController = new VelocityVoltage(0)
+        .withEnableFOC(true);
 
     private final double HOOD_ENCODER_MAGNET_OFFSET = -0.016357421875;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.75;
@@ -126,9 +129,6 @@ public class ShooterSubsystem extends SubsystemBase {
 
         //Explictly set the hood motor position on startup
         hoodMotor.setPosition(hoodEncoder.getAbsolutePosition().getValue().times(HOOD_ROTOR_TO_SENSOR_RATIO));
-
-        //Home to zero
-        setHoodDegrees(0.0);
     }
 
     /**
@@ -196,8 +196,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
         DogLog.log("Shooter/shooter_rpm", (int) getRPM());
         DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
-        DogLog.log("Shooter/rpm_error", Math.abs(getRPM() - getTargetRPM()));
 
-        DogLog.log("Shooter/hood_angle", hoodDegrees);
+        DogLogUtil.logDouble("Shooter/hood_angle", hoodDegrees);
     }
 }

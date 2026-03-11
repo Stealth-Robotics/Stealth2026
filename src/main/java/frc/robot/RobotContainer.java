@@ -5,13 +5,15 @@ package frc.robot;
 
 import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
+import frc.robot.subsystems.DriveSubsystem.FieldPose;
+import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 
 public class RobotContainer {
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -25,7 +27,7 @@ public class RobotContainer {
     private boolean driveFieldCentric = true;
     
     public RobotContainer() {
-        robot = new RobotSystem(driverRumble(), operatorRumble());
+        robot = new RobotSystem(driverController, operatorController);
 
         //Add the auto chooser to our dashboard
         autos = robot.getAutos();
@@ -40,7 +42,10 @@ public class RobotContainer {
         // camera.setFPS(30);
 
         //Allows us to bypass the shift tracker for testing/emergency situations
-        SmartDashboard.putBoolean("Force Allow Shooting", true);
+        SmartDashboard.putBoolean("Override ShiftTracker", false);
+
+        //Hahaha stopped the annoying warnings
+        DriverStation.silenceJoystickConnectionWarning(true);
 
         configureBindings();
         addAutosToChooser();
@@ -59,9 +64,8 @@ public class RobotContainer {
         );
 
         robot.setIntakeDefaultCommand(
-            () -> driverController.getLeftTriggerAxis() > 0.01
-                ? -driverController.getLeftTriggerAxis() : driverController.getRightTriggerAxis(), 
-            () -> driverController.getRightTriggerAxis() > 0.01
+            () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+            () -> driverController.y().getAsBoolean()
         );
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
@@ -69,10 +73,15 @@ public class RobotContainer {
 
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
-        operatorController.a().whileTrue(robot.slowDown());
+        operatorController.b().whileTrue(robot.slowDown());
 
-        driverController.a().whileTrue(robot.rotateRobotToShoot());
-        driverController.y().whileTrue(robot.driveToClimb());
+        operatorController.a().whileTrue(robot.rotateRobotToShoot());
+        driverController.a().whileTrue(robot.driveToPose(FieldPose.CLIMB_LEFT));
+
+        //Passing target changing
+        operatorController.povLeft().onTrue(robot.setPassingTarget(PassingTarget.LEFT));
+        operatorController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
+        operatorController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
         driverController.x().onTrue(robot.toggleIntake());
     }
 
@@ -80,16 +89,9 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selecting on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addRoutine("OneCycleWin", () -> autos.oneCycle());
-    }
-
-    private Command driverRumble() {
-        return new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1));
-    }
-
-    private Command operatorRumble() {
-        return new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 1));
-    }
+        // autoChooser.addRoutine("OneCycleWin", () -> autos.oneCycle());
+        autoChooser.addRoutine("RightOneCyclePlusOutpost", () -> autos.rightOneCyclePlusOutpost());
+    } 
 
     //Used mostly for telemetry and logging general match info
     public void periodic() {
@@ -98,6 +100,14 @@ public class RobotContainer {
 
         DogLog.log("Alliance", AllianceUtility.getAlliance().name());
         DogLog.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
+
+        String timeString = String.format(
+            "%d:%02d",
+            (int) ShiftTracker.getTimeLeftInShift() / 60,
+            (int) ShiftTracker.getTimeLeftInShift() % 60
+        );
+        DogLog.log("Shift Time Left", timeString);
+
         DogLog.log("Hub Scorable", ShiftTracker.canScore());
         DogLog.log("Driving Mode", driveFieldCentric ? "Field Centric" : "Robot Centric");
     }

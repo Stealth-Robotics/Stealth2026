@@ -64,7 +64,7 @@ public class ShiftTracker {
 
         if (isRunning()) {
             if (phase != MatchPhase.UNKNOWN && phase != null) {
-                if (matchTimer.hasElapsed(phase.getEndTime()))
+                if (getTime() > phase.getEndTime())
                     phase = phase.getNext();
             }
             else {
@@ -122,11 +122,11 @@ public class ShiftTracker {
         return ourAlliance == allianceThatWonAuto;
     }
 
-    public static double getTime() {
-        return matchTimer.get();
+    public static double getTimeLeftInShift() {
+        return Math.max(0, phase.getEndTime() - getTime());
     }
 
-    public static double getTimeLeftInShift() {
-        return Math.max(0, phase.getEndTime() - (matchTimer.get() + timeOffset));
+    private static double getTime() {
+        return matchTimer.get() + timeOffset;
     }
 }

@@ -11,23 +11,32 @@ import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.AllianceUtility;
+import frc.robot.util.RectZone;
+import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotParams;
-import frc.robot.util.ShotTrajectoryCalculator;
-import frc.robot.util.ZoneManager;
-import frc.robot.util.ZoneManager.FieldZone;
+import frc.robot.util.ShotCalculator;
 
 public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private boolean applyIdle = true;
-    private boolean isShotRequested = false;
+
+    private PassingTarget passingTarget = PassingTarget.NONE;
+
+    private boolean isShooting = false;
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -39,25 +48,21 @@ public class ShootingSuperstructure extends SubsystemBase {
     //The error of the turret if the target angle is beyond its limits
     public double turretLockError = 0;
 
-    //TODO: Find maximum time in between shots when rapidly shooting
-    private final double MAX_SHOT_SPACING_SECONDS = 0.75;
-
     private final double SHOOTER_REVERSE_RPM = -2000;
 
     private final CANrange shotSensor;
     private final CANrangeConfiguration shotSensorConfig = new CANrangeConfiguration();
 
-    private final double FUEL_DETECTED_THRESHOLD_INCHES = 0.5;
-
-    private final Debouncer shotDebouncer = new Debouncer(MAX_SHOT_SPACING_SECONDS, DebounceType.kFalling);
-
     private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
-    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 2;
+    private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 6;
+
+    //The target pose that we are currently aiming at
+    private Translation3d aimingTarget = Translation3d.kZero;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    //TODO: Tune these values to actual targets
     private final ShotParams leftPass = new ShotParams(new Translation3d(1.098, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams middlePass = new ShotParams(new Translation3d(1.098, 4, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(1.098, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
@@ -68,6 +73,13 @@ public class ShootingSuperstructure extends SubsystemBase {
         IDLE,
         PASSING,
         HUB_TRACKING
+    }
+
+    public enum PassingTarget {
+        NONE,
+        LEFT,
+        MIDDLE,
+        RIGHT
     }
 
     public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier) {
@@ -93,14 +105,14 @@ public class ShootingSuperstructure extends SubsystemBase {
         this.state = state;
     }
 
-    public boolean isActiveShooter() {
-        return this.isShotRequested;
+    public void setPassingTarget(PassingTarget newTarget) {
+        passingTarget = newTarget;
     }
 
     public Command shoot() {
         return run(() -> {
-            shooter.spinToRPM(ShotTrajectoryCalculator.getTargetFlywheelRPM());
-            this.isShotRequested = true;
+            shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
+
             if (readyToShoot()) {
                 transfer.spin();
                 transfer.feed();
@@ -110,11 +122,20 @@ public class ShootingSuperstructure extends SubsystemBase {
                 transfer.stopFeeding();
             }
 
-        }).finallyDo(() -> {
+            isShooting = true;
+        })
+        .finallyDo(() -> {
             shooter.coastShooter();
             transfer.stopSpinning();
             transfer.stopFeeding();
-            this.isShotRequested = false;
+
+            isShooting = false;
+        })
+        .onlyWhile(() -> {
+            if (SmartDashboard.getBoolean("Override ShiftTracker", false))
+                return true;
+
+            return (state.equals(ShooterState.HUB_TRACKING) && ShiftTracker.canScore()) || state.equals(ShooterState.PASSING);
         });
     }
 
@@ -123,13 +144,9 @@ public class ShootingSuperstructure extends SubsystemBase {
             transfer.reverseFeed();
             shooter.spinToRPM(SHOOTER_REVERSE_RPM);
         }).finallyDo(() -> { 
-            transfer.stopSpinning();
+            transfer.stopFeeding();
             shooter.coastShooter();
         });
-    }
-
-    public Command autonomousShoot() {
-        return shoot().until(() -> !isShooting());
     }
 
     /**
@@ -144,64 +161,81 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private void trackHub() {
         ShotParams params = AllianceUtility.flipPose(hub);
-        Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
+        Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
 
-        ShotTrajectoryCalculator.update(
-            robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
+        ShotCalculator.update(
+            turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
             params.maxTrajectoryHeight()
         );
 
-        shooter.setHoodDegrees(ShotTrajectoryCalculator.getHoodAngle());
+        shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
 
-        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
-        turret.setTargetDegrees(turretTarget);
+        Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
+        Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
 
-        turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
-            turretTarget - turret.MAX_TURRET_DEGREES :
-            turretTarget < turret.MIN_TURRET_DEGREES ? turretTarget + turret.MIN_TURRET_DEGREES : 0;
+        Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
+
+        turret.setTargetDegrees(turretTargetRot.getDegrees());
+
+        calculateTurretLockError(turretTargetRot.getDegrees());
+
+        aimingTarget = params.target();
     }
 
     /**
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
     private void pass() {
-        ShotParams params = 
-            ZoneManager.getZone().equals(FieldZone.LEFT_PASS) ? 
-            AllianceUtility.flipPose(leftPass) : AllianceUtility.flipPose(rightPass);
-            
-        Pose3d robotPose3d = new Pose3d(robotPoseSupplier.get());
+        if (passingTarget.equals(PassingTarget.NONE)) {
+            //Attempts to read the driver station location from the FMS and defaults to the MIDDLE if none is found
+            passingTarget = PassingTarget.values()[DriverStation.getLocation().orElse(2) - 1];
+        }
 
-        ShotTrajectoryCalculator.update(
-            robotPose3d.transformBy(TURRET_TRANSFORM_METERS),
+        ShotParams params = AllianceUtility.flipPose(
+            (passingTarget.equals(PassingTarget.LEFT) ? leftPass : 
+            passingTarget.equals(PassingTarget.MIDDLE) ? middlePass : rightPass)
+        );
+            
+        Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
+
+        ShotCalculator.update(
+            turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
             params.maxTrajectoryHeight()
         );
 
-        shooter.setHoodDegrees(ShotTrajectoryCalculator.getHoodAngle());
+        shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
 
-        double turretTarget = Units.radiansToDegrees(robotPose3d.getRotation().getZ()) - ShotTrajectoryCalculator.getTurretAngle();
-        turret.setTargetDegrees(turretTarget);
+        Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
+        Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
 
+        Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
+
+        turret.setTargetDegrees(turretTargetRot.getDegrees());
+
+        calculateTurretLockError(turretTargetRot.getDegrees());
+
+        aimingTarget = params.target();
+    }
+
+    private void calculateTurretLockError(double turretTarget) {
         turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
-            turretTarget - turret.MAX_TURRET_DEGREES :
-            turretTarget < turret.MIN_TURRET_DEGREES ? turretTarget + turret.MIN_TURRET_DEGREES : 0;
+            turret.MAX_TURRET_DEGREES - turretTarget :
+            (turretTarget < turret.MIN_TURRET_DEGREES) ? turret.MIN_TURRET_DEGREES - turretTarget  : 0;
     }
 
     /**
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
     private boolean readyToShoot() {
-        return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isTurretNearAngle();
+        return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady();
     }
 
-    /**
-     * @return If the shot sensor detects that a fuel hasn't been shot for MAX_SHOT_SPACING_SECONDS
-     */
-    private boolean isShooting() {
-        return shotDebouncer.calculate(Units.metersToInches(shotSensor.getDistance().getValueAsDouble()) < FUEL_DETECTED_THRESHOLD_INCHES);
+    public boolean isShooting() {
+        return isShooting;
     }
 
     @Override
@@ -225,6 +259,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         }
 
         DogLog.log("ShootingSuperstructure/state", state.name());
-        DogLog.log("ShootingSuperstructure/is_shooting", isShooting());
+        DogLog.log("ShootingSuperstructure/passing_target", passingTarget.name());
+        DogLog.log("ShootingSuperstructure/aiming_target", aimingTarget);
     }
 }
