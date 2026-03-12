@@ -65,7 +65,8 @@ public class RobotContainer {
 
         robot.setIntakeDefaultCommand(
             () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-            () -> driverController.y().getAsBoolean()
+            () -> driverController.rightTrigger().getAsBoolean(),
+            () -> driverController.rightBumper().getAsBoolean()
         );
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());

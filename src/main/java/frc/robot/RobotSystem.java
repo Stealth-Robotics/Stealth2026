@@ -81,18 +81,15 @@ public class RobotSystem extends SubsystemBase {
             );
     }
 
-    public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy) {
+    public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
         Command intakeDefaultCommand = run(() -> {
             intake.setRollerSpeed(rollerSpeed.getAsDouble());
         }).beforeStarting(() -> {
-            Trigger deployToggle = new Trigger(deploy);
-            deployToggle.toggleOnTrue(
-                new ConditionalCommand(
-                    new InstantCommand(() -> intake.retract()),
-                    new InstantCommand(() -> intake.deploy()),
-                    () -> intake.isDeployed()
-                )
-            );
+            Trigger deployTrigger = new Trigger(deploy);
+            deployTrigger.onTrue(intake.deployCommand());
+
+            Trigger retractTrigger = new Trigger(retract);
+            retractTrigger.onTrue(intake.retractCommand());
         });
 
         intakeDefaultCommand.addRequirements(intake);
