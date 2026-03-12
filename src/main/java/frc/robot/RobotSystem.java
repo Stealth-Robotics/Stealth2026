@@ -47,6 +47,7 @@ public class RobotSystem extends SubsystemBase {
     private final ShootingSuperstructure shooter;
     private final ClimbSubsystem climb;
     private final LEDSubsystem led;
+    
     private boolean isSlowMoActive = false;
 
     private final Field2d fieldTelemetry = new Field2d();
