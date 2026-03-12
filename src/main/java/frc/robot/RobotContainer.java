@@ -14,10 +14,13 @@ import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.subsystems.DriveSubsystem.FieldPose;
 import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 
 public class RobotContainer {
     private final CommandXboxController driverController = new CommandXboxController(0);
     private final CommandXboxController operatorController = new CommandXboxController(1);
+    
+    private final CommandXboxController testController = new CommandXboxController(3);
 
     private final RobotSystem robot;
 
@@ -82,6 +85,13 @@ public class RobotContainer {
         operatorController.povLeft().onTrue(robot.setPassingTarget(PassingTarget.LEFT));
         operatorController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
         operatorController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
+
+        testController.back().and(driverController.y()).whileTrue(robot.driveSysIdQuasistatic(SysIdRoutine.Direction.kForward));
+        testController.back().and(driverController.x()).whileTrue(robot.driveSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
+
+        testController.back().and(driverController.a()).whileTrue(robot.driveSysIdDynamic(SysIdRoutine.Direction.kForward));
+        testController.back().and(driverController.b()).whileTrue(robot.driveSysIdDynamic(SysIdRoutine.Direction.kReverse));
+
     }
 
     /*

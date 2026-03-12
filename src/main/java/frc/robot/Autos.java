@@ -3,6 +3,7 @@ package frc.robot;
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -10,6 +11,7 @@ import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
+import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 
 public class Autos {
     private final AutoFactory autoFactory;
@@ -66,21 +68,63 @@ public class Autos {
 
         return routine;
     }
-    // public AutoRoutine rightCenterAutoClimb() {
-    //     AutoRoutine routine = autoFactory.newRoutine("rightCenterAutoClimb");
-    //     String pathName = "RightCenterClimb";
-        
-    //     AutoTrajectory driveWhileShooting = routine.trajectory(pathName,0);
-    //     AutoTrajectory climbAlign = routine.trajectory(pathName,1);
+    public AutoRoutine leftOneCyclePlusDepot() {
+        AutoRoutine routine = autoFactory.newRoutine("routine");
 
-    //     routine.active().onTrue(
-    //         new SequentialCommandGroup(
-    //             shooter.shoot(),
-    //             driveWhileShooting.resetOdometry(),
-    //             driveWhileShooting.cmd(),
-    //             shooter.
-                
-    //         )
-    //     );
-    // }
+        String pathName = "LeftOneCyclePlusDepotSlow";
+
+        AutoTrajectory path = routine.trajectory(pathName,0);
+        path.atTime("StartIntaking").onTrue(new SequentialCommandGroup(intake.deployCommand(), intake.intakeCommand()));
+        path.atTime("StopIntaking").onTrue(new SequentialCommandGroup(intake.retractCommand(), intake.stopCommand()));
+        path.atTime("StartShooting").onTrue(new SequentialCommandGroup(new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)), shooter.shoot()));
+        path.atTime("StopShooting").onTrue(new InstantCommand(() -> shooter.setState(ShooterState.IDLE)));
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                path.resetOdometry(),
+                path.cmd()
+            )
+        );
+        return routine;
+    }
+    public AutoRoutine rightCenterAutoClimb() {
+        AutoRoutine routine = autoFactory.newRoutine("rightCenterAutoClimb");
+        String pathName = "RightCenterClimb";
+        
+        AutoTrajectory driveWhileShooting = routine.trajectory(pathName,0);
+        AutoTrajectory climbAlign = routine.trajectory(pathName,1);
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                driveWhileShooting.resetOdometry(),
+                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                shooter.shoot(),
+                driveWhileShooting.cmd(),
+                new WaitCommand(0.5),
+                new InstantCommand(() -> shooter.setState(ShooterState.IDLE)),
+                climbAlign.cmd()
+            )
+        );
+        return routine;
+    }
+        public AutoRoutine leftCenterAutoClimb() {
+        AutoRoutine routine = autoFactory.newRoutine("leftCenterAutoClimb");
+        String pathName = "LeftCenterClimb";
+        
+        AutoTrajectory driveWhileShooting = routine.trajectory(pathName,0);
+        AutoTrajectory climbAlign = routine.trajectory(pathName,1);
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                driveWhileShooting.resetOdometry(),
+                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                shooter.shoot(),
+                driveWhileShooting.cmd(),
+                new WaitCommand(0.5),
+                new InstantCommand(() -> shooter.setState(ShooterState.IDLE)),
+                climbAlign.cmd()
+            )
+        );
+        return routine;
+    }
 }

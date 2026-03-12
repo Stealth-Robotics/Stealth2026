@@ -111,7 +111,7 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command toss(double upPercentage) {
         return new SequentialCommandGroup(
             new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
-            new WaitCommand(0.1),
+            new WaitCommand(0.5),
             new InstantCommand(() -> deploy())
         );
     }

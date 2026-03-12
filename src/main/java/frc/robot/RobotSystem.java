@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
@@ -55,7 +56,7 @@ public class RobotSystem extends SubsystemBase {
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
-    private final double INTAKE_TOSS_INTERVAL_SECONDS = 2;
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = 1;
     private final double INTAKE_TOSS_PERCENTAGE_UP = 0.75;
     private final double DRIVE_SHOOT_SLOWDOWN_FACTOR = 0.25;
     private final double DRIVE_USER_SLOWDOWN_FACTOR = 0.2;
@@ -236,6 +237,14 @@ public class RobotSystem extends SubsystemBase {
         }
 
         DogLog.log("VisibleTagPoses", visibleTags);
+    }
+
+    public Command driveSysIdQuasistatic(SysIdRoutine.Direction direction){
+        return drive.sysIdQuasistatic(direction);
+    }
+
+    public Command driveSysIdDynamic(SysIdRoutine.Direction direction){
+        return drive.sysIdDynamic(direction);
     }
 
     @Override
