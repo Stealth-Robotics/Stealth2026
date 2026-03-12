@@ -16,13 +16,13 @@ public class TransferSubsystem extends SubsystemBase {
     private final TalonFXConfiguration feederConfig = new TalonFXConfiguration();
 
     private final VoltageOut spindexerController = new VoltageOut(0)
-        .withEnableFOC(true);
+        .withEnableFOC(false);
     private final VoltageOut feederController = new VoltageOut(0)
-        .withEnableFOC(true);
+        .withEnableFOC(false);
 
     private final CoastOut coast = new CoastOut();
 
-    private final double SPINNING_VOLTAGE = 10;
+    private final double SPINNING_VOLTAGE = 12;
     private final double FEEDING_VOLTAGE = 12;
 
     private final int SPINDEXER_MOTOR_ID = 5;

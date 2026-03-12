@@ -66,4 +66,21 @@ public class Autos {
 
         return routine;
     }
+    // public AutoRoutine rightCenterAutoClimb() {
+    //     AutoRoutine routine = autoFactory.newRoutine("rightCenterAutoClimb");
+    //     String pathName = "RightCenterClimb";
+        
+    //     AutoTrajectory driveWhileShooting = routine.trajectory(pathName,0);
+    //     AutoTrajectory climbAlign = routine.trajectory(pathName,1);
+
+    //     routine.active().onTrue(
+    //         new SequentialCommandGroup(
+    //             shooter.shoot(),
+    //             driveWhileShooting.resetOdometry(),
+    //             driveWhileShooting.cmd(),
+    //             shooter.
+                
+    //         )
+    //     );
+    // }
 }

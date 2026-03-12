@@ -56,10 +56,12 @@ public class RobotSystem extends SubsystemBase {
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
-    private final double INTAKE_TOSS_INTERVAL_SECONDS = 1;
-    private final double INTAKE_TOSS_PERCENTAGE_UP = 0.3;
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = 2;
+    private final double INTAKE_TOSS_PERCENTAGE_UP = 0.75;
     private final double DRIVE_SHOOT_SLOWDOWN_FACTOR = 0.25;
     private final double DRIVE_USER_SLOWDOWN_FACTOR = 0.2;
+
+    private Timer tossTimer = new Timer();
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -108,24 +110,14 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command shoot() {
-        Timer tossTimer = new Timer();
-
-        return shooter.shoot().alongWith(
-            run(() -> {
-                if (tossTimer.hasElapsed(INTAKE_TOSS_INTERVAL_SECONDS)) {
-                    tossTimer.reset();
-
-                    CommandScheduler.getInstance().schedule(intake.toss(INTAKE_TOSS_PERCENTAGE_UP));
-                }
-            })
+        return shooter.shoot()
             .beforeStarting(() -> {
                 tossTimer.start();
             })
             .finallyDo(() -> {
                 tossTimer.stop();
                 tossTimer.reset();
-            })
-        );        
+            });       
     }
 
     public Command clearTransfer() {
@@ -243,6 +235,12 @@ public class RobotSystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if(shooter.isShooting()) {
+            if (tossTimer.hasElapsed(INTAKE_TOSS_INTERVAL_SECONDS)) {
+                tossTimer.reset();
+                CommandScheduler.getInstance().schedule(intake.toss(INTAKE_TOSS_PERCENTAGE_UP));
+            }
+        }
         ZoneManager.updateRobotPositionAndVelocity(drive.getPose());
 
         updateShootingState();
