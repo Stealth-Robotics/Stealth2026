@@ -181,11 +181,9 @@ public class RobotSystem extends SubsystemBase {
         return new StartEndCommand(
             () -> {
                 isSlowMoActive = true;
-                DogLog.log("SlowMo:", "Active");
             },
             () -> {
                 isSlowMoActive = false;
-                DogLog.log("SlowMo:", "Inactive");
             }
         );
 
@@ -269,6 +267,5 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
         DogLog.log("Drive/ModuleStates", drive.getModuleStates());
         DogLog.log("Drive/Rotation", drive.getPose().getRotation());
-        DogLog.log("Drive/SlowModeActive", this.isSlowMoActive);
     }
 }

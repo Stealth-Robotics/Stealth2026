@@ -86,11 +86,11 @@ public class RobotContainer {
         operatorController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
         operatorController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
 
-        testController.back().and(driverController.y()).whileTrue(robot.driveSysIdQuasistatic(SysIdRoutine.Direction.kForward));
-        testController.back().and(driverController.x()).whileTrue(robot.driveSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
+        testController.back().and(testController.y()).whileTrue(robot.driveSysIdQuasistatic(SysIdRoutine.Direction.kForward));
+        testController.back().and(testController.x()).whileTrue(robot.driveSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
 
-        testController.back().and(driverController.a()).whileTrue(robot.driveSysIdDynamic(SysIdRoutine.Direction.kForward));
-        testController.back().and(driverController.b()).whileTrue(robot.driveSysIdDynamic(SysIdRoutine.Direction.kReverse));
+        testController.back().and(testController.a()).whileTrue(robot.driveSysIdDynamic(SysIdRoutine.Direction.kForward));
+        testController.back().and(testController.b()).whileTrue(robot.driveSysIdDynamic(SysIdRoutine.Direction.kReverse));
 
     }
 
@@ -100,6 +100,8 @@ public class RobotContainer {
     private void addAutosToChooser() {
         // autoChooser.addRoutine("OneCycleWin", () -> autos.oneCycle());
         autoChooser.addRoutine("RightOneCyclePlusOutpost", () -> autos.rightOneCyclePlusOutpost());
+        autoChooser.addRoutine("LeftOneCyclePlusDepot", () -> autos.leftOneCyclePlusDepot());
+        autoChooser.addRoutine("RightCenterAutoClimb", () -> autos.rightCenterAutoClimb());
     } 
 
     //Used mostly for telemetry and logging general match info

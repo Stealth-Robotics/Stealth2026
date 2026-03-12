@@ -132,10 +132,10 @@ public class ShootingSuperstructure extends SubsystemBase {
             isShooting = false;
         })
         .onlyWhile(() -> {
-            if (SmartDashboard.getBoolean("Override ShiftTracker", false))
+            if (SmartDashboard.getBoolean("Override ShiftTracker", false) || state.equals(ShooterState.PASSING))
                 return true;
 
-            return (state.equals(ShooterState.HUB_TRACKING) && ShiftTracker.canScore()) || state.equals(ShooterState.PASSING);
+            return (state.equals(ShooterState.HUB_TRACKING) && ShiftTracker.canScore());
         });
     }
 
