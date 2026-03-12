@@ -171,6 +171,9 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     /* The SysId routine to test */
     private SysIdRoutine m_sysIdRoutineToApply = m_sysIdRoutineTranslation;
 
+    /* Human-readable name of the currently selected SysId routine, used for logging */
+    private String m_sysIdRoutineName = "Translation";
+
     /**
      * Constructs a CTRE SwerveDrivetrain using the specified constants.
      * <p>
@@ -278,6 +281,23 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     public Command sysIdDynamic(SysIdRoutine.Direction direction) {
         return m_sysIdRoutineToApply.dynamic(direction);
     }
+
+    /**
+     * Sets the active SysId routine and updates the logged routine name.
+     *
+     * @param routine   The SysId routine to apply
+     * @param routineName Human-readable name for logging (e.g. "Translation", "Steer", "Rotation")
+     */
+    public void setSysIdRoutine(SysIdRoutine routine, String routineName) {
+        m_sysIdRoutineToApply = routine;
+        m_sysIdRoutineName = routineName;
+    }
+
+    public SysIdRoutine getSysIdRoutineTranslation() { return m_sysIdRoutineTranslation; }
+    public SysIdRoutine getSysIdRoutineSteer()       { return m_sysIdRoutineSteer; }
+    public SysIdRoutine getSysIdRoutineRotation()    { return m_sysIdRoutineRotation; }
+
+    public String getSysIdRoutineName() { return m_sysIdRoutineName; }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Pose2d getPose() {

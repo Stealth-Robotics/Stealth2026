@@ -186,7 +186,6 @@ public class RobotSystem extends SubsystemBase {
                 isSlowMoActive = false;
             }
         );
-
     }
 
     /*
@@ -229,7 +228,7 @@ public class RobotSystem extends SubsystemBase {
         
         Pose3d[] visibleTags = new Pose3d[currentTags.length];
         for (int i = 0; i < currentTags.length; i++) {
-            Pose3d tagPose =  tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
+            Pose3d tagPose = tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
             if (tagPose != null)
                 visibleTags[i] = tagPose;
         }
@@ -237,13 +236,40 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("VisibleTagPoses", visibleTags);
     }
 
-    public Command driveSysIdQuasistatic(SysIdRoutine.Direction direction){
+    // -------------------------------------------------------------------------
+    // SysId — routine selection (D-pad)
+    // -------------------------------------------------------------------------
+
+    /** Selects the Translation routine as the active SysId routine. */
+    public Command selectSysIdTranslation() {
+        return runOnce(() -> drive.setSysIdRoutine(drive.getSysIdRoutineTranslation(), "Translation"));
+    }
+
+    /** Selects the Steer routine as the active SysId routine. */
+    public Command selectSysIdSteer() {
+        return runOnce(() -> drive.setSysIdRoutine(drive.getSysIdRoutineSteer(), "Steer"));
+    }
+
+    /** Selects the Rotation routine as the active SysId routine. */
+    public Command selectSysIdRotation() {
+        return runOnce(() -> drive.setSysIdRoutine(drive.getSysIdRoutineRotation(), "Rotation"));
+    }
+
+    // -------------------------------------------------------------------------
+    // SysId — test execution (back + face buttons)
+    // -------------------------------------------------------------------------
+
+    /** Runs a quasistatic test in the given direction using the currently selected routine. */
+    public Command driveSysIdQuasistatic(SysIdRoutine.Direction direction) {
         return drive.sysIdQuasistatic(direction);
     }
 
-    public Command driveSysIdDynamic(SysIdRoutine.Direction direction){
+    /** Runs a dynamic test in the given direction using the currently selected routine. */
+    public Command driveSysIdDynamic(SysIdRoutine.Direction direction) {
         return drive.sysIdDynamic(direction);
     }
+
+    // -------------------------------------------------------------------------
 
     @Override
     public void periodic() {
@@ -267,5 +293,6 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
         DogLog.log("Drive/ModuleStates", drive.getModuleStates());
         DogLog.log("Drive/Rotation", drive.getPose().getRotation());
+        DogLog.log("Drive/SysId/ActiveRoutine", drive.getSysIdRoutineName());
     }
 }
