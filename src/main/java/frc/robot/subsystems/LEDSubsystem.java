@@ -2,14 +2,13 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.CANdleConfiguration;
 import com.ctre.phoenix6.controls.ColorFlowAnimation;
-import com.ctre.phoenix6.controls.FireAnimation;
-import com.ctre.phoenix6.controls.LarsonAnimation;
-import com.ctre.phoenix6.controls.RainbowAnimation;
 import com.ctre.phoenix6.controls.SolidColor;
 import com.ctre.phoenix6.hardware.CANdle;
-import com.ctre.phoenix6.signals.LarsonBounceValue;
+import com.ctre.phoenix6.signals.Enable5VRailValue;
+import com.ctre.phoenix6.signals.LossOfSignalBehaviorValue;
 import com.ctre.phoenix6.signals.RGBWColor;
-import com.ctre.phoenix6.signals.StripTypeValue;
+import com.ctre.phoenix6.signals.StatusLedWhenActiveValue;
+import com.ctre.phoenix6.signals.VBatOutputModeValue;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -44,6 +43,10 @@ public class LEDSubsystem extends SubsystemBase {
         candleConfig = new CANdleConfiguration();
         
         candleConfig.LED.BrightnessScalar = 0.1;
+        candleConfig.CANdleFeatures.Enable5VRail = Enable5VRailValue.Disabled;
+        candleConfig.CANdleFeatures.StatusLedWhenActive = StatusLedWhenActiveValue.Enabled;
+        candleConfig.CANdleFeatures.VBatOutputMode = VBatOutputModeValue.Off;
+        candleConfig.LED.LossOfSignalBehavior = LossOfSignalBehaviorValue.DisableLEDs;
 
         candle.getConfigurator().apply(candleConfig);
     }
