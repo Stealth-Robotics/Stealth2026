@@ -8,7 +8,6 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -178,11 +177,17 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command activateSlowMo() {
-         return new StartEndCommand(
-            () -> { isSlowMoActive = true; DogLog.log("SlowMo:", "Active"); },
-            () -> { isSlowMoActive = false; DogLog.log("SlowMo:", "Inactive"); },
-            this
+        return new StartEndCommand(
+            () -> {
+                isSlowMoActive = true;
+                DogLog.log("SlowMo:", "Active");
+            },
+            () -> {
+                isSlowMoActive = false;
+                DogLog.log("SlowMo:", "Inactive");
+            }
         );
+
     }
 
     /*
@@ -255,5 +260,6 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
         DogLog.log("Drive/ModuleStates", drive.getModuleStates());
         DogLog.log("Drive/Rotation", drive.getPose().getRotation());
+        DogLog.log("Drive/SlowModeActive", this.isSlowMoActive);
     }
 }
