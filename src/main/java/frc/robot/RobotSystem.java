@@ -8,6 +8,7 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -61,6 +62,10 @@ public class RobotSystem extends SubsystemBase {
     private final double INTAKE_TOSS_PERCENTAGE_UP = 0.75;
     private final double DRIVE_SHOOT_SLOWDOWN_FACTOR = 0.25;
     private final double DRIVE_USER_SLOWDOWN_FACTOR = 0.2;
+
+    private final SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
+    private final SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);
+    private final SlewRateLimiter thetaLimiter = new SlewRateLimiter(5.0);
 
     private Timer tossTimer = new Timer();
 
@@ -148,15 +153,20 @@ public class RobotSystem extends SubsystemBase {
     public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta, BooleanSupplier isFieldCentric) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
+                double filteredX = xLimiter.calculate(x.getAsDouble());
+                double filteredY = yLimiter.calculate(y.getAsDouble());
+                double filteredTheta = thetaLimiter.calculate(theta.getAsDouble());
+                double speed = getDrivingSpeedScaleFactor();
+
                 return isFieldCentric.getAsBoolean() ?
                     drive.fieldCentric
-                        .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
-                        .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
-                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE * getDrivingSpeedScaleFactor()) :
+                        .withVelocityX(-filteredY * drive.MAX_SPEED * speed)
+                        .withVelocityY(-filteredX * drive.MAX_SPEED * speed)
+                        .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed) :
                     drive.robotCentric
-                        .withVelocityX(y.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
-                        .withVelocityY(x.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
-                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE * getDrivingSpeedScaleFactor());
+                        .withVelocityX(filteredY * drive.MAX_SPEED * speed)
+                        .withVelocityY(filteredX * drive.MAX_SPEED * speed)
+                        .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed);
             })
         );
     }
