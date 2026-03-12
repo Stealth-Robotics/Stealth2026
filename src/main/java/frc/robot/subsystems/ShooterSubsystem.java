@@ -70,6 +70,9 @@ public class ShooterSubsystem extends SubsystemBase {
     private final int HOOD_MOTOR_ID = 4;
     private final int HOOD_ENCODER_ID = 9;
 
+    private final int SHOOTER_STATOR_LIMIT = 60;
+    private final int HOOD_STATOR_LIMIT = 20;
+
     private boolean disableHood = false;
 
     private final Notification hoodLimitExceededError = 
@@ -85,15 +88,15 @@ public class ShooterSubsystem extends SubsystemBase {
         //Shooter motors configuration
         shooterConfig.Feedback.SensorToMechanismRatio = SHOOTER_MOTOR_TO_FLYWHEEL_RATIO;
 
-        shooterConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        shooterConfig.CurrentLimits.StatorCurrentLimit = 80;
-
         shooterConfig.Slot0.kP = SHOOTING_kP;
         shooterConfig.Slot0.kI = SHOOTING_kI;
         shooterConfig.Slot0.kD = SHOOTING_kD;
         shooterConfig.Slot0.kV = SHOOTING_kV;
         shooterConfig.Slot0.kS = SHOOTING_kS;
         shooterConfig.Slot0.kA = SHOOTING_kA;
+
+        shooterConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        shooterConfig.CurrentLimits.StatorCurrentLimit = SHOOTER_STATOR_LIMIT;
 
         shooterMotor1.getConfigurator().apply(shooterConfig);
         shooterMotor2.getConfigurator().apply(shooterConfig);
@@ -114,12 +117,12 @@ public class ShooterSubsystem extends SubsystemBase {
         hoodConfig.Feedback.FeedbackRemoteSensorID = hoodEncoder.getDeviceID();
         hoodConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
 
-        hoodConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        hoodConfig.CurrentLimits.StatorCurrentLimit = 30;
-
         hoodConfig.Slot0.kP = HOOD_kP;
         hoodConfig.Slot0.kI = HOOD_kI;
         hoodConfig.Slot0.kD = HOOD_kD;
+
+        hoodConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        hoodConfig.CurrentLimits.StatorCurrentLimit = HOOD_STATOR_LIMIT;
 
         hoodMotor.getConfigurator().apply(hoodConfig);
 

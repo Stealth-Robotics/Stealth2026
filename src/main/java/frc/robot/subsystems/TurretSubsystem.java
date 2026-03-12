@@ -46,6 +46,8 @@ public class TurretSubsystem extends SubsystemBase {
     private final int TURRET_MOTOR_ID = 7;
     private final int TURRET_ENCODER_ID = 8;
 
+    private final int TURRET_STATOR_LIMIT = 40;
+
     public TurretSubsystem() {
         turretMotor = new TalonFX(TURRET_MOTOR_ID);
         turretEncoder = new CANcoder(TURRET_ENCODER_ID);
@@ -54,7 +56,7 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig.Feedback.SensorToMechanismRatio = TURRET_SENSOR_TO_MECHANISM_RATIO;
 
         turretConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        turretConfig.CurrentLimits.StatorCurrentLimit = 60;
+        turretConfig.CurrentLimits.StatorCurrentLimit = TURRET_STATOR_LIMIT;
 
         turretConfig.Slot0.kP = kP;
         turretConfig.Slot0.kI = kI;

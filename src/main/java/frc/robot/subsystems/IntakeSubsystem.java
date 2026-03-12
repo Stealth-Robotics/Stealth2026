@@ -58,6 +58,9 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_MOTOR_ID = 17;
     private final int DEPLOY_ENCODER_ID = 18;
 
+    private final int DEPLOY_STATOR_LIMIT = 20;
+    private final int ROLLER_STATOR_LIMIT = 30;
+
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
         deployMotor = new TalonFX(DEPLOY_MOTOR_ID);
@@ -66,6 +69,9 @@ public class IntakeSubsystem extends SubsystemBase {
         //Roller motor config
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         rollerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+
+        rollerConfig.CurrentLimits.StatorCurrentLimit = ROLLER_STATOR_LIMIT;
+        rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
         rollerMotor.getConfigurator().apply(rollerConfig);
 
@@ -87,7 +93,7 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.Feedback.RotorToSensorRatio = DEPLOY_MOTOR_TO_ENCODER_RATIO;
 
         deployConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        deployConfig.CurrentLimits.StatorCurrentLimit = 80;
+        deployConfig.CurrentLimits.StatorCurrentLimit = DEPLOY_STATOR_LIMIT;
 
         deployConfig.Slot0.kP = RETRACT_kP;
         deployConfig.Slot0.kI = RETRACT_kI;
