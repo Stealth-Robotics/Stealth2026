@@ -30,7 +30,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kI = 15.0;
     private final double kD = 0.0;
 
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 2;
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 1.5;
 
     public final double MAX_TURRET_DEGREES = 121;
     private final double TURRET_HOME_DEGREES = 0;

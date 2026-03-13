@@ -28,8 +28,8 @@ public class TransferSubsystem extends SubsystemBase {
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
-    private final int SPINDEXER_STATOR_LIMIT = 35;
-    private final int FEEDER_STATOR_LIMIT = 35;
+    private final int SPINDEXER_STATOR_LIMIT = 45;
+    private final int FEEDER_STATOR_LIMIT = 45;
 
     public TransferSubsystem() {
         spindexerMotor = new TalonFX(SPINDEXER_MOTOR_ID);

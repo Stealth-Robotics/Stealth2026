@@ -61,7 +61,7 @@ public class RobotSystem extends SubsystemBase {
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 1;
     private final double INTAKE_TOSS_PERCENTAGE_UP = 0.75;
     private final double DRIVE_SHOOT_SLOWDOWN_FACTOR = 0.25;
-    private final double DRIVE_USER_SLOWDOWN_FACTOR = 0.2;
+    private final double DRIVE_USER_SLOWDOWN_FACTOR = 0.3;
 
     private final SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
     private final SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);

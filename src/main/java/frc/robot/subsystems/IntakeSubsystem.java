@@ -59,7 +59,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_ENCODER_ID = 18;
 
     private final int DEPLOY_STATOR_LIMIT = 20;
-    private final int ROLLER_STATOR_LIMIT = 60;
+    private final int ROLLER_STATOR_LIMIT = 70;
 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
@@ -161,6 +161,19 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command retractCommand() {
         return runOnce(() -> deploy());
+    }
+
+    public Command startIntaking() {
+        return run(()->{
+            deploy();
+            setRollerSpeed(MAX_ROLLER_SPEED);
+        });
+    }
+    public Command stopIntaking() {
+        return run(()->{
+            retract();
+            setRollerSpeed(0);
+        });
     }
 
     @Override

@@ -4,7 +4,9 @@ import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.subsystems.ClimbSubsystem;
@@ -73,11 +75,13 @@ public class Autos {
 
         String pathName = "LeftOneCyclePlusDepotSlow";
 
+        shooter.setState(ShooterState.HUB_TRACKING);
+
         AutoTrajectory path = routine.trajectory(pathName,0);
-        path.atTime("StartIntaking").onTrue(new SequentialCommandGroup(intake.deployCommand(), intake.intakeCommand()));
-        path.atTime("StopIntaking").onTrue(new SequentialCommandGroup(intake.retractCommand(), intake.stopCommand()));
-        path.atTime("StartShooting").onTrue(new SequentialCommandGroup(new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)), shooter.shoot()));
-        path.atTime("StopShooting").onTrue(new InstantCommand(() -> shooter.setState(ShooterState.IDLE)));
+        path.atTime("StartIntaking").onTrue(intake.startIntaking());
+        path.atTime("StopIntaking").onTrue(intake.stopIntaking());
+        path.atTime("StartShooting").onTrue(new RunCommand(() -> shooter.shoot()).until(path.atTime("StopShooting")));
+        path.atTime("StopShooting").onTrue(new ParallelCommandGroup(new InstantCommand(() -> shooter.setState(ShooterState.IDLE)),intake.startIntaking()));
 
         routine.active().onTrue(
             new SequentialCommandGroup(
