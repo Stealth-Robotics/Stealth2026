@@ -10,6 +10,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -30,7 +31,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kI = 15.0;
     private final double kD = 0.0;
 
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 1.5;
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 5.0;
 
     public final double MAX_TURRET_DEGREES = 121;
     private final double TURRET_HOME_DEGREES = 0;
@@ -109,5 +110,6 @@ public class TurretSubsystem extends SubsystemBase {
     public void periodic() {
         DogLogUtil.logDouble("Turret/turret_degrees", getTurretAngleDegrees());
         DogLogUtil.logDouble("Turret/turret_target_degrees", getTargetAngleDegrees());
+        DogLogUtil.logDouble("Turret/turret_error_degrees", getTurretAngleDegrees() - getTargetAngleDegrees());
     }
 }

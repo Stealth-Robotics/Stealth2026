@@ -65,8 +65,6 @@ public class RobotSystem extends SubsystemBase {
     private final SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);
     private final SlewRateLimiter thetaLimiter = new SlewRateLimiter(5.0);
 
-    private Timer tossTimer = new Timer();
-
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();

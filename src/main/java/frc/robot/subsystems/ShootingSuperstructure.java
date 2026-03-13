@@ -237,6 +237,7 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
     private boolean readyToShoot(BooleanSupplier override) {
+        // return override.getAsBoolean() || (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
         return override.getAsBoolean() || (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
     }
 

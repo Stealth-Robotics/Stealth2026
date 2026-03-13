@@ -16,6 +16,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -61,12 +62,18 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_ENCODER_ID = 18;
 
     private final int DEPLOY_STATOR_LIMIT = 20;
-    private final int ROLLER_STATOR_LIMIT = 70;
+    private final int ROLLER_STATOR_LIMIT = 80;
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 1;
     public static final double INTAKE_TOSS_PERCENTAGE_UP = 0.75;
 
     private Timer tossTimer = new Timer();
+
+    private IntakeState intakeState = IntakeState.RETRACTED;
+
+    public enum IntakeState {
+        DEPLOYED, AGITATING, RETRACTED;
+    }
 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
@@ -121,21 +128,28 @@ public class IntakeSubsystem extends SubsystemBase {
      * then back down to toss the fuel into the spindexer.
      */
     public Command toss(double upPercentage) {
-        return new SequentialCommandGroup(
+        return new ConditionalCommand(new SequentialCommandGroup(
             new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
             new WaitCommand(0.5),
-            new InstantCommand(() -> deploy())
+            new InstantCommand(() -> deploy())),
+            new InstantCommand(), 
+            () -> !this.intakeState.equals(IntakeState.DEPLOYED)
         );
     }
     public Command startAgitate() {
-        return new InstantCommand(() -> {
+        return new ConditionalCommand(new InstantCommand(() -> {
             tossTimer.reset();
             tossTimer.start();
-        });
+            intakeState = IntakeState.AGITATING;
+        }), new InstantCommand(), 
+        () -> !this.intakeState.equals(IntakeState.DEPLOYED));
     }
 
     public Command stopAgitate() {
-        return new InstantCommand(() -> tossTimer.stop());
+        return new InstantCommand(() -> {
+            tossTimer.stop();
+            intakeState = IntakeState.RETRACTED;
+        });
     }
 
     public boolean isDeployed() {
@@ -182,6 +196,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command startIntaking() {
         return run(()->{
+            intakeState = IntakeState.DEPLOYED;
             tossTimer.stop();
             tossTimer.reset();
             deploy();
@@ -190,13 +205,14 @@ public class IntakeSubsystem extends SubsystemBase {
     }
     public Command stopIntaking() {
         return run(()->{
+            intakeState = IntakeState.RETRACTED;
             setRollerSpeed(0);
         });
     }
 
     @Override
     public void periodic() {
-        if (tossTimer.hasElapsed(INTAKE_TOSS_INTERVAL_SECONDS)) {
+        if (tossTimer.hasElapsed(INTAKE_TOSS_INTERVAL_SECONDS) && intakeState.equals(IntakeState.AGITATING)) {
                 tossTimer.reset();
                 CommandScheduler.getInstance().schedule(toss(INTAKE_TOSS_PERCENTAGE_UP));
         }
