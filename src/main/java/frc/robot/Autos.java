@@ -38,34 +38,23 @@ public class Autos {
 
         String pathName = "RightOneCyclePlusOutpost";
 
-        AutoTrajectory goToCenter = routine.trajectory(pathName, 0);
-        AutoTrajectory startIntaking = routine.trajectory(pathName, 1);
-        AutoTrajectory stopIntaking = routine.trajectory(pathName, 2);
-        AutoTrajectory startShooting = routine.trajectory(pathName, 3);
-        AutoTrajectory goToOutpost = routine.trajectory(pathName, 4);
+        AutoTrajectory path = routine.trajectory(pathName, 0);
+        path.atTime("StartIntaking").onTrue(intake.startIntaking());
+        path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
+        path.atTime("StartShooting").onTrue(shooter.shoot().alongWith(intake.startAgitate()));
+        path.atTime("StopShooting").onTrue(shooter.shoot());
 
         routine.active().onTrue(
             new SequentialCommandGroup(
-                goToCenter.resetOdometry(),
-                goToCenter.cmd(),
-
-                intake.deployCommand(),
-                intake.intakeCommand(),
-
-                startIntaking.cmd(),
-                stopIntaking.cmd(),
-
-                intake.stopCommand(),
-
-                new ParallelDeadlineGroup(
-                    startShooting.cmd(),
-                    shooter.shoot()
-                ),
-
-                goToOutpost.cmd(),
-                new WaitCommand(2),
-                drive.applyRequest(() -> drive.brake),
-                shooter.shoot()
+                path.resetOdometry(),
+                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                path.cmd()
+            )
+        );
+        path.done().onTrue(
+            new SequentialCommandGroup(
+                intake.stopAgitate(),
+                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
             )
         );
 
@@ -81,7 +70,7 @@ public class Autos {
         path.atTime("StopIntaking").onTrue(intake.stopIntaking());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
         path.atTime("StartShooting").onTrue(shooter.shoot().alongWith(intake.startAgitate()));
-        path.atTime("StopShooting").onTrue(intake.startIntaking());
+        path.atTime("StopShooting").onTrue(intake.startIntaking().alongWith(shooter.shoot()));
 
         AutoTrajectory path2 = routine.trajectory(pathName,1);
 
@@ -89,58 +78,92 @@ public class Autos {
             new SequentialCommandGroup(
                 path.resetOdometry(),
                 new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
-                path.cmd(),
+                path.cmd()
+            )
+        );
+
+        path.done().onTrue(
+            new SequentialCommandGroup(
                 new WaitCommand(2),
+                intake.startAgitate(),
                 new ParallelDeadlineGroup(
                     path2.cmd(),
-                    shooter.shoot().alongWith(intake.startAgitate())
+                    shooter.shoot()
                 ),
-                new InstantCommand(() ->shooter.setState(ShooterState.IDLE))
+                intake.stopAgitate(),
+                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
             )
         );
+
         return routine;
     }
 
-    public AutoRoutine rightCenterAutoClimb() {
-        AutoRoutine routine = autoFactory.newRoutine("rightCenterAutoClimb");
-        String pathName = "RightCenterClimb";
-        
-        AutoTrajectory driveWhileShooting = routine.trajectory(pathName,0);
-        AutoTrajectory climbAlign = routine.trajectory(pathName,1);
+    public AutoRoutine centerPreload() {
+        AutoRoutine routine = autoFactory.newRoutine("routine");
 
-        routine.active().onTrue(
-            new SequentialCommandGroup(
-                driveWhileShooting.resetOdometry(),
-                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
-                shooter.shoot(),
-                driveWhileShooting.cmd(),
-                new WaitCommand(0.5),
-                new InstantCommand(() -> shooter.setState(ShooterState.IDLE)),
-                climbAlign.cmd()
-            )
-        );
-        return routine;
-    }
-        public AutoRoutine leftCenterAutoClimb() {
-        AutoRoutine routine = autoFactory.newRoutine("leftCenterAutoClimb");
-        String pathName = "LeftCenterClimb";
-        
-        AutoTrajectory driveWhileShooting = routine.trajectory(pathName,0);
-        AutoTrajectory climbAlign = routine.trajectory(pathName,1);
+        String pathName = "CenterPreload";
+
+        AutoTrajectory path = routine.trajectory(pathName, 0);
 
         routine.active().onTrue(
             new SequentialCommandGroup(
-                driveWhileShooting.resetOdometry(),
+                path.resetOdometry(),
                 new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                intake.startAgitate(),
                 shooter.shoot(),
-                driveWhileShooting.cmd(),
-                new WaitCommand(0.5),
-                new InstantCommand(() -> shooter.setState(ShooterState.IDLE)),
-                climbAlign.cmd()
+                path.cmd()
             )
         );
+
+        path.done().onTrue(
+            new SequentialCommandGroup(
+                intake.stopAgitate(),
+                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
+            )
+        );
+
         return routine;
     }
+    // public AutoRoutine rightCenterAutoClimb() {
+    //     AutoRoutine routine = autoFactory.newRoutine("rightCenterAutoClimb");
+    //     String pathName = "RightCenterClimb";
+        
+    //     AutoTrajectory driveWhileShooting = routine.trajectory(pathName,0);
+    //     AutoTrajectory climbAlign = routine.trajectory(pathName,1);
+
+    //     routine.active().onTrue(
+    //         new SequentialCommandGroup(
+    //             driveWhileShooting.resetOdometry(),
+    //             new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+    //             shooter.shoot(),
+    //             driveWhileShooting.cmd(),
+    //             new WaitCommand(0.5),
+    //             new InstantCommand(() -> shooter.setState(ShooterState.IDLE)),
+    //             climbAlign.cmd()
+    //         )
+    //     );
+    //     return routine;
+    // }
+    //     public AutoRoutine leftCenterAutoClimb() {
+    //     AutoRoutine routine = autoFactory.newRoutine("leftCenterAutoClimb");
+    //     String pathName = "LeftCenterClimb";
+        
+    //     AutoTrajectory driveWhileShooting = routine.trajectory(pathName,0);
+    //     AutoTrajectory climbAlign = routine.trajectory(pathName,1);
+
+    //     routine.active().onTrue(
+    //         new SequentialCommandGroup(
+    //             driveWhileShooting.resetOdometry(),
+    //             new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+    //             shooter.shoot(),
+    //             driveWhileShooting.cmd(),
+    //             new WaitCommand(0.5),
+    //             new InstantCommand(() -> shooter.setState(ShooterState.IDLE)),
+    //             climbAlign.cmd()
+    //         )
+    //     );
+    //     return routine;
+    // }
 
         public AutoRoutine simpleCenterAuto() {
         AutoRoutine routine = autoFactory.newRoutine("simpleCenterAuto");
