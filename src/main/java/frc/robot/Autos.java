@@ -90,8 +90,10 @@ public class Autos {
                 new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 path.cmd(),
                 new WaitCommand(2),
-                path2.cmd(),
-                shooter.shoot(),
+                new ParallelDeadlineGroup(
+                    path2.cmd(),
+                    shooter.shoot().alongWith(intake.startAgitate())
+                ),
                 new InstantCommand(() ->shooter.setState(ShooterState.IDLE))
             )
         );
