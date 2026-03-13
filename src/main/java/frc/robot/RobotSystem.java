@@ -280,6 +280,10 @@ public class RobotSystem extends SubsystemBase {
         return drive.sysIdDynamic(direction);
     }
 
+    public String getSysIdRoutineName() {
+        return drive.getSysIdRoutineName();
+    }
+
     // -------------------------------------------------------------------------
 
     @Override
@@ -304,6 +308,6 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
         DogLog.log("Drive/ModuleStates", drive.getModuleStates());
         DogLog.log("Drive/Rotation", drive.getPose().getRotation());
-        DogLog.log("Drive/SysId/ActiveRoutine", drive.getSysIdRoutineName());
+        // DogLog.log("Drive/SysId/ActiveRoutine", drive.getSysIdRoutineName());
     }
 }
