@@ -87,6 +87,7 @@ public class RobotContainer {
 
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
+        driverController.b().onTrue(robot.agitate());
 
         operatorController.a().whileTrue(robot.rotateRobotToShoot());
         operatorController.x().whileTrue(robot.activateSlowMo());

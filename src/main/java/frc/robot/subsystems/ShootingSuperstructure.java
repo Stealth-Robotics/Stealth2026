@@ -54,9 +54,9 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private final ShotParams leftPass = new ShotParams(new Translation3d(1.098, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams middlePass = new ShotParams(new Translation3d(1.098, 4, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams rightPass = new ShotParams(new Translation3d(1.098, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams leftPass = new ShotParams(new Translation3d(0, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams middlePass = new ShotParams(new Translation3d(0, 4, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams rightPass = new ShotParams(new Translation3d(0, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
@@ -200,7 +200,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             params.maxTrajectoryHeight()
         );
 
-        shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
+        shooter.setHoodDegrees(ShooterSubsystem.MAX_HOOD_DEGREES);
 
         Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
         Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());

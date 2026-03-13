@@ -116,14 +116,11 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command shoot() {
-        return shooter.shoot()
-            .beforeStarting(() -> {
-                tossTimer.start();
-            })
-            .finallyDo(() -> {
-                tossTimer.stop();
-                tossTimer.reset();
-            });       
+        return shooter.shoot();     
+    }
+
+    public Command agitate() {
+        return intake.toss(INTAKE_TOSS_PERCENTAGE_UP);
     }
 
     public Command clearTransfer() {
