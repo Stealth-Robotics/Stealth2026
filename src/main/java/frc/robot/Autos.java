@@ -80,7 +80,7 @@ public class Autos {
         path.atTime("StopIntaking").onTrue(intake.stopIntaking());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
         path.atTime("StartShooting").onTrue(shooter.shoot().alongWith(intake.startAgitate()));
-        path.atTime("StopShooting").onTrue(intake.startIntaking());
+        path.atTime("StopShooting").onTrue(intake.startIntaking().alongWith(shooter.shoot()));
 
         AutoTrajectory path2 = routine.trajectory(pathName,1);
 
@@ -88,15 +88,21 @@ public class Autos {
             new SequentialCommandGroup(
                 path.resetOdometry(),
                 new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
-                path.cmd(),
+                path.cmd()
+            )
+        );
+
+        path.done().onTrue(
+            new SequentialCommandGroup(
                 new WaitCommand(2),
                 new ParallelDeadlineGroup(
                     path2.cmd(),
-                    shooter.shoot().alongWith(intake.startAgitate())
+                    shooter.shoot()
                 ),
-                new InstantCommand(() ->shooter.setState(ShooterState.IDLE))
+                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
             )
         );
+
         return routine;
     }
     public AutoRoutine rightCenterAutoClimb() {
