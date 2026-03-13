@@ -141,6 +141,7 @@ public class IntakeSubsystem extends SubsystemBase {
             tossTimer.reset();
             tossTimer.start();
             intakeState = IntakeState.AGITATING;
+            System.out.println("Started agitating");
         }), new InstantCommand(), 
         () -> !this.intakeState.equals(IntakeState.DEPLOYED));
     }
@@ -149,6 +150,7 @@ public class IntakeSubsystem extends SubsystemBase {
         return new InstantCommand(() -> {
             tossTimer.stop();
             intakeState = IntakeState.RETRACTED;
+            System.out.println("Stopped agitating");
         });
     }
 

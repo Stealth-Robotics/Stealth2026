@@ -40,7 +40,7 @@ public class Autos {
 
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
-        path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
+        path.atTime("SpinUp").onTrue(shooter.spinUp(2500).alongWith(intake.stopIntaking()));
         path.atTime("StartShooting").onTrue(shooter.shoot().alongWith(intake.startAgitate()));
         path.atTime("StopShooting").onTrue(shooter.shoot());
 
@@ -53,6 +53,7 @@ public class Autos {
         );
         path.done().onTrue(
             new SequentialCommandGroup(
+                new WaitCommand(5),
                 intake.stopAgitate(),
                 new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
             )
@@ -133,10 +134,10 @@ public class Autos {
         AutoTrajectory stopspot = routine.trajectory(pathName,2);
 
         routine.active().onTrue(
-             Commands.sequence(
-            drive.resetOdometry(),
-            new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
-            drive.cmd().withTimeout(4))
+            Commands.sequence(
+                drive.resetOdometry(),
+                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                drive.cmd().withTimeout(4))
         );
 
         drive.done().onTrue(
