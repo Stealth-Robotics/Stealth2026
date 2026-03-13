@@ -95,10 +95,12 @@ public class Autos {
         path.done().onTrue(
             new SequentialCommandGroup(
                 new WaitCommand(2),
+                intake.startAgitate(),
                 new ParallelDeadlineGroup(
                     path2.cmd(),
                     shooter.shoot()
                 ),
+                intake.stopAgitate(),
                 new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
             )
         );

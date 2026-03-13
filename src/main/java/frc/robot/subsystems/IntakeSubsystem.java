@@ -128,14 +128,14 @@ public class IntakeSubsystem extends SubsystemBase {
         );
     }
     public Command startAgitate() {
-        return run(() -> {
+        return new InstantCommand(() -> {
             tossTimer.reset();
             tossTimer.start();
         });
     }
-    
+
     public Command stopAgitate() {
-        return run(() -> tossTimer.stop());
+        return new InstantCommand(() -> tossTimer.stop());
     }
 
     public boolean isDeployed() {
