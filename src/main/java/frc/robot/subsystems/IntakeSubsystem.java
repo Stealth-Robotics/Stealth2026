@@ -59,7 +59,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_ENCODER_ID = 18;
 
     private final int DEPLOY_STATOR_LIMIT = 20;
-    private final int ROLLER_STATOR_LIMIT = 30;
+    private final int ROLLER_STATOR_LIMIT = 60;
 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);

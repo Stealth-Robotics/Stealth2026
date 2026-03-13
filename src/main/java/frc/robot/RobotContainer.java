@@ -147,5 +147,7 @@ public class RobotContainer {
 
         DogLog.log("Hub Scorable", ShiftTracker.canScore());
         DogLog.log("Driving Mode", driveFieldCentric ? "Field Centric" : "Robot Centric");
+
+        DogLog.log("Drive/SysId/ActiveRoutine", robot.getSysIdRoutineName());
     }
 }
