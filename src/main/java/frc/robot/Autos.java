@@ -75,19 +75,24 @@ public class Autos {
 
         String pathName = "LeftOneCyclePlusDepotSlow";
 
-        shooter.setState(ShooterState.HUB_TRACKING);
-
         AutoTrajectory path = routine.trajectory(pathName,0);
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
         path.atTime("StopIntaking").onTrue(intake.stopIntaking());
-        path.atTime("SpinUp").onTrue(shooter.spinUp(1500));
-        path.atTime("StartShooting").onTrue(new SequentialCommandGroup(new RunCommand(() -> shooter.runShooter()), intake.startAgitate()));
+        path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
+        path.atTime("StartShooting").onTrue(shooter.shoot().alongWith(intake.startAgitate()));
         path.atTime("StopShooting").onTrue(intake.startIntaking());
+
+        AutoTrajectory path2 = routine.trajectory(pathName,1);
 
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                path.cmd()
+                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                path.cmd(),
+                new WaitCommand(2),
+                path2.cmd(),
+                shooter.shoot(),
+                new InstantCommand(() ->shooter.setState(ShooterState.IDLE))
             )
         );
         return routine;

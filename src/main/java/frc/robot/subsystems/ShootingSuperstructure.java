@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
@@ -109,17 +110,11 @@ public class ShootingSuperstructure extends SubsystemBase {
         return new InstantCommand(() -> shooter.spinToRPM(rpm));
     }
 
-    public void runShooter(){
-        shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
-        transfer.spin();
-        transfer.feed();
-    }
-
     public Command shoot() {
         return run(() -> {
             shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
 
-            if (readyToShoot()) {
+            if (readyToShoot(() -> DriverStation.isAutonomous())) {
             // if(true){
                 transfer.spin();
                 transfer.feed();
@@ -241,8 +236,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     /**
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
-    private boolean readyToShoot() {
-        return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady();
+    private boolean readyToShoot(BooleanSupplier override) {
+        return override.getAsBoolean() || (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
     }
 
     public boolean isShooting() {
