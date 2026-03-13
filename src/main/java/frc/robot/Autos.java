@@ -3,6 +3,7 @@ package frc.robot;
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
@@ -99,6 +100,7 @@ public class Autos {
         );
         return routine;
     }
+
     public AutoRoutine rightCenterAutoClimb() {
         AutoRoutine routine = autoFactory.newRoutine("rightCenterAutoClimb");
         String pathName = "RightCenterClimb";
@@ -137,6 +139,38 @@ public class Autos {
                 climbAlign.cmd()
             )
         );
+        return routine;
+    }
+
+        public AutoRoutine simpleCenterAuto() {
+        AutoRoutine routine = autoFactory.newRoutine("simpleCenterAuto");
+        String pathName = "SimpleShoot";
+        
+        AutoTrajectory drive = routine.trajectory(pathName,0);
+        AutoTrajectory shoot = routine.trajectory(pathName,1);
+        AutoTrajectory done = routine.trajectory(pathName,2);
+
+        routine.active().onTrue(
+             Commands.sequence(
+            drive.resetOdometry(),
+            new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+            drive.cmd().withTimeout(4))
+        );
+
+        shoot.active().whileTrue(
+            Commands.sequence(shooter.shoot(),
+            new WaitCommand(10))
+        );
+
+        shoot.done().onTrue(
+            Commands.sequence(
+                new WaitCommand(0.5),
+                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
+            )
+            
+        );
+
+
         return routine;
     }
 }

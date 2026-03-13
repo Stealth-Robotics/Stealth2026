@@ -129,6 +129,8 @@ public class RobotContainer {
         autoChooser.addRoutine("RightOneCyclePlusOutpost", () -> autos.rightOneCyclePlusOutpost());
         autoChooser.addRoutine("LeftOneCyclePlusDepot", () -> autos.leftOneCyclePlusDepot());
         autoChooser.addRoutine("RightCenterAutoClimb", () -> autos.rightCenterAutoClimb());
+        autoChooser.addRoutine("SimpleCenterAuto", () -> autos.simpleCenterAuto());
+
     } 
 
     //Used mostly for telemetry and logging general match info
