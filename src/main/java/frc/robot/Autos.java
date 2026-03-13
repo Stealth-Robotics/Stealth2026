@@ -80,8 +80,9 @@ public class Autos {
         AutoTrajectory path = routine.trajectory(pathName,0);
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
         path.atTime("StopIntaking").onTrue(intake.stopIntaking());
-        path.atTime("StartShooting").onTrue(new RunCommand(() -> shooter.shoot()).until(path.atTime("StopShooting")));
-        path.atTime("StopShooting").onTrue(new ParallelCommandGroup(new InstantCommand(() -> shooter.setState(ShooterState.IDLE)),intake.startIntaking()));
+        path.atTime("SpinUp").onTrue(shooter.spinUp(1500));
+        path.atTime("StartShooting").onTrue(new SequentialCommandGroup(new RunCommand(() -> shooter.runShooter()), intake.startAgitate()));
+        path.atTime("StopShooting").onTrue(intake.startIntaking());
 
         routine.active().onTrue(
             new SequentialCommandGroup(

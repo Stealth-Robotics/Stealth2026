@@ -17,7 +17,10 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotParams;
@@ -102,11 +105,22 @@ public class ShootingSuperstructure extends SubsystemBase {
         passingTarget = newTarget;
     }
 
+    public Command spinUp(double rpm) {
+        return new InstantCommand(() -> shooter.spinToRPM(rpm));
+    }
+
+    public void runShooter(){
+        shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
+        transfer.spin();
+        transfer.feed();
+    }
+
     public Command shoot() {
         return run(() -> {
             shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
 
             if (readyToShoot()) {
+            // if(true){
                 transfer.spin();
                 transfer.feed();
             }
@@ -130,6 +144,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
             return (state.equals(ShooterState.HUB_TRACKING) && ShiftTracker.canScore());
         });
+    }
+
+    public Command shootForTimeCommand(double time) {
+        return new ParallelDeadlineGroup(shoot(), new WaitCommand(time));
     }
 
     public Command clearTransfer() {

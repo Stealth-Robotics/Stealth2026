@@ -13,7 +13,9 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -60,6 +62,11 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final int DEPLOY_STATOR_LIMIT = 20;
     private final int ROLLER_STATOR_LIMIT = 70;
+
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = 1;
+    public static final double INTAKE_TOSS_PERCENTAGE_UP = 0.75;
+
+    private Timer tossTimer = new Timer();
 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
@@ -120,6 +127,16 @@ public class IntakeSubsystem extends SubsystemBase {
             new InstantCommand(() -> deploy())
         );
     }
+    public Command startAgitate() {
+        return run(() -> {
+            tossTimer.reset();
+            tossTimer.start();
+        });
+    }
+    
+    public Command stopAgitate() {
+        return run(() -> tossTimer.stop());
+    }
 
     public boolean isDeployed() {
         return !MathUtil.isNear(
@@ -165,19 +182,24 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command startIntaking() {
         return run(()->{
+            tossTimer.stop();
+            tossTimer.reset();
             deploy();
             setRollerSpeed(MAX_ROLLER_SPEED);
         });
     }
     public Command stopIntaking() {
         return run(()->{
-            retract();
             setRollerSpeed(0);
         });
     }
 
     @Override
     public void periodic() {
+        if (tossTimer.hasElapsed(INTAKE_TOSS_INTERVAL_SECONDS)) {
+                tossTimer.reset();
+                CommandScheduler.getInstance().schedule(toss(INTAKE_TOSS_PERCENTAGE_UP));
+        }
         DogLog.log("Intake/roller_speed", rollerMotor.get());
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
     }
