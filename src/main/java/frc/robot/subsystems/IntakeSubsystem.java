@@ -62,7 +62,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_ENCODER_ID = 18;
 
     private final int DEPLOY_STATOR_LIMIT = 20;
-    private final int ROLLER_STATOR_LIMIT = 80;
+    private final int ROLLER_STATOR_LIMIT = 90;
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 1;
     public static final double INTAKE_TOSS_PERCENTAGE_UP = 0.75;

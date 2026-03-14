@@ -165,6 +165,11 @@ public class ShootingSuperstructure extends SubsystemBase {
         turret.homeTurret();
     }
 
+    // Force change the tracking mode. USE WITH CAUTION
+    public void forceTracking() {
+        state = ShooterState.HUB_TRACKING;
+    }
+
     private void trackHub() {
         ShotParams params = AllianceUtility.flipPose(hub);
         Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
@@ -249,7 +254,9 @@ public class ShootingSuperstructure extends SubsystemBase {
     public void periodic() {
         switch (state) {
             case IDLE -> {
-                if (applyIdle) {
+                if(SmartDashboard.getBoolean("Override_Idle", false)){
+                    forceTracking();
+                } else if (applyIdle) {
                     idleSubsystems();
                 }
             }

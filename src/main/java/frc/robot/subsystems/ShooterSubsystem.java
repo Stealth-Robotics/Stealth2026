@@ -188,7 +188,7 @@ public class ShooterSubsystem extends SubsystemBase {
         double hoodDegrees = getHoodDegrees();
 
         if (!disableHood) {
-            if (hoodDegrees < MIN_HOOD_DEGREES - 2 || hoodDegrees > MAX_HOOD_DEGREES + 2) {
+            if (hoodDegrees < MIN_HOOD_DEGREES - 8 || hoodDegrees > MAX_HOOD_DEGREES + 8) {
                 hoodMotor.setControl(coast);
 
                 Elastic.sendNotification(hoodLimitExceededError);

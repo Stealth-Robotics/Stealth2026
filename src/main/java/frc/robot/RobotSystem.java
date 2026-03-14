@@ -9,11 +9,13 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -36,6 +38,7 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
+import frc.robot.util.AllianceUtility;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
@@ -54,7 +57,7 @@ public class RobotSystem extends SubsystemBase {
 
     private final Field2d fieldTelemetry = new Field2d();
 
-    private final double MIN_TAG_REJECTION_METERS = 4;
+    private final double MIN_TAG_REJECTION_METERS = 6;
     private final String LOCALIZATION_LIMELIGHT = "limelight-robot";
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
@@ -202,7 +205,14 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command seedFieldCentric() {
-        return runOnce(() -> drive.seedFieldCentric()).andThen(() -> shooter.setState(ShooterState.IDLE));
+         return runOnce(() -> drive.seedFieldCentric()).andThen(() -> shooter.setState(ShooterState.HUB_TRACKING));
+
+        // return new ConditionalCommand(
+        //         runOnce(()-> drive.resetPose(new Pose2d(3,4,Rotation2d.fromDegrees(0)))), 
+        //         runOnce(() -> drive.resetPose(new Pose2d(14,4,Rotation2d.fromDegrees(180)))),
+        //         () -> AllianceUtility.getAlliance().equals(Alliance.Blue))
+        //     .andThen(runOnce(() -> shooter.setState(ShooterState.HUB_TRACKING)))
+        //     .andThen(runOnce(() -> drive.seedFieldCentric()));
     }
 
     public Autos getAutos() {
@@ -223,7 +233,7 @@ public class RobotSystem extends SubsystemBase {
         if (Math.abs(robotAngularVelocity) < Math.PI) {
             PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LOCALIZATION_LIMELIGHT);
             if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
-                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 9999999));
+                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
                 ShotCalculator.updateVisionLatency(poseEstimate.latency);
             }
         }

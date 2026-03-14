@@ -17,7 +17,7 @@ public class ShiftTracker {
     /* This constant stands for the amount of time that you can shoot before it's legal
      * And still have the fuel count in the hub
     */
-    private static final double SCORING_DELAY_SECONDS = 0.8;
+    private static final double SCORING_DELAY_SECONDS = 0.2;
 
     //Just in case we start teleop without auto and we need to correctly offset the time
     private static double timeOffset = 0;

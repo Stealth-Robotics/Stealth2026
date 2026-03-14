@@ -90,12 +90,14 @@ public class Autos {
                 new ParallelDeadlineGroup(
                     path2.cmd(),
                     shooter.shoot()
-                ),
-                intake.stopAgitate(),
-                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
+                )
             )
         );
-
+        path2.done().onTrue(new SequentialCommandGroup(
+                new WaitCommand(4),
+                intake.stopAgitate(),
+                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
+        ));
         return routine;
     }
 

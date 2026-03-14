@@ -6,6 +6,8 @@ package frc.robot;
 import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
@@ -17,7 +19,7 @@ import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.subsystems.DriveSubsystem.FieldPose;
 import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+
 
 public class RobotContainer {
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -33,8 +35,8 @@ public class RobotContainer {
     public RobotContainer() {
 
         DogLog.setOptions(new DogLogOptions()
-            .withCaptureDs(true)
-            .withLogExtras(true)
+            .withCaptureDs(false)
+            .withLogExtras(false)
         );
 
         DogLog.setPdh(new PowerDistribution(63, ModuleType.kRev));
@@ -49,12 +51,14 @@ public class RobotContainer {
 
         //TODO: Commented out because we don't have the driver cam hooked up yet
         //Stream the driver camera to Elastic
-        UsbCamera camera = CameraServer.startAutomaticCapture();
-        camera.setResolution(640, 480);
-        camera.setFPS(30);
+
+        // UsbCamera camera = CameraServer.startAutomaticCapture(1);
+        
+        // camera.setResolution(640, 480);
+        // camera.setFPS(30);
 
         //Allows us to bypass the shift tracker for testing/emergency situations
-        SmartDashboard.putBoolean("Override ShiftTracker", false);
+        SmartDashboard.putBoolean("O+verride ShiftTracker", false);
 
         //Hahaha stopped the annoying warnings
         DriverStation.silenceJoystickConnectionWarning(true);
@@ -81,7 +85,7 @@ public class RobotContainer {
         );
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
-        driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
+        // driverController.povDown().onTrue(new InstantCommand(() -> driveFieldCentric = !driveFieldCentric));
 
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
@@ -117,6 +121,7 @@ public class RobotContainer {
     public void periodic() {
         AllianceUtility.update();
         ShiftTracker.update();
+        
 
         DogLog.log("Alliance", AllianceUtility.getAlliance().name());
         DogLog.log("Match Phase", ShiftTracker.getCurrentMatchPhase());

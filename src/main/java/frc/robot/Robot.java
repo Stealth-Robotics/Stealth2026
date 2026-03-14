@@ -26,7 +26,12 @@ public class Robot extends TimedRobot {
         //Stop hoot replay logging
         SignalLogger.enableAutoLogging(false);
 
-        //Set Limelight to use the robot's imu
+        // Mode 0 - EXTERNAL_ONLY: Uses only external robot IMU data (e.g., Pigeon 2) via SetRobotOrientation(). No internal IMU processing.
+        // Mode 1 - EXTERNAL_SEED: Uses external IMU data for botpose, but constantly seeds the internal IMU offset to match the external source, preparing for a switch to internal modes.
+        // Mode 2 - INTERNAL_ONLY: Relies solely on the internal fused IMU yaw.
+        // Mode 3 - INTERNAL_MT1_ASSIST: Fuses the internal IMU with MegaTag1 (MT1) vision yaw estimates to slowly correct IMU drift.
+        // Mode 4 - INTERNAL_EXTERNAL_ASSIST (Recommended): Fuses the internal IMU with external IMU data using a complementary filter, offering 1kHz motion updates while eliminating drift through external correction. 
+
         LimelightHelpers.SetIMUMode("limelight-robot", 0);
     }
 
