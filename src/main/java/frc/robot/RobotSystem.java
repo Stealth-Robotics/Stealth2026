@@ -31,6 +31,7 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.DriveSubsystem.FieldPose;
+import frc.robot.subsystems.LEDSubsystem.DisplayMode;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
@@ -242,6 +243,9 @@ public class RobotSystem extends SubsystemBase {
 
     public Command homeClimber() { return climb.stow().andThen(intake.stopAgitate()); }
     public Command toggleClimb() { return climb.toggleClimb(); }
+    public void disabledLeds() {
+        led.changeDisplayMode(DisplayMode.DISABLED);
+    }
 
     @Override
     public void periodic() {
