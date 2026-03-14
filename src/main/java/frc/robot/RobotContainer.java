@@ -49,9 +49,9 @@ public class RobotContainer {
 
         //TODO: Commented out because we don't have the driver cam hooked up yet
         //Stream the driver camera to Elastic
-        // UsbCamera camera = CameraServer.startAutomaticCapture();
-        // camera.setResolution(640, 480);
-        // camera.setFPS(30);
+        UsbCamera camera = CameraServer.startAutomaticCapture();
+        camera.setResolution(640, 480);
+        camera.setFPS(30);
 
         //Allows us to bypass the shift tracker for testing/emergency situations
         SmartDashboard.putBoolean("Override ShiftTracker", false);

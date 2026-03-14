@@ -68,9 +68,9 @@ public class ClimbSubsystem extends SubsystemBase {
         climbConfig.MotionMagic.MotionMagicCruiseVelocity = kCRUISE_VELOCITY;
 
         climbMotor1.getConfigurator().apply(climbConfig);
-        climbMotor2.getConfigurator().apply(climbConfig);
+        //climbMotor2.getConfigurator().apply(climbConfig);
 
-        climbMotor2.setControl(new Follower(CLIMB_MOTOR_1_ID, MotorAlignmentValue.Aligned));
+        //climbMotor2.setControl(new Follower(CLIMB_MOTOR_1_ID, MotorAlignmentValue.Aligned));
     }
     private void runToPosition(double inches) {
         climbMotor1.setControl(climbController.withSlot(0).withPosition(inches - CLIMB_ZERO_POS));
@@ -89,8 +89,12 @@ public class ClimbSubsystem extends SubsystemBase {
         return new InstantCommand(() -> runToPosition(CLIMB_IDLE_POS_INCHES));
     }
 
+
+
+
     @Override
     public void periodic() {
-        DogLogUtil.logDouble("Climb/climberPose", climbMotor1.get());
+        DogLogUtil.logDouble("Climb/Climber1_Pose", climbMotor1.getPosition().getValueAsDouble());
+        //DogLogUtil.logDouble("Climb/Climber2_Pose", climbMotor2.getPosition().getValueAsDouble());
     }
 }
