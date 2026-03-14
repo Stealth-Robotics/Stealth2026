@@ -240,44 +240,8 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("VisibleTagPoses", visibleTags);
     }
 
-    // -------------------------------------------------------------------------
-    // SysId — routine selection (D-pad)
-    // -------------------------------------------------------------------------
-
-    /** Selects the Translation routine as the active SysId routine. */
-    public Command selectSysIdTranslation() {
-        return runOnce(() -> drive.setSysIdRoutine(drive.getSysIdRoutineTranslation(), "Translation"));
-    }
-
-    /** Selects the Steer routine as the active SysId routine. */
-    public Command selectSysIdSteer() {
-        return runOnce(() -> drive.setSysIdRoutine(drive.getSysIdRoutineSteer(), "Steer"));
-    }
-
-    /** Selects the Rotation routine as the active SysId routine. */
-    public Command selectSysIdRotation() {
-        return runOnce(() -> drive.setSysIdRoutine(drive.getSysIdRoutineRotation(), "Rotation"));
-    }
-
-    // -------------------------------------------------------------------------
-    // SysId — test execution (back + face buttons)
-    // -------------------------------------------------------------------------
-
-    /** Runs a quasistatic test in the given direction using the currently selected routine. */
-    public Command driveSysIdQuasistatic(SysIdRoutine.Direction direction) {
-        return drive.sysIdQuasistatic(direction);
-    }
-
-    /** Runs a dynamic test in the given direction using the currently selected routine. */
-    public Command driveSysIdDynamic(SysIdRoutine.Direction direction) {
-        return drive.sysIdDynamic(direction);
-    }
-
-    public String getSysIdRoutineName() {
-        return drive.getSysIdRoutineName();
-    }
-
-    // -------------------------------------------------------------------------
+    public Command homeClimber() { return climb.stow().andThen(intake.stopAgitate()); }
+    public Command toggleClimb() { return climb.toggleClimb(); }
 
     @Override
     public void periodic() {

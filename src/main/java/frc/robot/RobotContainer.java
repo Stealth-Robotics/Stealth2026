@@ -23,8 +23,6 @@ public class RobotContainer {
     private final CommandXboxController driverController = new CommandXboxController(0);
     private final CommandXboxController operatorController = new CommandXboxController(1);
     
-    private final CommandXboxController testController = new CommandXboxController(3);
-
     private final RobotSystem robot;
 
     private final Autos autos;
@@ -99,26 +97,8 @@ public class RobotContainer {
         operatorController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
         operatorController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
 
-        // ----- SysId bindings -----
-        // D-pad selects which routine is active (logged to Drive/SysId/ActiveRoutine):
-        //   D-pad Left  → Translation
-        //   D-pad Up    → Steer
-        //   D-pad Right → Rotation
-        //
-        // Back + face button runs the currently selected routine:
-        //   Back + Y → quasistatic forward
-        //   Back + X → quasistatic reverse
-        //   Back + A → dynamic forward
-        //   Back + B → dynamic reverse
-
-        testController.povLeft().onTrue(robot.selectSysIdTranslation());
-        testController.povUp().onTrue(robot.selectSysIdSteer());
-        testController.povRight().onTrue(robot.selectSysIdRotation());
-
-        testController.back().and(testController.y()).whileTrue(robot.driveSysIdQuasistatic(SysIdRoutine.Direction.kForward));
-        testController.back().and(testController.x()).whileTrue(robot.driveSysIdQuasistatic(SysIdRoutine.Direction.kReverse));
-        testController.back().and(testController.a()).whileTrue(robot.driveSysIdDynamic(SysIdRoutine.Direction.kForward));
-        testController.back().and(testController.b()).whileTrue(robot.driveSysIdDynamic(SysIdRoutine.Direction.kReverse));
+        operatorController.povDown().onTrue(robot.homeClimber());
+        operatorController.y().onTrue(robot.toggleClimb());
     }
 
     /*
@@ -150,7 +130,5 @@ public class RobotContainer {
 
         DogLog.log("Hub Scorable", ShiftTracker.canScore());
         DogLog.log("Driving Mode", driveFieldCentric ? "Field Centric" : "Robot Centric");
-
-        DogLog.log("Drive/SysId/ActiveRoutine", robot.getSysIdRoutineName());
     }
 }
