@@ -31,6 +31,7 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.DriveSubsystem.FieldPose;
+import frc.robot.subsystems.LEDSubsystem.DisplayMode;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
@@ -240,44 +241,11 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("VisibleTagPoses", visibleTags);
     }
 
-    // -------------------------------------------------------------------------
-    // SysId — routine selection (D-pad)
-    // -------------------------------------------------------------------------
-
-    /** Selects the Translation routine as the active SysId routine. */
-    public Command selectSysIdTranslation() {
-        return runOnce(() -> drive.setSysIdRoutine(drive.getSysIdRoutineTranslation(), "Translation"));
+    public Command homeClimber() { return climb.stow().andThen(intake.stopAgitate()); }
+    public Command toggleClimb() { return climb.toggleClimb(); }
+    public void disabledLeds() {
+        led.changeDisplayMode(DisplayMode.DISABLED);
     }
-
-    /** Selects the Steer routine as the active SysId routine. */
-    public Command selectSysIdSteer() {
-        return runOnce(() -> drive.setSysIdRoutine(drive.getSysIdRoutineSteer(), "Steer"));
-    }
-
-    /** Selects the Rotation routine as the active SysId routine. */
-    public Command selectSysIdRotation() {
-        return runOnce(() -> drive.setSysIdRoutine(drive.getSysIdRoutineRotation(), "Rotation"));
-    }
-
-    // -------------------------------------------------------------------------
-    // SysId — test execution (back + face buttons)
-    // -------------------------------------------------------------------------
-
-    /** Runs a quasistatic test in the given direction using the currently selected routine. */
-    public Command driveSysIdQuasistatic(SysIdRoutine.Direction direction) {
-        return drive.sysIdQuasistatic(direction);
-    }
-
-    /** Runs a dynamic test in the given direction using the currently selected routine. */
-    public Command driveSysIdDynamic(SysIdRoutine.Direction direction) {
-        return drive.sysIdDynamic(direction);
-    }
-
-    public String getSysIdRoutineName() {
-        return drive.getSysIdRoutineName();
-    }
-
-    // -------------------------------------------------------------------------
 
     @Override
     public void periodic() {

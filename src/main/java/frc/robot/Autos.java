@@ -164,4 +164,32 @@ public class Autos {
         
         return routine;
     }
+
+    public AutoRoutine centerClimbAuto() {
+        AutoRoutine routine = autoFactory.newRoutine("centerClimbAuto");
+        String pathName = "CenterPreloadPlusClimb";
+
+        AutoTrajectory path = routine.trajectory(pathName, 0);
+
+        path.atTime("DeployClimb").onTrue(climb.reach());
+        path.atTime("StartShoot").onTrue(shooter.shoot());
+
+        routine.active().onTrue(
+            Commands.sequence(
+                path.resetOdometry(),
+                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                intake.startAgitate(),
+                shooter.spinUp(1500),
+                path.cmd().withTimeout(18)
+            )
+        );
+        path.done().onTrue(
+            Commands.sequence(
+                intake.stopAgitate(),
+                new InstantCommand(()->shooter.setState(ShooterState.IDLE)),
+                climb.ascend()
+            )
+        );
+        return routine;
+    }
 }
