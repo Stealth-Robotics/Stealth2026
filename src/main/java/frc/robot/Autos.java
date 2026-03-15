@@ -70,7 +70,8 @@ public class Autos {
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
         path.atTime("StopIntaking").onTrue(intake.stopIntaking());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
-        path.atTime("StartShooting").onTrue(shooter.shoot().alongWith(intake.startAgitate()));
+        // path.atTime("StartShooting").onTrue(shooter.shoot().alongWith(intake.startAgitate()));
+        path.atTime("StartShooting").onTrue(intake.startAgitate().alongWith(shooter.shoot()));
         path.atTime("StopShooting").onTrue(intake.startIntaking().alongWith(shooter.shoot()));
 
         AutoTrajectory path2 = routine.trajectory(pathName,1);
@@ -87,17 +88,19 @@ public class Autos {
             new SequentialCommandGroup(
                 new WaitCommand(2),
                 intake.startAgitate(),
-                new ParallelDeadlineGroup(
+                new ParallelCommandGroup(
                     path2.cmd(),
                     shooter.shoot()
                 )
             )
         );
+        
         path2.done().onTrue(new SequentialCommandGroup(
                 new WaitCommand(4),
                 intake.stopAgitate(),
                 new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
         ));
+
         return routine;
     }
 

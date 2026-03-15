@@ -39,7 +39,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final VelocityVoltage shooterController = new VelocityVoltage(0)
         .withEnableFOC(true);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.063721;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.116455;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.75;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;

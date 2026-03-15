@@ -96,6 +96,7 @@ public class RobotSystem extends SubsystemBase {
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy) {
         Command intakeDefaultCommand = run(() -> {
             intake.setRollerSpeed(rollerSpeed.getAsDouble());
+            intake.agitateFalse();
         }).beforeStarting(() -> {
             Trigger deployToggle = new Trigger(deploy);
             deployToggle.toggleOnTrue(

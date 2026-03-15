@@ -69,10 +69,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private Timer tossTimer = new Timer();
 
-    private IntakeState intakeState = IntakeState.RETRACTED;
+    private IntakeState intakeState = IntakeState.NOT_AGITATING;
 
     public enum IntakeState {
-        DEPLOYED, AGITATING, RETRACTED;
+        AGITATING, NOT_AGITATING;
     }
 
     public IntakeSubsystem() {
@@ -121,6 +121,7 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.getConfigurator().apply(deployConfig);
 
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
+        tossTimer.start();
     }
 
     /**
@@ -128,31 +129,48 @@ public class IntakeSubsystem extends SubsystemBase {
      * then back down to toss the fuel into the spindexer.
      */
     public Command toss(double upPercentage) {
-        return new ConditionalCommand(new SequentialCommandGroup(
+        // return new ConditionalCommand(new SequentialCommandGroup(
+        //     new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
+        //     new WaitCommand(0.5),
+        //     new InstantCommand(() -> deploy())),
+        //     new InstantCommand(), 
+        //     () -> this.intakeState.equals(IntakeState.AGITATING)
+        // );
+        return new SequentialCommandGroup(
             new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
             new WaitCommand(0.5),
-            new InstantCommand(() -> deploy())),
-            new InstantCommand(), 
-            () -> !this.intakeState.equals(IntakeState.DEPLOYED)
+            new InstantCommand(() -> deploy())
         );
     }
+
     public Command startAgitate() {
-        return new ConditionalCommand(new InstantCommand(() -> {
-            tossTimer.reset();
-            tossTimer.start();
+        return new InstantCommand(() -> {
             intakeState = IntakeState.AGITATING;
-            System.out.println("Started agitating");
-        }), new InstantCommand(), 
-        () -> !this.intakeState.equals(IntakeState.DEPLOYED));
+            DogLog.log("Intake/Agitating", true);
+        });
+    }
+
+    // public Command startAgitate(double upPercentage) {
+    //     return new SequentialCommandGroup(
+    //         new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
+    //         new WaitCommand(0.5),
+    //         new InstantCommand(() -> deploy())
+    //     );
+    // }
+    
+    public void agitateFalse() {
+        intakeState = IntakeState.NOT_AGITATING;
+        DogLog.log("Intake/Agitating", false);
     }
 
     public Command stopAgitate() {
         return new InstantCommand(() -> {
-            tossTimer.stop();
-            intakeState = IntakeState.RETRACTED;
-            System.out.println("Stopped agitating");
+            intakeState = IntakeState.NOT_AGITATING;
+            DogLog.log("Intake/Agitating", false);
         });
     }
+
+    public IntakeState getIntakeState() { return intakeState; }
 
     public boolean isDeployed() {
         return !MathUtil.isNear(
@@ -198,16 +216,14 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command startIntaking() {
         return run(()->{
-            intakeState = IntakeState.DEPLOYED;
-            tossTimer.stop();
-            tossTimer.reset();
+            intakeState = IntakeState.NOT_AGITATING;
             deploy();
             setRollerSpeed(MAX_ROLLER_SPEED);
         });
     }
     public Command stopIntaking() {
         return run(()->{
-            intakeState = IntakeState.RETRACTED;
+            intakeState = IntakeState.NOT_AGITATING;
             setRollerSpeed(0);
         });
     }
@@ -215,9 +231,10 @@ public class IntakeSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         if (tossTimer.hasElapsed(INTAKE_TOSS_INTERVAL_SECONDS) && intakeState.equals(IntakeState.AGITATING)) {
-                tossTimer.reset();
-                CommandScheduler.getInstance().schedule(toss(INTAKE_TOSS_PERCENTAGE_UP));
+                tossTimer.restart();
+                runOnce(()-> toss(INTAKE_TOSS_PERCENTAGE_UP));
         }
+
         DogLog.log("Intake/roller_speed", rollerMotor.get());
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
     }
