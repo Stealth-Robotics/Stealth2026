@@ -54,7 +54,7 @@ public class Autos {
         path.done().onTrue(
             new SequentialCommandGroup(
                 new WaitCommand(5),
-                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
+                shooter.shoot().alongWith(intake.autoToss().repeatedly()).alongWith(intake.intakeCommand())
             )
         );
 
