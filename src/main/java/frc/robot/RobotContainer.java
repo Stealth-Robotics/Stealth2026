@@ -103,6 +103,8 @@ public class RobotContainer {
 
         operatorController.povDown().onTrue(robot.homeClimber());
         operatorController.y().onTrue(robot.toggleClimb());
+
+        operatorController.leftTrigger(0.75).onTrue(robot.overrideShiftTracker());
     }
 
     /*

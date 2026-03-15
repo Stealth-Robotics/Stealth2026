@@ -128,6 +128,10 @@ public class RobotSystem extends SubsystemBase {
         return shooter.clearTransfer();
     }
 
+    public Command overrideShiftTracker() {
+        return shooter.overrideShiftTracker();
+    }
+
     private void updateShootingState() {
         FieldZone zone = ZoneManager.getZone();
 
