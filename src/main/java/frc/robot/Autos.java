@@ -41,7 +41,7 @@ public class Autos {
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500).alongWith(intake.stopIntaking()));
-        path.atTime("StartShooting").onTrue(shooter.shoot().alongWith(intake.startAgitate()));
+        path.atTime("StartShooting").onTrue(shooter.shoot());
         path.atTime("StopShooting").onTrue(shooter.shoot());
 
         routine.active().onTrue(
@@ -54,7 +54,6 @@ public class Autos {
         path.done().onTrue(
             new SequentialCommandGroup(
                 new WaitCommand(5),
-                intake.stopAgitate(),
                 new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
             )
         );
@@ -70,8 +69,7 @@ public class Autos {
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
         path.atTime("StopIntaking").onTrue(intake.stopIntaking());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
-        // path.atTime("StartShooting").onTrue(shooter.shoot().alongWith(intake.startAgitate()));
-        path.atTime("StartShooting").onTrue(intake.startAgitate().alongWith(shooter.shoot()));
+        path.atTime("StartShooting").onTrue(shooter.shoot());
         path.atTime("StopShooting").onTrue(intake.startIntaking().alongWith(shooter.shoot()));
 
         AutoTrajectory path2 = routine.trajectory(pathName,1);
@@ -110,17 +108,13 @@ public class Autos {
             new SequentialCommandGroup(
                 path.resetOdometry(),
                 new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
-                intake.startAgitate(),
                 shooter.shoot(),
                 path.cmd()
             )
         );
 
         path.done().onTrue(
-            new SequentialCommandGroup(
-                intake.stopAgitate(),
-                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
-            )
+            new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
         );
 
         return routine;
@@ -178,14 +172,12 @@ public class Autos {
             Commands.sequence(
                 path.resetOdometry(),
                 new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
-                intake.startAgitate(),
                 shooter.spinUp(1500),
                 path.cmd().withTimeout(18)
             )
         );
         path.done().onTrue(
             Commands.sequence(
-                intake.stopAgitate(),
                 new InstantCommand(()->shooter.setState(ShooterState.IDLE)),
                 climb.ascend()
             )

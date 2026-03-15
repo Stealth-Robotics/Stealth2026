@@ -96,7 +96,6 @@ public class RobotSystem extends SubsystemBase {
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy) {
         Command intakeDefaultCommand = run(() -> {
             intake.setRollerSpeed(rollerSpeed.getAsDouble());
-            intake.agitateFalse();
         }).beforeStarting(() -> {
             Trigger deployToggle = new Trigger(deploy);
             deployToggle.toggleOnTrue(
@@ -260,7 +259,7 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("VisibleTagPoses", visibleTags);
     }
 
-    public Command homeClimber() { return climb.stow().andThen(intake.stopAgitate()); }
+    public Command homeClimber() { return climb.stow(); }
     public Command toggleClimb() { return climb.toggleClimb(); }
     public void disabledLeds() {
         led.changeDisplayMode(DisplayMode.DISABLED);

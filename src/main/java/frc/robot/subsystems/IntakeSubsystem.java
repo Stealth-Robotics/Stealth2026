@@ -13,10 +13,7 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -64,16 +61,8 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_STATOR_LIMIT = 20;
     private final int ROLLER_STATOR_LIMIT = 90;
 
-    private final double INTAKE_TOSS_INTERVAL_SECONDS = 1;
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.5;
     public static final double INTAKE_TOSS_PERCENTAGE_UP = 0.75;
-
-    private Timer tossTimer = new Timer();
-
-    private IntakeState intakeState = IntakeState.NOT_AGITATING;
-
-    public enum IntakeState {
-        AGITATING, NOT_AGITATING;
-    }
 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
@@ -121,24 +110,16 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.getConfigurator().apply(deployConfig);
 
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
-        tossTimer.start();
     }
 
     /**
-     * Moves the intake up to the desired percentage of the fully up position and 
+     * Moves the intake up to the desired percentage of the fully up position and
      * then back down to toss the fuel into the spindexer.
      */
     public Command toss(double upPercentage) {
-        // return new ConditionalCommand(new SequentialCommandGroup(
-        //     new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
-        //     new WaitCommand(0.5),
-        //     new InstantCommand(() -> deploy())),
-        //     new InstantCommand(), 
-        //     () -> this.intakeState.equals(IntakeState.AGITATING)
-        // );
         return new SequentialCommandGroup(
             new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
-            new WaitCommand(0.5),
+            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> deploy())
         );
     }
@@ -149,35 +130,6 @@ public class IntakeSubsystem extends SubsystemBase {
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS)
         );
     }
-
-    public Command startAgitate() {
-        return new InstantCommand(() -> {
-            intakeState = IntakeState.AGITATING;
-            DogLog.log("Intake/Agitating", true);
-        });
-    }
-
-    // public Command startAgitate(double upPercentage) {
-    //     return new SequentialCommandGroup(
-    //         new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
-    //         new WaitCommand(0.5),
-    //         new InstantCommand(() -> deploy())
-    //     );
-    // }
-    
-    public void agitateFalse() {
-        intakeState = IntakeState.NOT_AGITATING;
-        DogLog.log("Intake/Agitating", false);
-    }
-
-    public Command stopAgitate() {
-        return new InstantCommand(() -> {
-            intakeState = IntakeState.NOT_AGITATING;
-            DogLog.log("Intake/Agitating", false);
-        });
-    }
-
-    public IntakeState getIntakeState() { return intakeState; }
 
     public boolean isDeployed() {
         return !MathUtil.isNear(
@@ -220,14 +172,12 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command startIntaking() {
         return run(()->{
-            intakeState = IntakeState.NOT_AGITATING;
             deploy();
             setRollerSpeed(MAX_ROLLER_SPEED);
         });
     }
     public Command stopIntaking() {
         return run(()->{
-            intakeState = IntakeState.NOT_AGITATING;
             setRollerSpeed(0);
         });
     }
