@@ -152,7 +152,7 @@ public class RobotSystem extends SubsystemBase {
      * <p>Makes the wheels brake if no gamepad input is provided. Using the isFieldCentric supplier
      * allows us to change modes mid match.</p>
      */
-    public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta, BooleanSupplier isFieldCentric) {
+    public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta, BooleanSupplier isFieldCentric, BooleanSupplier brake) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
                 double filteredX = xLimiter.calculate(x.getAsDouble());
@@ -160,11 +160,15 @@ public class RobotSystem extends SubsystemBase {
                 double filteredTheta = thetaLimiter.calculate(theta.getAsDouble());
                 double speed = getDrivingSpeedScaleFactor();
 
-                return isFieldCentric.getAsBoolean() ?
+                return brake.getAsBoolean() ?
+                drive.brake :
+
+                isFieldCentric.getAsBoolean() ?
                     drive.fieldCentric
                         .withVelocityX(-filteredY * drive.MAX_SPEED * speed)
                         .withVelocityY(-filteredX * drive.MAX_SPEED * speed)
                         .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed) :
+                        
                     drive.robotCentric
                         .withVelocityX(filteredY * drive.MAX_SPEED * speed)
                         .withVelocityY(filteredX * drive.MAX_SPEED * speed)
