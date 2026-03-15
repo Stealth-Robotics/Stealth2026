@@ -143,6 +143,13 @@ public class IntakeSubsystem extends SubsystemBase {
         );
     }
 
+    public Command autoToss() {
+        return new SequentialCommandGroup(
+            toss(INTAKE_TOSS_PERCENTAGE_UP),
+            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS)
+        );
+    }
+
     public Command startAgitate() {
         return new InstantCommand(() -> {
             intakeState = IntakeState.AGITATING;
@@ -210,9 +217,6 @@ public class IntakeSubsystem extends SubsystemBase {
         return runOnce(() -> deploy());
     }
 
-    public Command retractCommand() {
-        return runOnce(() -> deploy());
-    }
 
     public Command startIntaking() {
         return run(()->{

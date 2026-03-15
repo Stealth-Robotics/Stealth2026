@@ -86,18 +86,13 @@ public class Autos {
 
         path.done().onTrue(
             new SequentialCommandGroup(
-                new WaitCommand(2),
-                intake.startAgitate(),
-                new ParallelCommandGroup(
-                    path2.cmd(),
-                    shooter.shoot()
-                )
+                new WaitCommand(1.5),
+                path2.cmd().alongWith(shooter.shoot()).alongWith(intake.autoToss().repeatedly())
             )
         );
         
         path2.done().onTrue(new SequentialCommandGroup(
                 new WaitCommand(4),
-                intake.stopAgitate(),
                 new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
         ));
 
