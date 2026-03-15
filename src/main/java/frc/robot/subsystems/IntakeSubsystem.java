@@ -234,11 +234,6 @@ public class IntakeSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (tossTimer.hasElapsed(INTAKE_TOSS_INTERVAL_SECONDS) && intakeState.equals(IntakeState.AGITATING)) {
-                tossTimer.restart();
-                runOnce(()-> toss(INTAKE_TOSS_PERCENTAGE_UP));
-        }
-
         DogLog.log("Intake/roller_speed", rollerMotor.get());
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
     }
