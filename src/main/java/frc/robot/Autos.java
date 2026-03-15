@@ -87,7 +87,13 @@ public class Autos {
         path.done().onTrue(
             new SequentialCommandGroup(
                 new WaitCommand(1.5),
-                path2.cmd().alongWith(shooter.shoot()).alongWith(intake.autoToss().repeatedly())
+                new ParallelDeadlineGroup(
+                    path2.cmd(), //Deadline
+
+                    //Follower commands
+                    shooter.shoot(),
+                    intake.autoToss().repeatedly()
+                )
             )
         );
         
