@@ -35,8 +35,10 @@ public class RobotContainer {
     public RobotContainer() {
 
         DogLog.setOptions(new DogLogOptions()
-            .withCaptureDs(false)
-            .withLogExtras(false)
+            .withCaptureDs(true)
+            .withLogExtras(true)
+            .withCaptureConsole(true)
+            .withCaptureNt(true)
         );
 
         DogLog.setPdh(new PowerDistribution(63, ModuleType.kRev));
