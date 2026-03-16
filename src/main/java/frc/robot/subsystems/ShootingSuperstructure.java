@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
@@ -7,8 +8,6 @@ import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.signals.UpdateModeValue;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -16,16 +15,14 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.AllianceUtility;
-import frc.robot.util.RectZone;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator;
@@ -56,14 +53,16 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
     private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 6;
 
+    private boolean overrideShiftTracker = false;
+
     //The target pose that we are currently aiming at
     private Translation3d aimingTarget = Translation3d.kZero;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private final ShotParams leftPass = new ShotParams(new Translation3d(1.098, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams middlePass = new ShotParams(new Translation3d(1.098, 4, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams rightPass = new ShotParams(new Translation3d(1.098, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams leftPass = new ShotParams(new Translation3d(0, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams middlePass = new ShotParams(new Translation3d(0, 4, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams rightPass = new ShotParams(new Translation3d(0, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
@@ -109,11 +108,16 @@ public class ShootingSuperstructure extends SubsystemBase {
         passingTarget = newTarget;
     }
 
+    public Command spinUp(double rpm) {
+        return new InstantCommand(() -> shooter.spinToRPM(rpm));
+    }
+
     public Command shoot() {
         return run(() -> {
             shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
 
-            if (readyToShoot()) {
+            if (readyToShoot(() -> DriverStation.isAutonomous())) {
+            // if(true){
                 transfer.spin();
                 transfer.feed();
             }
@@ -132,11 +136,15 @@ public class ShootingSuperstructure extends SubsystemBase {
             isShooting = false;
         })
         .onlyWhile(() -> {
-            if (SmartDashboard.getBoolean("Override ShiftTracker", false))
+            if (SmartDashboard.getBoolean("Override ShiftTracker", false) || state.equals(ShooterState.PASSING) || overrideShiftTracker)
                 return true;
 
-            return (state.equals(ShooterState.HUB_TRACKING) && ShiftTracker.canScore()) || state.equals(ShooterState.PASSING);
+            return (state.equals(ShooterState.HUB_TRACKING) && ShiftTracker.canScore());
         });
+    }
+
+    public Command shootForTimeCommand(double time) {
+        return new ParallelDeadlineGroup(shoot(), new WaitCommand(time));
     }
 
     public Command clearTransfer() {
@@ -157,6 +165,11 @@ public class ShootingSuperstructure extends SubsystemBase {
         shooter.setHoodDegrees(0);
 
         turret.homeTurret();
+    }
+
+    // Force change the tracking mode. USE WITH CAUTION
+    public void forceTracking() {
+        state = ShooterState.HUB_TRACKING;
     }
 
     private void trackHub() {
@@ -184,6 +197,10 @@ public class ShootingSuperstructure extends SubsystemBase {
         aimingTarget = params.target();
     }
 
+    public Command overrideShiftTracker() {
+        return new InstantCommand(() -> overrideShiftTracker = true);
+    }
+
     /**
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
@@ -207,7 +224,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             params.maxTrajectoryHeight()
         );
 
-        shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
+        shooter.setHoodDegrees(ShooterSubsystem.MAX_HOOD_DEGREES);
 
         Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
         Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
@@ -230,8 +247,9 @@ public class ShootingSuperstructure extends SubsystemBase {
     /**
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
      */
-    private boolean readyToShoot() {
-        return !state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady();
+    private boolean readyToShoot(BooleanSupplier override) {
+        // return override.getAsBoolean() || (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
+        return override.getAsBoolean() || (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
     }
 
     public boolean isShooting() {
@@ -242,7 +260,9 @@ public class ShootingSuperstructure extends SubsystemBase {
     public void periodic() {
         switch (state) {
             case IDLE -> {
-                if (applyIdle) {
+                if(SmartDashboard.getBoolean("Override_Idle", false)){
+                    forceTracking();
+                } else if (applyIdle) {
                     idleSubsystems();
                 }
             }

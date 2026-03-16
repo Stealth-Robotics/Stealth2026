@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.*;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.SignalLogger;
@@ -23,6 +24,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
@@ -114,7 +117,7 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         new SysIdRoutine.Config(
             null,        // Use default ramp rate (1 V/s)
             Volts.of(4), // Reduce dynamic step voltage to 4 V to prevent brownout
-            null,        // Use default timeout (10 s)
+            Units.Seconds.of(5.0),        // Use default timeout (10 s)
             // Log state with SignalLogger class
             state -> SignalLogger.writeString("SysIdTranslation_State", state.toString())
         ),
@@ -170,6 +173,9 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
 
     /* The SysId routine to test */
     private SysIdRoutine m_sysIdRoutineToApply = m_sysIdRoutineTranslation;
+
+    /* Human-readable name of the currently selected SysId routine, used for logging */
+    private String m_sysIdRoutineName = "Translation";
 
     /**
      * Constructs a CTRE SwerveDrivetrain using the specified constants.
@@ -278,6 +284,23 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     public Command sysIdDynamic(SysIdRoutine.Direction direction) {
         return m_sysIdRoutineToApply.dynamic(direction);
     }
+
+    /**
+     * Sets the active SysId routine and updates the logged routine name.
+     *
+     * @param routine   The SysId routine to apply
+     * @param routineName Human-readable name for logging (e.g. "Translation", "Steer", "Rotation")
+     */
+    public void setSysIdRoutine(SysIdRoutine routine, String routineName) {
+        m_sysIdRoutineToApply = routine;
+        m_sysIdRoutineName = routineName;
+    }
+
+    public SysIdRoutine getSysIdRoutineTranslation() { return m_sysIdRoutineTranslation; }
+    public SysIdRoutine getSysIdRoutineSteer()       { return m_sysIdRoutineSteer; }
+    public SysIdRoutine getSysIdRoutineRotation()    { return m_sysIdRoutineRotation; }
+
+    public String getSysIdRoutineName() { return m_sysIdRoutineName; }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Pose2d getPose() {

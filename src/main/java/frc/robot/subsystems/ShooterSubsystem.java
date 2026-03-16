@@ -4,7 +4,6 @@ import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.Follower;
-import com.ctre.phoenix6.controls.MotionMagicVelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -40,7 +39,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final VelocityVoltage shooterController = new VelocityVoltage(0)
         .withEnableFOC(true);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.016357421875;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.116455;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.75;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
@@ -49,7 +48,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 60;
     private final double MAX_POSSIBLE_RPM = 3800;
 
-    private final double MAX_HOOD_DEGREES = 21.3;
+    public static final double MAX_HOOD_DEGREES = 21.3;
     private final double MIN_HOOD_DEGREES = 0;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;
@@ -71,6 +70,9 @@ public class ShooterSubsystem extends SubsystemBase {
     private final int HOOD_MOTOR_ID = 4;
     private final int HOOD_ENCODER_ID = 9;
 
+    private final int SHOOTER_STATOR_LIMIT = 60;
+    private final int HOOD_STATOR_LIMIT = 20;
+
     private boolean disableHood = false;
 
     private final Notification hoodLimitExceededError = 
@@ -86,15 +88,15 @@ public class ShooterSubsystem extends SubsystemBase {
         //Shooter motors configuration
         shooterConfig.Feedback.SensorToMechanismRatio = SHOOTER_MOTOR_TO_FLYWHEEL_RATIO;
 
-        shooterConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        shooterConfig.CurrentLimits.StatorCurrentLimit = 80;
-
         shooterConfig.Slot0.kP = SHOOTING_kP;
         shooterConfig.Slot0.kI = SHOOTING_kI;
         shooterConfig.Slot0.kD = SHOOTING_kD;
         shooterConfig.Slot0.kV = SHOOTING_kV;
         shooterConfig.Slot0.kS = SHOOTING_kS;
         shooterConfig.Slot0.kA = SHOOTING_kA;
+
+        shooterConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        shooterConfig.CurrentLimits.StatorCurrentLimit = SHOOTER_STATOR_LIMIT;
 
         shooterMotor1.getConfigurator().apply(shooterConfig);
         shooterMotor2.getConfigurator().apply(shooterConfig);
@@ -115,12 +117,12 @@ public class ShooterSubsystem extends SubsystemBase {
         hoodConfig.Feedback.FeedbackRemoteSensorID = hoodEncoder.getDeviceID();
         hoodConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
 
-        hoodConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        hoodConfig.CurrentLimits.StatorCurrentLimit = 30;
-
         hoodConfig.Slot0.kP = HOOD_kP;
         hoodConfig.Slot0.kI = HOOD_kI;
         hoodConfig.Slot0.kD = HOOD_kD;
+
+        hoodConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        hoodConfig.CurrentLimits.StatorCurrentLimit = HOOD_STATOR_LIMIT;
 
         hoodMotor.getConfigurator().apply(hoodConfig);
 
@@ -186,7 +188,7 @@ public class ShooterSubsystem extends SubsystemBase {
         double hoodDegrees = getHoodDegrees();
 
         if (!disableHood) {
-            if (hoodDegrees < MIN_HOOD_DEGREES - 2 || hoodDegrees > MAX_HOOD_DEGREES + 2) {
+            if (hoodDegrees < MIN_HOOD_DEGREES - 8 || hoodDegrees > MAX_HOOD_DEGREES + 8) {
                 hoodMotor.setControl(coast);
 
                 Elastic.sendNotification(hoodLimitExceededError);

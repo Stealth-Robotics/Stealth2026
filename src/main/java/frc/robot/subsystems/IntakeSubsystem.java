@@ -2,7 +2,6 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -36,6 +35,7 @@ public class IntakeSubsystem extends SubsystemBase {
         .withEnableFOC(true);
 
     private final double INTAKE_ROLLER_VOLTAGE = 7;
+    private final double MAX_ROLLER_SPEED = 0.8;
 
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.4013671875;
 
@@ -45,15 +45,24 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.651;
 
     private final double DEPLOYED_ROTATIONS = 0;
-    private final double RETRACTED_ROTATIONS = 0.3;
+    private final double RETRACTED_ROTATIONS = 0.308;
 
-    private final double DEPLOY_kP = 42;
+    private final double DEPLOY_kP = 30;
+    private final double RETRACT_kP = 35;
+    private final double DEPLOY_kI = 0;
+    private final double RETRACT_kI = 0.09;
     private final double DEPLOY_kACCEL = 10;
     private final double DEPLOY_kVELO = 50;
 
     private final int ROLLER_MOTOR_ID = 16;
     private final int DEPLOY_MOTOR_ID = 17;
     private final int DEPLOY_ENCODER_ID = 18;
+
+    private final int DEPLOY_STATOR_LIMIT = 20;
+    private final int ROLLER_STATOR_LIMIT = 90;
+
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.5;
+    public static final double INTAKE_TOSS_PERCENTAGE_UP = 0.75;
 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
@@ -63,6 +72,9 @@ public class IntakeSubsystem extends SubsystemBase {
         //Roller motor config
         rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         rollerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+
+        rollerConfig.CurrentLimits.StatorCurrentLimit = ROLLER_STATOR_LIMIT;
+        rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
         rollerMotor.getConfigurator().apply(rollerConfig);
 
@@ -84,26 +96,38 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.Feedback.RotorToSensorRatio = DEPLOY_MOTOR_TO_ENCODER_RATIO;
 
         deployConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        deployConfig.CurrentLimits.StatorCurrentLimit = 80;
+        deployConfig.CurrentLimits.StatorCurrentLimit = DEPLOY_STATOR_LIMIT;
 
-        deployConfig.Slot0.kP = DEPLOY_kP;
+        deployConfig.Slot0.kP = RETRACT_kP;
+        deployConfig.Slot0.kI = RETRACT_kI;
+
+        deployConfig.Slot1.kP = DEPLOY_kP;
+        deployConfig.Slot1.kI = DEPLOY_kI;
+        
         deployConfig.MotionMagic.MotionMagicAcceleration = DEPLOY_kACCEL;
         deployConfig.MotionMagic.MotionMagicCruiseVelocity = DEPLOY_kVELO;
 
         deployMotor.getConfigurator().apply(deployConfig);
 
-        deployMotor.setControl(deployController.withPosition(deployMotor.getPosition().getValue()));
+        deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
     }
 
     /**
-     * Moves the intake up to the desired percentage of the fully up position and 
+     * Moves the intake up to the desired percentage of the fully up position and
      * then back down to toss the fuel into the spindexer.
      */
     public Command toss(double upPercentage) {
         return new SequentialCommandGroup(
-            new InstantCommand(() -> deployMotor.setControl(deployController.withPosition(RETRACTED_ROTATIONS * upPercentage))),
-            new WaitCommand(0.1),
+            new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
+            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> deploy())
+        );
+    }
+
+    public Command autoToss() {
+        return new SequentialCommandGroup(
+            toss(INTAKE_TOSS_PERCENTAGE_UP),
+            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS)
         );
     }
 
@@ -119,18 +143,22 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerMotor.setControl(rollerController.withOutput(INTAKE_ROLLER_VOLTAGE * percentOfVoltage));
     }
 
+    private void bumpDeploy(double rotations) {
+        deployMotor.setControl(deployController.withSlot(0).withPosition(rotations));
+    }
+
     public void deploy() {
-        deployMotor.setControl(deployController.withPosition(DEPLOYED_ROTATIONS));
+        deployMotor.setControl(deployController.withSlot(1).withPosition(DEPLOYED_ROTATIONS));
     }
 
     public void retract() {
-        deployMotor.setControl(deployController.withPosition(RETRACTED_ROTATIONS));
+        deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS));
     }
 
     // AUTO COMMANDS
 
     public Command intakeCommand() {
-        return runOnce(() -> setRollerSpeed(0.8));
+        return runOnce(() -> setRollerSpeed(MAX_ROLLER_SPEED));
     }
 
     public Command stopCommand() {
@@ -141,8 +169,17 @@ public class IntakeSubsystem extends SubsystemBase {
         return runOnce(() -> deploy());
     }
 
-    public Command retractCommand() {
-        return runOnce(() -> deploy());
+
+    public Command startIntaking() {
+        return run(()->{
+            deploy();
+            setRollerSpeed(MAX_ROLLER_SPEED);
+        });
+    }
+    public Command stopIntaking() {
+        return run(()->{
+            setRollerSpeed(0);
+        });
     }
 
     @Override

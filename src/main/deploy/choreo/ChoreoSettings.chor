@@ -76,7 +76,7 @@
  },
  "generationFeatures":[],
  "codegen":{
-  "root":"..\\C:\\Users\\Portobello\\Documents\\GitHub\\Stealth2026\\src\\main\\deploy",
+  "root":"choreo",
   "genVars":true,
   "genTrajData":true,
   "useChoreoLib":true

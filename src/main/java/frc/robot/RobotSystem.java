@@ -8,12 +8,14 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -21,18 +23,22 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.DriveSubsystem.FieldPose;
+import frc.robot.subsystems.LEDSubsystem.DisplayMode;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
+import frc.robot.util.AllianceUtility;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
@@ -46,16 +52,22 @@ public class RobotSystem extends SubsystemBase {
     private final ShootingSuperstructure shooter;
     private final ClimbSubsystem climb;
     private final LEDSubsystem led;
+    
+    private boolean isSlowMoActive = false;
 
     private final Field2d fieldTelemetry = new Field2d();
 
-    private final double MIN_TAG_REJECTION_METERS = 4;
+    private final double MIN_TAG_REJECTION_METERS = 6;
     private final String LOCALIZATION_LIMELIGHT = "limelight-robot";
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
-    private final double INTAKE_TOSS_INTERVAL_SECONDS = 1;
-    private final double INTAKE_TOSS_PERCENTAGE_UP = 0.3;
+    private final double DRIVE_SHOOT_SLOWDOWN_FACTOR = 0.25;
+    private final double DRIVE_USER_SLOWDOWN_FACTOR = 0.3;
+
+    private final SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
+    private final SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);
+    private final SlewRateLimiter thetaLimiter = new SlewRateLimiter(5.0);
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -101,28 +113,19 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command shoot() {
-        Timer tossTimer = new Timer();
+        return shooter.shoot();     
+    }
 
-        return shooter.shoot().alongWith(
-            run(() -> {
-                if (tossTimer.hasElapsed(INTAKE_TOSS_INTERVAL_SECONDS)) {
-                    tossTimer.reset();
-
-                    CommandScheduler.getInstance().schedule(intake.toss(INTAKE_TOSS_PERCENTAGE_UP));
-                }
-            })
-            .beforeStarting(() -> {
-                tossTimer.start();
-            })
-            .finallyDo(() -> {
-                tossTimer.stop();
-                tossTimer.reset();
-            })
-        );        
+    public Command agitate() {
+        return intake.toss(IntakeSubsystem.INTAKE_TOSS_PERCENTAGE_UP);
     }
 
     public Command clearTransfer() {
         return shooter.clearTransfer();
+    }
+
+    public Command overrideShiftTracker() {
+        return shooter.overrideShiftTracker();
     }
 
     private void updateShootingState() {
@@ -148,15 +151,20 @@ public class RobotSystem extends SubsystemBase {
     public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta, BooleanSupplier isFieldCentric) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
+                double filteredX = xLimiter.calculate(x.getAsDouble());
+                double filteredY = yLimiter.calculate(y.getAsDouble());
+                double filteredTheta = thetaLimiter.calculate(theta.getAsDouble());
+                double speed = getDrivingSpeedScaleFactor();
+
                 return isFieldCentric.getAsBoolean() ?
                     drive.fieldCentric
-                        .withVelocityX(-y.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
-                        .withVelocityY(-x.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
-                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE * getDrivingSpeedScaleFactor()) :
+                        .withVelocityX(-filteredY * drive.MAX_SPEED * speed)
+                        .withVelocityY(-filteredX * drive.MAX_SPEED * speed)
+                        .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed) :
                     drive.robotCentric
-                        .withVelocityX(y.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
-                        .withVelocityY(x.getAsDouble() * drive.MAX_SPEED * getDrivingSpeedScaleFactor())
-                        .withRotationalRate(-theta.getAsDouble() * drive.MAX_ANGULAR_RATE * getDrivingSpeedScaleFactor());
+                        .withVelocityX(filteredY * drive.MAX_SPEED * speed)
+                        .withVelocityY(filteredX * drive.MAX_SPEED * speed)
+                        .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed);
             })
         );
     }
@@ -165,14 +173,28 @@ public class RobotSystem extends SubsystemBase {
      * Allows us to slow down when performing certain actions like shooting or climbing
      */
     public double getDrivingSpeedScaleFactor() {
-        if (shooter.isShooting())
-            return 0.35;
+        if (shooter.isShooting()) {
+            return DRIVE_SHOOT_SLOWDOWN_FACTOR;
+        } else if (this.isSlowMoActive) {
+            return DRIVE_USER_SLOWDOWN_FACTOR;
+        }
 
         return 1.0;
     }
 
     public Command driveToPose(FieldPose targetPose) {
         return drive.goToPose(() -> targetPose);
+    }
+
+    public Command activateSlowMo() {
+        return new StartEndCommand(
+            () -> {
+                isSlowMoActive = true;
+            },
+            () -> {
+                isSlowMoActive = false;
+            }
+        );
     }
 
     /*
@@ -184,7 +206,14 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command seedFieldCentric() {
-        return runOnce(() -> drive.seedFieldCentric()).andThen(() -> shooter.setState(ShooterState.IDLE));
+         return runOnce(() -> drive.seedFieldCentric()).andThen(() -> shooter.setState(ShooterState.HUB_TRACKING));
+
+        // return new ConditionalCommand(
+        //         runOnce(()-> drive.resetPose(new Pose2d(3,4,Rotation2d.fromDegrees(0)))), 
+        //         runOnce(() -> drive.resetPose(new Pose2d(14,4,Rotation2d.fromDegrees(180)))),
+        //         () -> AllianceUtility.getAlliance().equals(Alliance.Blue))
+        //     .andThen(runOnce(() -> shooter.setState(ShooterState.HUB_TRACKING)))
+        //     .andThen(runOnce(() -> drive.seedFieldCentric()));
     }
 
     public Autos getAutos() {
@@ -205,7 +234,7 @@ public class RobotSystem extends SubsystemBase {
         if (Math.abs(robotAngularVelocity) < Math.PI) {
             PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LOCALIZATION_LIMELIGHT);
             if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
-                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 9999999));
+                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
                 ShotCalculator.updateVisionLatency(poseEstimate.latency);
             }
         }
@@ -215,12 +244,18 @@ public class RobotSystem extends SubsystemBase {
         
         Pose3d[] visibleTags = new Pose3d[currentTags.length];
         for (int i = 0; i < currentTags.length; i++) {
-            Pose3d tagPose =  tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
+            Pose3d tagPose = tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
             if (tagPose != null)
                 visibleTags[i] = tagPose;
         }
 
         DogLog.log("VisibleTagPoses", visibleTags);
+    }
+
+    public Command homeClimber() { return climb.stow(); }
+    public Command toggleClimb() { return climb.toggleClimb(); }
+    public void disabledLeds() {
+        led.changeDisplayMode(DisplayMode.DISABLED);
     }
 
     @Override
@@ -239,5 +274,6 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
         DogLog.log("Drive/ModuleStates", drive.getModuleStates());
         DogLog.log("Drive/Rotation", drive.getPose().getRotation());
+        // DogLog.log("Drive/SysId/ActiveRoutine", drive.getSysIdRoutineName());
     }
 }
