@@ -169,15 +169,18 @@ public class IntakeSubsystem extends SubsystemBase {
         return runOnce(() -> deploy());
     }
 
+    public Command retractCommand() {
+        return runOnce(() -> retract());
+    }
 
     public Command startIntaking() {
-        return run(()->{
+        return run(() -> {
             deploy();
             setRollerSpeed(MAX_ROLLER_SPEED);
         });
     }
     public Command stopIntaking() {
-        return run(()->{
+        return run(() -> {
             setRollerSpeed(0);
         });
     }

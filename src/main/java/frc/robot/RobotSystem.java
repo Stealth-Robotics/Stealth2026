@@ -9,18 +9,13 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
@@ -28,7 +23,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.ClimbSubsystem;
 import frc.robot.subsystems.DriveSubsystem;
@@ -38,7 +32,6 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
-import frc.robot.util.AllianceUtility;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
@@ -53,8 +46,6 @@ public class RobotSystem extends SubsystemBase {
     private final ClimbSubsystem climb;
     private final LEDSubsystem led;
     
-    private boolean isSlowMoActive = false;
-
     private final Field2d fieldTelemetry = new Field2d();
 
     private final double MIN_TAG_REJECTION_METERS = 6;
@@ -62,8 +53,26 @@ public class RobotSystem extends SubsystemBase {
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
-    private final double DRIVE_SHOOT_SLOWDOWN_FACTOR = 0.25;
-    private final double DRIVE_USER_SLOWDOWN_FACTOR = 0.3;
+    private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
+
+    private enum DrivingMode {
+        NORMAL(1.0),
+        SHOOTING(0.25),
+        PRECISION(0.2);
+
+        /**
+         * Allows us to slow down when performing certain actions like shooting or climbing
+         */
+        final double slowingFactor;
+
+        DrivingMode(double slowingFactor) {
+            this.slowingFactor = slowingFactor;
+        }
+
+        double getSlowingFactor() {
+            return slowingFactor;
+        }
+    }
 
     private final SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
     private final SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);
@@ -154,7 +163,7 @@ public class RobotSystem extends SubsystemBase {
                 double filteredX = xLimiter.calculate(x.getAsDouble());
                 double filteredY = yLimiter.calculate(y.getAsDouble());
                 double filteredTheta = thetaLimiter.calculate(theta.getAsDouble());
-                double speed = getDrivingSpeedScaleFactor();
+                double speed = currentDrivingMode.getSlowingFactor();
 
                 return isFieldCentric.getAsBoolean() ?
                     drive.fieldCentric
@@ -169,30 +178,17 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
-    /**
-     * Allows us to slow down when performing certain actions like shooting or climbing
-     */
-    public double getDrivingSpeedScaleFactor() {
-        if (shooter.isShooting()) {
-            return DRIVE_SHOOT_SLOWDOWN_FACTOR;
-        } else if (this.isSlowMoActive) {
-            return DRIVE_USER_SLOWDOWN_FACTOR;
-        }
-
-        return 1.0;
-    }
-
     public Command driveToPose(FieldPose targetPose) {
         return drive.goToPose(() -> targetPose);
     }
 
-    public Command activateSlowMo() {
+    public Command activatePrecisionDriving() {
         return new StartEndCommand(
             () -> {
-                isSlowMoActive = true;
+                currentDrivingMode = DrivingMode.PRECISION;
             },
             () -> {
-                isSlowMoActive = false;
+                currentDrivingMode = DrivingMode.NORMAL;
             }
         );
     }
@@ -206,14 +202,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command seedFieldCentric() {
-         return runOnce(() -> drive.seedFieldCentric()).andThen(() -> shooter.setState(ShooterState.HUB_TRACKING));
-
-        // return new ConditionalCommand(
-        //         runOnce(()-> drive.resetPose(new Pose2d(3,4,Rotation2d.fromDegrees(0)))), 
-        //         runOnce(() -> drive.resetPose(new Pose2d(14,4,Rotation2d.fromDegrees(180)))),
-        //         () -> AllianceUtility.getAlliance().equals(Alliance.Blue))
-        //     .andThen(runOnce(() -> shooter.setState(ShooterState.HUB_TRACKING)))
-        //     .andThen(runOnce(() -> drive.seedFieldCentric()));
+        return runOnce(() -> drive.seedFieldCentric());
     }
 
     public Autos getAutos() {
@@ -252,8 +241,14 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("VisibleTagPoses", visibleTags);
     }
 
-    public Command homeClimber() { return climb.stow(); }
-    public Command toggleClimb() { return climb.toggleClimb(); }
+    public Command homeClimber() {
+        return climb.stow();
+    }
+
+    public Command toggleClimb() { 
+        return climb.toggleClimb();
+    }
+
     public void disabledLeds() {
         led.changeDisplayMode(DisplayMode.DISABLED);
     }
@@ -274,6 +269,5 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
         DogLog.log("Drive/ModuleStates", drive.getModuleStates());
         DogLog.log("Drive/Rotation", drive.getPose().getRotation());
-        // DogLog.log("Drive/SysId/ActiveRoutine", drive.getSysIdRoutineName());
     }
 }
