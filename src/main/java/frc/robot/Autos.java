@@ -19,15 +19,13 @@ import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 public class Autos {
     private final AutoFactory autoFactory;
 
-    private final DriveSubsystem drive;
     private final IntakeSubsystem intake;
     private final ShootingSuperstructure shooter;
     private final ClimbSubsystem climb;
 
-    public Autos(AutoFactory autoFactory, DriveSubsystem drive, IntakeSubsystem intake, ShootingSuperstructure shooter, ClimbSubsystem climb) {
+    public Autos(AutoFactory autoFactory, IntakeSubsystem intake, ShootingSuperstructure shooter, ClimbSubsystem climb) {
         this.autoFactory = autoFactory;
         
-        this.drive = drive;
         this.intake = intake;
         this.shooter = shooter;
         this.climb = climb;
@@ -54,7 +52,7 @@ public class Autos {
         path.done().onTrue(
             new SequentialCommandGroup(
                 new WaitCommand(5),
-                shooter.shoot().alongWith(intake.autoToss().repeatedly()).alongWith(intake.intakeCommand())
+                shooter.shoot().alongWith(intake.agitate().repeatedly()).alongWith(intake.intakeCommand())
             )
         );
 
@@ -85,14 +83,15 @@ public class Autos {
         path.done().onTrue(
             new SequentialCommandGroup(
                 new WaitCommand(1.5),
-                path2.cmd().alongWith(shooter.shoot()).alongWith(intake.autoToss().repeatedly())
+                path2.cmd().alongWith(shooter.shoot()).alongWith(intake.agitate().repeatedly())
             )
         );
         
-        path2.done().onTrue(new SequentialCommandGroup(
-                new WaitCommand(4),
-                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
-        ));
+        // Shouldn't need this now
+        // path2.done().onTrue(new SequentialCommandGroup(
+        //         new WaitCommand(4),
+        //         new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
+        // ));
 
         return routine;
     }
@@ -113,9 +112,10 @@ public class Autos {
             )
         );
 
-        path.done().onTrue(
-            new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
-        );
+        // Shouldn't need this now
+        // path.done().onTrue(
+        //     new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
+        // );
 
         return routine;
     }
@@ -149,11 +149,12 @@ public class Autos {
         //     )
         // );
 
-        stopspot.done().onTrue(
-            Commands.sequence(
-                new WaitCommand(0.5),
-                new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
-            ));
+        // Shouldn't need this now
+        // stopspot.done().onTrue(
+        //     Commands.sequence(
+        //         new WaitCommand(0.5),
+        //         new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
+        //     ));
         
         
         return routine;
@@ -177,10 +178,7 @@ public class Autos {
             )
         );
         path.done().onTrue(
-            Commands.sequence(
-                new InstantCommand(()->shooter.setState(ShooterState.IDLE)),
-                climb.ascend()
-            )
+            climb.ascend()
         );
         return routine;
     }

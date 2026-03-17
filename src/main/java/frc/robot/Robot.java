@@ -75,6 +75,7 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousExit() {
+        m_robotContainer.resetAfterAuto();
     }
 
     @Override

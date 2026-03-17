@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
@@ -80,7 +81,6 @@ public class RobotContainer {
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
         
-        driverController.b().onTrue(robot.agitate());
         operatorController.b().onTrue(robot.agitate());
 
         operatorController.a().whileTrue(robot.rotateRobotToShoot());
@@ -127,5 +127,9 @@ public class RobotContainer {
     // Sets default light state when disabled
     public void disabledPeriodic() {
         robot.disabledLeds();
+    }
+
+    public void resetAfterAuto() {
+        CommandScheduler.getInstance().schedule(robot.deactivateShooter());
     }
 }

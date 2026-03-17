@@ -113,8 +113,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         return run(() -> {
             shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
 
-            if (readyToShoot(() -> DriverStation.isAutonomous())) {
-            // if(true){
+            if (readyToShoot()) {
                 transfer.spin();
                 transfer.feed();
             }
@@ -151,6 +150,10 @@ public class ShootingSuperstructure extends SubsystemBase {
         });
     }
 
+    public void coastShooter() {
+        shooter.coastShooter();
+    }
+
     /**
      * Set the hood, turret, and flywheel to their homed/idle states (zeroed and unpowered)
      */
@@ -159,11 +162,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         shooter.setHoodDegrees(0);
 
         turret.homeTurret();
-    }
-
-    // Force change the tracking mode. USE WITH CAUTION
-    public void forceTracking() {
-        state = ShooterState.HUB_TRACKING;
     }
 
     private void trackHub() {
@@ -236,10 +234,11 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     /**
      * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
+     * OR if we are in autonomous and just want to shoot no matter what.
      */
-    private boolean readyToShoot(BooleanSupplier override) {
-        // return override.getAsBoolean() || (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
-        return override.getAsBoolean() || (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
+    private boolean readyToShoot() {
+        return DriverStation.isAutonomous() || 
+        (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
     }
 
     public boolean isShooting() {
@@ -250,9 +249,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     public void periodic() {
         switch (state) {
             case IDLE -> {
-                if(SmartDashboard.getBoolean("Override_Idle", false)){
-                    forceTracking();
-                } else if (applyIdle) {
+                if (applyIdle) {
                     idleSubsystems();
                 }
             }

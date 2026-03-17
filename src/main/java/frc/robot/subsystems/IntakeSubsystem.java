@@ -1,5 +1,7 @@
 package frc.robot.subsystems;
 
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -62,7 +64,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int ROLLER_STATOR_LIMIT = 90;
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.5;
-    public static final double INTAKE_TOSS_PERCENTAGE_UP = 0.75;
+    private final double INTAKE_TOSS_PERCENTAGE = 0.75;
 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
@@ -116,17 +118,11 @@ public class IntakeSubsystem extends SubsystemBase {
      * Moves the intake up to the desired percentage of the fully up position and
      * then back down to toss the fuel into the spindexer.
      */
-    public Command toss(double upPercentage) {
+    public Command agitate() {
         return new SequentialCommandGroup(
-            new InstantCommand(() -> bumpDeploy(RETRACTED_ROTATIONS * upPercentage)),
+            new InstantCommand(() -> deployTo(RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE)),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
-            new InstantCommand(() -> deploy())
-        );
-    }
-
-    public Command autoToss() {
-        return new SequentialCommandGroup(
-            toss(INTAKE_TOSS_PERCENTAGE_UP),
+            new InstantCommand(() -> deploy()),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS)
         );
     }
@@ -143,7 +139,7 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerMotor.setControl(rollerController.withOutput(INTAKE_ROLLER_VOLTAGE * percentOfVoltage));
     }
 
-    private void bumpDeploy(double rotations) {
+    private void deployTo(double rotations) {
         deployMotor.setControl(deployController.withSlot(0).withPosition(rotations));
     }
 

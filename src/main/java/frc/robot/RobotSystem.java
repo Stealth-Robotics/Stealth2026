@@ -122,11 +122,15 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command shoot() {
-        return shooter.shoot();     
+        return shooter.shoot().alongWith(intake.agitate().repeatedly());
+    }
+
+    public Command deactivateShooter() {
+        return new InstantCommand(() -> shooter.setState(ShooterState.IDLE));
     }
 
     public Command agitate() {
-        return intake.toss(IntakeSubsystem.INTAKE_TOSS_PERCENTAGE_UP);
+        return intake.agitate();
     }
 
     public Command clearTransfer() {
@@ -199,7 +203,6 @@ public class RobotSystem extends SubsystemBase {
     public Autos getAutos() {
         return new Autos(
             drive.createAutoFactory(),
-            drive,
             intake,
             shooter,
             climb
