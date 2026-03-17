@@ -55,10 +55,11 @@ public class RobotSystem extends SubsystemBase {
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
 
-    private enum DrivingMode {
+    public enum DrivingMode {
         NORMAL(1.0),
         SHOOTING(0.25),
-        PRECISION(0.2);
+        PRECISION(0.2),
+        ROBOT_CENTRIC(1.0);
 
         /**
          * Allows us to slow down when performing certain actions like shooting or climbing
@@ -165,12 +166,23 @@ public class RobotSystem extends SubsystemBase {
                 double filteredTheta = thetaLimiter.calculate(theta.getAsDouble());
                 double speed = currentDrivingMode.getSlowingFactor();
 
-                return drive.fieldCentric
+                return (currentDrivingMode.equals(DrivingMode.ROBOT_CENTRIC)) ?
+                    drive.robotCentric
+                        .withVelocityX(filteredY * drive.MAX_SPEED * speed)
+                        .withVelocityY(filteredX * drive.MAX_SPEED * speed)
+                        .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed) :
+                    drive.fieldCentric
                         .withVelocityX(-filteredY * drive.MAX_SPEED * speed)
                         .withVelocityY(-filteredX * drive.MAX_SPEED * speed)
                         .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed);
             })
         );
+    }
+
+    public void toggleDrivingMode() {
+        if (currentDrivingMode.equals(DrivingMode.ROBOT_CENTRIC))
+            currentDrivingMode = DrivingMode.NORMAL;
+        else currentDrivingMode = DrivingMode.ROBOT_CENTRIC;
     }
 
     public Command driveToPose(FieldPose targetPose) {
@@ -258,6 +270,7 @@ public class RobotSystem extends SubsystemBase {
         fieldTelemetry.setRobotPose(drive.getPose());
 
         DogLog.log("Current Zone", ZoneManager.getZone().name());
+        DogLog.log("Driving Mode", currentDrivingMode.name());
 
         //TODO: Drive telemetry for testing
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
