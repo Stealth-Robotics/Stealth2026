@@ -23,7 +23,6 @@ import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AllianceUtility;
-import frc.robot.util.ShiftTracker;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator;
 
@@ -52,8 +51,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
     private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 6;
-
-    private boolean overrideShiftTracker = false;
 
     //The target pose that we are currently aiming at
     private Translation3d aimingTarget = Translation3d.kZero;
@@ -136,10 +133,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             isShooting = false;
         })
         .onlyWhile(() -> {
-            if (SmartDashboard.getBoolean("Override ShiftTracker", false) || state.equals(ShooterState.PASSING) || overrideShiftTracker)
-                return true;
-
-            return (state.equals(ShooterState.HUB_TRACKING) && ShiftTracker.canScore());
+            return !state.equals(ShooterState.IDLE);
         });
     }
 
@@ -195,10 +189,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         calculateTurretLockError(turretTargetRot.getDegrees());
 
         aimingTarget = params.target();
-    }
-
-    public Command overrideShiftTracker() {
-        return new InstantCommand(() -> overrideShiftTracker = true);
     }
 
     /**

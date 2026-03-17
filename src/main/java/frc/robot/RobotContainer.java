@@ -29,8 +29,6 @@ public class RobotContainer {
 
     private final Autos autos;
     private final AutoChooser autoChooser;
-
-    private boolean driveFieldCentric = true;
     
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
@@ -50,13 +48,6 @@ public class RobotContainer {
         autoChooser = new AutoChooser();
         SmartDashboard.putData("Auto Chooser", autoChooser);
 
-        //TODO: Commented out because we don't have the driver cam hooked up yet
-        //Stream the driver camera to Elastic
-
-        // UsbCamera camera = CameraServer.startAutomaticCapture(1);
-        // camera.setResolution(640, 480);
-        // camera.setFPS(30);
-
         //Allows us to bypass the shift tracker for testing/emergency situations
         SmartDashboard.putBoolean("Override ShiftTracker", false);
 
@@ -75,8 +66,7 @@ public class RobotContainer {
         robot.setDriveDefaultCommand(
             () -> driverController.getLeftX(),
             () -> driverController.getLeftY(),
-            () -> driverController.getRightX(),
-            () -> driveFieldCentric
+            () -> driverController.getRightX()
         );
 
         robot.setIntakeDefaultCommand(
@@ -132,7 +122,6 @@ public class RobotContainer {
         DogLog.log("Shift Time Left", timeString);
 
         DogLog.log("Hub Scorable", ShiftTracker.canScore());
-        DogLog.log("Driving Mode", driveFieldCentric ? "Field Centric" : "Robot Centric");
     }
 
     // Sets default light state when disabled
