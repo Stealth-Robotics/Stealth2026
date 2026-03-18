@@ -180,10 +180,12 @@ public class IntakeSubsystem extends SubsystemBase {
     public void periodic() {
         DogLog.log("Intake/roller_speed", rollerMotor.get());
         DogLogUtil.logDouble("Intake/roller_current", rollerMotor.getSupplyCurrent().getValueAsDouble());
+        DogLogUtil.logDouble("Intake/roller_temperature_C", rollerMotor.getDeviceTemp().getValueAsDouble());
         DogLog.log("Intake/roller_max_current",ROLLER_STATOR_LIMIT);
 
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
         DogLogUtil.logDouble("Intake/intake_current", deployMotor.getSupplyCurrent().getValueAsDouble());
+        DogLogUtil.logDouble("Intake/intake_temperature_C", deployMotor.getDeviceTemp().getValueAsDouble());
         DogLog.log("Intake/intake_max_current", DEPLOY_STATOR_LIMIT);
     }
 }

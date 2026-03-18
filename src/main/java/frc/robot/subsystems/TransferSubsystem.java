@@ -82,10 +82,12 @@ public class TransferSubsystem extends SubsystemBase {
         // Advantagescope logging
         DogLogUtil.logDouble("Transfer/spindexer_speed", spindexerMotor.getVelocity().getValueAsDouble());
         DogLogUtil.logDouble("Transfer/spindexer_current", spindexerMotor.getSupplyCurrent().getValueAsDouble());
+        DogLogUtil.logDouble("Transfer/spindexer_temperature_C", spindexerMotor.getDeviceTemp().getValueAsDouble());
         DogLog.log("Transfer/spindexer_max_current", SPINDEXER_STATOR_LIMIT);
 
         DogLogUtil.logDouble("Transfer/feeder_speed", feederMotor.getVelocity().getValueAsDouble());
         DogLogUtil.logDouble("Transfer/feeder_current", feederMotor.getSupplyCurrent().getValueAsDouble());
+        DogLogUtil.logDouble("Transfer/feeder_temperature_C", feederMotor.getDeviceTemp().getValueAsDouble());
         DogLog.log("Transfer/feeder_max_current", FEEDER_STATOR_LIMIT);
     }
 }

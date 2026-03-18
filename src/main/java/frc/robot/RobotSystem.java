@@ -277,25 +277,41 @@ public class RobotSystem extends SubsystemBase {
                 module.getDriveMotor().getSupplyCurrent().getValueAsDouble());
             DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
                 module.getSteerMotor().getSupplyCurrent().getValueAsDouble());
+            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
+                module.getDriveMotor().getDeviceTemp().getValueAsDouble());
+            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
+                module.getSteerMotor().getDeviceTemp().getValueAsDouble());
         }
 
-        var currentTags = LimelightHelpers.getLatestResults(LOCALIZATION_LIMELIGHT).targets_Fiducials;
-        if (currentTags != null && currentTags.length > 0) {
-            Pose3d[] visibleTags = new Pose3d[currentTags.length];
-            for (int i = 0; i < currentTags.length; i++) {
-                Pose3d tagPose = tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
-                if (tagPose != null)
-                    visibleTags[i] = tagPose;
+        LimelightHelpers.LimelightResults llResults = LimelightHelpers.getLatestResults(LOCALIZATION_LIMELIGHT);
+        if (llResults != null )
+        {
+           // Log Limelight hardware temperature (if available)
+            if (llResults.hardware != null) {
+                DogLogUtil.logDouble(LOCALIZATION_LIMELIGHT + "/Hardware_Temperature_C", llResults.hardware.temperature);
             }
 
-            DogLog.log(LOCALIZATION_LIMELIGHT + "/VisibleTagPoses", visibleTags);
+            // Log visible tag poses
+            var currentTags = llResults.targets_Fiducials;
+            if (currentTags != null && currentTags.length > 0) {
+                Pose3d[] visibleTags = new Pose3d[currentTags.length];
+                for (int i = 0; i < currentTags.length; i++) {
+                    Pose3d tagPose = tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
+                    if (tagPose != null)
+                        visibleTags[i] = tagPose;
+                }
+
+                DogLog.log(LOCALIZATION_LIMELIGHT + "/VisibleTagPoses", visibleTags);
+            }
         }
 
+        // Log M1 Pose data
         var m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(LOCALIZATION_LIMELIGHT);
         if (m1Pose != null) {
             DogLog.log(LOCALIZATION_LIMELIGHT + "/wpiBlue_Pose2d", m1Pose.pose);
             DogLog.log(LOCALIZATION_LIMELIGHT + "/wpiBlue_Timestamp_Sec", m1Pose.timestampSeconds);
             DogLogUtil.logDouble( LOCALIZATION_LIMELIGHT + "/wpiBlue_Latency", m1Pose.latency);
+            
         }
     }
 }
