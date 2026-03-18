@@ -38,7 +38,7 @@ public class Autos {
 
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
-        path.atTime("SpinUp").onTrue(shooter.spinUp(2500).alongWith(intake.stopIntaking()));
+        path.atTime("SpinUp").onTrue(shooter.spinUp(2500).alongWith(intake.stopCommand()));
         path.atTime("StartShooting").onTrue(shooter.shoot());
         path.atTime("StopShooting").onTrue(shooter.shoot());
 
@@ -58,24 +58,25 @@ public class Autos {
 
         return routine;
     }
+
     public AutoRoutine leftOneCyclePlusDepot() {
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
         String pathName = "LeftOneCyclePlusDepotSlow";
 
-        AutoTrajectory path = routine.trajectory(pathName,0);
+        AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
-        path.atTime("StopIntaking").onTrue(intake.stopIntaking());
+        path.atTime("StopIntaking").onTrue(intake.stopCommand());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
         path.atTime("StartShooting").onTrue(shooter.shoot());
         path.atTime("StopShooting").onTrue(intake.startIntaking().alongWith(shooter.shoot()));
 
-        AutoTrajectory path2 = routine.trajectory(pathName,1);
+        AutoTrajectory path2 = routine.trajectory(pathName, 1);
 
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                // new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 path.cmd()
             )
         );
@@ -119,6 +120,7 @@ public class Autos {
 
         return routine;
     }
+    
     public AutoRoutine simpleCenterAuto() {
         AutoRoutine routine = autoFactory.newRoutine("simpleCenterAuto");
         String pathName = "SimpleShoot";
