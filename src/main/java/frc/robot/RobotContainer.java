@@ -35,12 +35,13 @@ public class RobotContainer {
     private final AutoChooser autoChooser;
     
     public RobotContainer() {
-        DogLog.setOptions(new DogLogOptions()
-            .withCaptureDs(true)
-            .withLogExtras(true)
-            .withCaptureConsole(true)
-            .withCaptureNt(true)
-        );
+        //TODO: Enable for competition
+        // DogLog.setOptions(new DogLogOptions()
+        //     .withCaptureDs(true)
+        //     .withLogExtras(true)
+        //     .withCaptureConsole(true)
+        //     .withCaptureNt(true)
+        // );
 
         DogLog.setPdh(new PowerDistribution(63, ModuleType.kRev));
 
@@ -51,9 +52,6 @@ public class RobotContainer {
 
         autoChooser = new AutoChooser();
         SmartDashboard.putData("Auto Chooser", autoChooser);
-
-        //Allows us to bypass the shift tracker for testing/emergency situations
-        SmartDashboard.putBoolean("Override ShiftTracker", false);
 
         //Hahaha stopped the annoying warnings
         DriverStation.silenceJoystickConnectionWarning(true);
@@ -87,7 +85,7 @@ public class RobotContainer {
         
         operatorController.b().onTrue(robot.agitate());
 
-        operatorController.a().whileTrue(robot.rotateRobotToShoot());
+        operatorController.a().whileTrue(robot.keepRobotLockedWithTurret());
         operatorController.x().whileTrue(robot.activatePrecisionDriving());
         driverController.a().whileTrue(robot.driveToPose(FieldPose.CLIMB_LEFT));
 

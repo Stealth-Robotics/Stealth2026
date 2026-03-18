@@ -5,13 +5,9 @@ import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
-import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
-import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.subsystems.ClimbSubsystem;
-import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
@@ -45,7 +41,8 @@ public class Autos {
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                //TODO: Should do this automatically
+                // new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 path.cmd()
             )
         );
@@ -75,7 +72,8 @@ public class Autos {
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                //TODO: Should do this automatically
+                // new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 path.cmd()
             )
         );
@@ -106,7 +104,8 @@ public class Autos {
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                //TODO: Should do this automatically
+                // new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 shooter.shoot(),
                 path.cmd()
             )
@@ -119,6 +118,7 @@ public class Autos {
 
         return routine;
     }
+    
     public AutoRoutine simpleCenterAuto() {
         AutoRoutine routine = autoFactory.newRoutine("simpleCenterAuto");
         String pathName = "SimpleShoot";
