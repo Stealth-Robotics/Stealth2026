@@ -3,13 +3,8 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
-import com.ctre.phoenix6.swerve.SwerveModuleConstants.DriveMotorArrangement;
-
 import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
-import dev.doglog.DogLogOptions;
-import edu.wpi.first.cameraserver.CameraServer;
-import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
@@ -20,7 +15,6 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
-import frc.robot.RobotSystem.DrivingMode;
 import frc.robot.subsystems.DriveSubsystem.FieldPose;
 import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 
