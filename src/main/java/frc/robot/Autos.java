@@ -34,7 +34,7 @@ public class Autos {
 
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
-        path.atTime("SpinUp").onTrue(shooter.spinUp(2500).alongWith(intake.stopIntaking()));
+        path.atTime("SpinUp").onTrue(shooter.spinUp(2500).alongWith(intake.stopCommand()));
         path.atTime("StartShooting").onTrue(shooter.shoot());
         path.atTime("StopShooting").onTrue(shooter.shoot());
 
@@ -62,7 +62,7 @@ public class Autos {
 
         AutoTrajectory path = routine.trajectory(pathName,0);
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
-        path.atTime("StopIntaking").onTrue(intake.stopIntaking());
+        path.atTime("StopIntaking").onTrue(intake.stopCommand());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
         path.atTime("StartShooting").onTrue(shooter.shoot());
         path.atTime("StopShooting").onTrue(intake.startIntaking().alongWith(shooter.shoot()));
