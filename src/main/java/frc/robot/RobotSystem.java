@@ -16,7 +16,9 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -200,12 +202,14 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
-    /*
-     * Macro that rotates the robot into the turret's operating range (plus a little extra for tolerance)
-     */
-    public Command rotateRobotToShoot() {
-        return drive.rotateToAngle(() -> drive.getPose().getRotation()
-            .plus(Rotation2d.fromDegrees(shooter.turretLockError + (5 * Math.signum(shooter.turretLockError)))));
+    public Command keepRobotLockedWithTurret() {
+        return new RepeatCommand(
+            new ConditionalCommand(
+                drive.rotateToAngle(() -> drive.getPose().getRotation().plus(Rotation2d.fromDegrees(shooter.turretLockError + (5 * Math.signum(shooter.turretLockError))))), 
+                new InstantCommand(),
+                () -> Math.abs(shooter.turretLockError) > 0
+            )
+        );
     }
 
     public Command seedFieldCentric() {

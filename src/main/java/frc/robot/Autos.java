@@ -5,13 +5,9 @@ import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
-import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
-import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.subsystems.ClimbSubsystem;
-import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
@@ -38,14 +34,15 @@ public class Autos {
 
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
-        path.atTime("SpinUp").onTrue(shooter.spinUp(2500).alongWith(intake.stopCommand()));
+        path.atTime("SpinUp").onTrue(shooter.spinUp(2500).alongWith(intake.stopIntaking()));
         path.atTime("StartShooting").onTrue(shooter.shoot());
         path.atTime("StopShooting").onTrue(shooter.shoot());
 
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                //TODO: Should do this automatically
+                // new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 path.cmd()
             )
         );
@@ -58,24 +55,24 @@ public class Autos {
 
         return routine;
     }
-
     public AutoRoutine leftOneCyclePlusDepot() {
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
         String pathName = "LeftOneCyclePlusDepotSlow";
 
-        AutoTrajectory path = routine.trajectory(pathName, 0);
+        AutoTrajectory path = routine.trajectory(pathName,0);
         path.atTime("StartIntaking").onTrue(intake.startIntaking());
-        path.atTime("StopIntaking").onTrue(intake.stopCommand());
+        path.atTime("StopIntaking").onTrue(intake.stopIntaking());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
         path.atTime("StartShooting").onTrue(shooter.shoot());
         path.atTime("StopShooting").onTrue(intake.startIntaking().alongWith(shooter.shoot()));
 
-        AutoTrajectory path2 = routine.trajectory(pathName, 1);
+        AutoTrajectory path2 = routine.trajectory(pathName,1);
 
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
+                //TODO: Should do this automatically
                 // new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 path.cmd()
             )
@@ -107,7 +104,8 @@ public class Autos {
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+                //TODO: Should do this automatically
+                // new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 shooter.shoot(),
                 path.cmd()
             )
