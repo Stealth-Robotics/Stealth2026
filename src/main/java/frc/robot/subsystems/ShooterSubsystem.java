@@ -74,6 +74,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final int HOOD_STATOR_LIMIT = 20;
 
     private boolean disableHood = false;
+    private double requestedHoodDegrees = 0;
 
     private final Notification hoodLimitExceededError = 
         new Notification(Elastic.NotificationLevel.ERROR, "Robot Error", "Hood has exceeded its limits. Switching to neutral mode.");
@@ -144,6 +145,7 @@ public class ShooterSubsystem extends SubsystemBase {
      * Sets the hood to the specified angle in degrees
      */
     public void setHoodDegrees(double degrees) {
+        requestedHoodDegrees = degrees;
         if (!disableHood) {
             hoodMotor.setControl(hoodController.withPosition(
                 Units.degreesToRotations(MathUtil.clamp(degrees, MIN_HOOD_DEGREES, MAX_HOOD_DEGREES)))
@@ -200,5 +202,6 @@ public class ShooterSubsystem extends SubsystemBase {
         DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
 
         DogLogUtil.logDouble("Shooter/hood_angle", hoodDegrees);
+        DogLogUtil.logDouble("Shooter/hood_target_angle", requestedHoodDegrees);
     }
 }

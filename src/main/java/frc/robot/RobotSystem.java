@@ -34,6 +34,7 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
+import frc.robot.util.DogLogUtil;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
@@ -237,18 +238,6 @@ public class RobotSystem extends SubsystemBase {
                 ShotCalculator.updateVisionLatency(poseEstimate.latency);
             }
         }
-
-        //Advantagescope logging
-        var currentTags = LimelightHelpers.getLatestResults(LOCALIZATION_LIMELIGHT).targets_Fiducials;
-        
-        Pose3d[] visibleTags = new Pose3d[currentTags.length];
-        for (int i = 0; i < currentTags.length; i++) {
-            Pose3d tagPose = tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
-            if (tagPose != null)
-                visibleTags[i] = tagPose;
-        }
-
-        DogLog.log("VisibleTagPoses", visibleTags);
     }
 
     public Command homeClimber() {
@@ -276,9 +265,28 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLog.log("Driving Mode", currentDrivingMode.name());
 
-        //TODO: Drive telemetry for testing
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
         DogLog.log("Drive/ModuleStates", drive.getModuleStates());
         DogLog.log("Drive/Rotation", drive.getPose().getRotation());
+        
+        //Advantagescope logging
+        var currentTags = LimelightHelpers.getLatestResults(LOCALIZATION_LIMELIGHT).targets_Fiducials;
+        if (currentTags != null && currentTags.length > 0) {
+            Pose3d[] visibleTags = new Pose3d[currentTags.length];
+            for (int i = 0; i < currentTags.length; i++) {
+                Pose3d tagPose = tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
+                if (tagPose != null)
+                    visibleTags[i] = tagPose;
+            }
+
+            DogLog.log(LOCALIZATION_LIMELIGHT + "/VisibleTagPoses", visibleTags);
+        }
+
+        var m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(LOCALIZATION_LIMELIGHT);
+        if (m1Pose != null) {
+            DogLog.log(LOCALIZATION_LIMELIGHT + "/wpiBlue_Pose2d", m1Pose.pose);
+            DogLog.log(LOCALIZATION_LIMELIGHT + "/wpiBlue_Timestamp_Sec", m1Pose.timestampSeconds);
+            DogLogUtil.logDouble( LOCALIZATION_LIMELIGHT + "/wpiBlue_Latency", m1Pose.latency);
+        }
     }
 }
