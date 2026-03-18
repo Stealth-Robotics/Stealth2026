@@ -76,7 +76,7 @@ public class TunerConstants {
 
     // CAN bus that the devices are located on;
     // All swerve devices must share the same CAN bus
-    public static final CANBus kCANBus = new CANBus("canivore", "./logs/example.hoot");
+    public static final CANBus kCANBus = new CANBus("canivore", "./logs/canivore.hoot");
 
     // Theoretical free speed (m/s) at 12 V applied output;
     // This needs to be tuned to your individual robot
@@ -196,6 +196,36 @@ public class TunerConstants {
             kBackRightSteerMotorId, kBackRightDriveMotorId, kBackRightEncoderId, kBackRightEncoderOffset,
             kBackRightXPos, kBackRightYPos, kInvertRightSide, kBackRightSteerMotorInverted, kBackRightEncoderInverted
         );
+
+        // Friendly device names for logging and diagnostics. Map CAN/Device IDs to a short human
+        // readable identifier so log messages can display meaningful names instead of raw IDs.
+        public static final java.util.Map<Integer, String> kDeviceFriendlyNames = java.util.Map.ofEntries(
+            java.util.Map.entry(kFrontLeftDriveMotorId, "FrontLeft-Drive"),
+            java.util.Map.entry(kFrontLeftSteerMotorId, "FrontLeft-Steer"),
+            java.util.Map.entry(kFrontLeftEncoderId, "FrontLeft-Encoder"),
+
+            java.util.Map.entry(kFrontRightDriveMotorId, "FrontRight-Drive"),
+            java.util.Map.entry(kFrontRightSteerMotorId, "FrontRight-Steer"),
+            java.util.Map.entry(kFrontRightEncoderId, "FrontRight-Encoder"),
+
+            java.util.Map.entry(kBackLeftDriveMotorId, "BackLeft-Drive"),
+            java.util.Map.entry(kBackLeftSteerMotorId, "BackLeft-Steer"),
+            java.util.Map.entry(kBackLeftEncoderId, "BackLeft-Encoder"),
+
+            java.util.Map.entry(kBackRightDriveMotorId, "BackRight-Drive"),
+            java.util.Map.entry(kBackRightSteerMotorId, "BackRight-Steer"),
+            java.util.Map.entry(kBackRightEncoderId, "BackRight-Encoder"),
+
+            java.util.Map.entry(kPigeonId, "Pigeon2")
+        );
+
+        /**
+         * Returns a friendly name for a device ID, falling back to a "CAN#" string when
+         * an explicit mapping does not exist.
+         */
+        public static String getDeviceName(int deviceId) {
+            return kDeviceFriendlyNames.getOrDefault(deviceId, "CAN#" + deviceId);
+        }
 
     /**
      * Creates a CommandSwerveDrivetrain instance.

@@ -6,7 +6,10 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+
+import dev.doglog.DogLog;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.DogLogUtil;
 
 public class TransferSubsystem extends SubsystemBase {
     private final TalonFX spindexerMotor;
@@ -73,4 +76,16 @@ public class TransferSubsystem extends SubsystemBase {
     public void stopFeeding() {
         feederMotor.setControl(feederController.withOutput(0));
     }
+
+        @Override
+        public void periodic() {
+            // Advantagescope logging
+            DogLogUtil.logDouble("Transfer/spindexer_speed", spindexerMotor.getVelocity().getValueAsDouble());
+            DogLogUtil.logDouble("Transfer/spindexer_current", spindexerMotor.getSupplyCurrent().getValueAsDouble());
+            DogLog.log("Transfer/spindexer_max_current", SPINDEXER_STATOR_LIMIT);
+    
+            DogLogUtil.logDouble("Transfer/feeder_speed", feederMotor.getVelocity().getValueAsDouble());
+            DogLogUtil.logDouble("Transfer/feeder_current", feederMotor.getSupplyCurrent().getValueAsDouble());
+            DogLog.log("Transfer/feeder_max_current", FEEDER_STATOR_LIMIT);
+        }
 }

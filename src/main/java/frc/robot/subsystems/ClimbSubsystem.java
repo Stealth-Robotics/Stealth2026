@@ -6,6 +6,8 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+
+import dev.doglog.DogLog;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -14,7 +16,7 @@ import frc.robot.util.DogLogUtil;
 
 public class ClimbSubsystem extends SubsystemBase {
     private final TalonFX climbMotor1;
-    private final TalonFX climbMotor2;
+    //private final TalonFX climbMotor2;
     // private final Servo clipServo;
 
     private final TalonFXConfiguration climbConfig = new TalonFXConfiguration();
@@ -23,6 +25,7 @@ public class ClimbSubsystem extends SubsystemBase {
     //TODO: Find CAN IDs
     private final int CLIMB_MOTOR_1_ID = 26;
     private final int CLIMB_MOTOR_2_ID = 28;
+    private final int CLIMB_STATOR_LIMIT = 90;
     // private final int CLIP_SERVO_CHANNEL = 0;
 
     // private final double CLIP_SERVO_IN = 0.0;
@@ -47,7 +50,7 @@ public class ClimbSubsystem extends SubsystemBase {
 
     public ClimbSubsystem() {
         climbMotor1 = new TalonFX(CLIMB_MOTOR_1_ID);
-        climbMotor2 = new TalonFX(CLIMB_MOTOR_2_ID);
+        //climbMotor2 = new TalonFX(CLIMB_MOTOR_2_ID);
         // clipServo = new Servo(CLIP_SERVO_CHANNEL);
 
         climbConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
@@ -92,6 +95,8 @@ public class ClimbSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         DogLogUtil.logDouble("Climb/Climber1_Pose", climbMotor1.getPosition().getValueAsDouble());
+        DogLogUtil.logDouble("Climb/Climber1_Current", climbMotor1.getSupplyCurrent().getValueAsDouble());
+        DogLog.log("Climb/Climber1_MaxCurrent", CLIMB_STATOR_LIMIT);
         //DogLogUtil.logDouble("Climb/Climber2_Pose", climbMotor2.getPosition().getValueAsDouble());
     }
 }

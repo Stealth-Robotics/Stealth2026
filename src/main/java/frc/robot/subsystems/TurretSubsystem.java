@@ -116,5 +116,7 @@ public class TurretSubsystem extends SubsystemBase {
         DogLogUtil.logDouble("Turret/turret_degrees", getTurretAngleDegrees());
         DogLogUtil.logDouble("Turret/turret_target_degrees", getTargetAngleDegrees());
         DogLogUtil.logDouble("Turret/turret_error_degrees", getTurretAngleDegrees() - getTargetAngleDegrees());
+        DogLogUtil.logDouble("Turret/turret_current", turretMotor.getSupplyCurrent().getValueAsDouble());
+        DogLog.log("Turret/turret_max_current", TURRET_STATOR_LIMIT);
     }
 }

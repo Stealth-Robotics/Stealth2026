@@ -179,6 +179,11 @@ public class IntakeSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         DogLog.log("Intake/roller_speed", rollerMotor.get());
+        DogLogUtil.logDouble("Intake/roller_current", rollerMotor.getSupplyCurrent().getValueAsDouble());
+        DogLog.log("Intake/roller_max_current",ROLLER_STATOR_LIMIT);
+
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
+        DogLogUtil.logDouble("Intake/intake_current", deployMotor.getSupplyCurrent().getValueAsDouble());
+        DogLog.log("Intake/intake_max_current", DEPLOY_STATOR_LIMIT);
     }
 }
