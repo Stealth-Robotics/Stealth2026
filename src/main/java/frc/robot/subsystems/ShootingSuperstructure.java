@@ -1,6 +1,5 @@
 package frc.robot.subsystems;
 
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
@@ -8,6 +7,7 @@ import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.signals.UpdateModeValue;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -16,7 +16,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
@@ -33,6 +33,12 @@ public class ShootingSuperstructure extends SubsystemBase {
     private PassingTarget passingTarget = PassingTarget.NONE;
 
     private boolean isShooting = false;
+    
+    private final Debouncer shotSensorDebouncer = new Debouncer(0.1, Debouncer.DebounceType.kRising);
+    private int totalShots = 0;
+    private boolean lastDebouncedShot = false;
+    private int hubShots = 0;
+    private int passShots = 0;
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -265,6 +271,36 @@ public class ShootingSuperstructure extends SubsystemBase {
             }
         }
 
+        boolean detected = shotSensor.getIsDetected().getValue();
+        boolean debouncedShot = shotSensorDebouncer.calculate(detected);
+        
+        // rising-edge: increment once when debounced input transitions false -> true
+
+        boolean risingEdge = debouncedShot && !lastDebouncedShot;
+        if (risingEdge && isShooting ) {
+            switch (state) {
+                case HUB_TRACKING:
+                    hubShots++;
+                    break;
+                case PASSING:
+                    passShots++;
+                break;
+                default:
+                    break;
+            }
+
+            totalShots++;
+        }
+
+        // log a pulse (1 on the rising edge, 0 otherwise) and the cumulative count
+        DogLog.log("ShootingSuperstructure/Shot_Detected", risingEdge && isShooting ? 1 : 0);
+        DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
+        DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
+        DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
+        DogLog.log("ShootingSuperstructure/Shot_Sensor_Detected", detected);
+        
+        lastDebouncedShot = debouncedShot;
+        
         DogLog.log("ShootingSuperstructure/state", state.name());
         DogLog.log("ShootingSuperstructure/passing_target", passingTarget.name());
         DogLog.log("ShootingSuperstructure/aiming_target", aimingTarget);

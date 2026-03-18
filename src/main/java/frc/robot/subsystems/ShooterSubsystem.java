@@ -202,7 +202,9 @@ public class ShooterSubsystem extends SubsystemBase {
         DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
         DogLog.log("Shooter/shooter_error_rpm", (int) (getRPM() - getTargetRPM()));
         DogLogUtil.logDouble("Shooter/shooter1_current", shooterMotor1.getSupplyCurrent().getValueAsDouble());
+        DogLogUtil.logDouble("Shooter/shooter1_stator_current", shooterMotor1.getStatorCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Shooter/shooter2_current", shooterMotor2.getSupplyCurrent().getValueAsDouble());
+        DogLogUtil.logDouble("Shooter/shooter2_stator_current", shooterMotor2.getStatorCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Shooter/shooter1_temperature_C", shooterMotor1.getDeviceTemp().getValueAsDouble());
         DogLogUtil.logDouble("Shooter/shooter2_temperature_C", shooterMotor2.getDeviceTemp().getValueAsDouble());
         DogLog.log("Shooter/shooter_max_current", SHOOTER_STATOR_LIMIT);
@@ -211,6 +213,8 @@ public class ShooterSubsystem extends SubsystemBase {
         DogLogUtil.logDouble("Shooter/hood_target_angle", requestedHoodDegrees);
         DogLogUtil.logDouble("Shooter/hood_error_angle", hoodDegrees - requestedHoodDegrees);
         DogLogUtil.logDouble("Shooter/hood_current", hoodMotor.getSupplyCurrent().getValueAsDouble());
+        DogLogUtil.logDouble("Shooter/hood_stator_current", hoodMotor.getStatorCurrent().getValueAsDouble());
+        DogLogUtil.logDouble("Shooter/hood_temperature_C", hoodMotor.getDeviceTemp().getValueAsDouble());
         DogLog.log("Shooter/hood_max_current", HOOD_STATOR_LIMIT);
     }
 }

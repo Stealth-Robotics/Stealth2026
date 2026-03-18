@@ -96,6 +96,7 @@ public class ClimbSubsystem extends SubsystemBase {
     public void periodic() {
         DogLogUtil.logDouble("Climb/Climber1_Pose", climbMotor1.getPosition().getValueAsDouble());
         DogLogUtil.logDouble("Climb/Climber1_Current", climbMotor1.getSupplyCurrent().getValueAsDouble());
+        DogLogUtil.logDouble("Climb/Climber1_StatorCurrent", climbMotor1.getStatorCurrent().getValueAsDouble());
         DogLog.log("Climb/Climber1_MaxCurrent", CLIMB_STATOR_LIMIT);
         //DogLogUtil.logDouble("Climb/Climber2_Pose", climbMotor2.getPosition().getValueAsDouble());
     }
