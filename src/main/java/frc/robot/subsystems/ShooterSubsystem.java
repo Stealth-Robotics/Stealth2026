@@ -200,12 +200,15 @@ public class ShooterSubsystem extends SubsystemBase {
 
         DogLog.log("Shooter/shooter_rpm", (int) getRPM());
         DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
+        DogLogUtil.logDouble("Shooter/shooter_error_rpm", getRPM() - getTargetRPM());
         DogLogUtil.logDouble("Shooter/shooter_current1", shooterMotor1.getSupplyCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Shooter/shooter_current2", shooterMotor2.getSupplyCurrent().getValueAsDouble());
         DogLog.log("Shooter/shooter_max_current", SHOOTER_STATOR_LIMIT);
 
         DogLogUtil.logDouble("Shooter/hood_angle", hoodDegrees);
         DogLogUtil.logDouble("Shooter/hood_target_angle", requestedHoodDegrees);
+        DogLogUtil.logDouble("Shooter/hood_error_angle", hoodDegrees - requestedHoodDegrees);
+
         DogLogUtil.logDouble("Shooter/hood_current", hoodMotor.getSupplyCurrent().getValueAsDouble());
         DogLog.log("Shooter/hood_max_current", HOOD_STATOR_LIMIT);
     }
