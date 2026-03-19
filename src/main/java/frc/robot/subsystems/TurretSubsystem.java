@@ -97,7 +97,7 @@ public class TurretSubsystem extends SubsystemBase {
     public boolean isReady() {
         var target = getTargetAngleDegrees();
         boolean targetInRange = 
-            target < MAX_TURRET_DEGREES + TURRET_ANGLE_TOLERANCE_DEGREES && 
+            target < MAX_TURRET_DEGREES + TURRET_ANGLE_TOLERANCE_DEGREES &&
             target > MIN_TURRET_DEGREES - TURRET_ANGLE_TOLERANCE_DEGREES;
 
         return targetInRange &&

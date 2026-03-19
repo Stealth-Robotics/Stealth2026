@@ -47,7 +47,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.651;
 
     private final double DEPLOYED_ROTATIONS = 0;
-    private final double RETRACTED_ROTATIONS = 0.308;
+    private final double RETRACTED_ROTATIONS = 0.2;
 
     private final double DEPLOY_kP = 30;
     private final double RETRACT_kP = 35;
