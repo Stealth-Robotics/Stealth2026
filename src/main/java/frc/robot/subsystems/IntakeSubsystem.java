@@ -112,7 +112,9 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.getConfigurator().apply(deployConfig);
 
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
-    }
+        DogLog.log("Intake/roller_max_current",ROLLER_STATOR_LIMIT);
+        DogLog.log("Intake/intake_max_current", DEPLOY_STATOR_LIMIT);
+}
 
     /**
      * Moves the intake up to the desired percentage of the fully up position and
@@ -182,12 +184,10 @@ public class IntakeSubsystem extends SubsystemBase {
         DogLogUtil.logDouble("Intake/roller_current", rollerMotor.getSupplyCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Intake/roller_stator_current", rollerMotor.getStatorCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Intake/roller_temperature_C", rollerMotor.getDeviceTemp().getValueAsDouble());
-        DogLog.log("Intake/roller_max_current",ROLLER_STATOR_LIMIT);
 
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
         DogLogUtil.logDouble("Intake/intake_current", deployMotor.getSupplyCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Intake/intake_stator_current", deployMotor.getStatorCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Intake/intake_temperature_C", deployMotor.getDeviceTemp().getValueAsDouble());
-        DogLog.log("Intake/intake_max_current", DEPLOY_STATOR_LIMIT);
     }
 }

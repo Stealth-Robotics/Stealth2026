@@ -55,6 +55,8 @@ public class TransferSubsystem extends SubsystemBase {
 
         spindexerMotor.setControl(coast);
         feederMotor.setControl(coast);
+        DogLog.log("Transfer/spindexer_max_current", SPINDEXER_STATOR_LIMIT);
+        DogLog.log("Transfer/feeder_max_current", FEEDER_STATOR_LIMIT);
     }
 
     public void spin() {
@@ -84,12 +86,10 @@ public class TransferSubsystem extends SubsystemBase {
         DogLogUtil.logDouble("Transfer/spindexer_current", spindexerMotor.getSupplyCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Transfer/spindexer_stator_current", spindexerMotor.getStatorCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Transfer/spindexer_temperature_C", spindexerMotor.getDeviceTemp().getValueAsDouble());
-        DogLog.log("Transfer/spindexer_max_current", SPINDEXER_STATOR_LIMIT);
 
         DogLogUtil.logDouble("Transfer/feeder_speed", feederMotor.getVelocity().getValueAsDouble());
         DogLogUtil.logDouble("Transfer/feeder_current", feederMotor.getSupplyCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Transfer/feeder_stator_current", feederMotor.getStatorCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Transfer/feeder_temperature_C", feederMotor.getDeviceTemp().getValueAsDouble());
-        DogLog.log("Transfer/feeder_max_current", FEEDER_STATOR_LIMIT);
     }
 }

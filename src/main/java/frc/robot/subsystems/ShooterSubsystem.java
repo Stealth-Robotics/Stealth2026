@@ -131,7 +131,9 @@ public class ShooterSubsystem extends SubsystemBase {
 
         //Explictly set the hood motor position on startup
         hoodMotor.setPosition(hoodEncoder.getAbsolutePosition().getValue().times(HOOD_ROTOR_TO_SENSOR_RATIO));
-    }
+        DogLog.log("Shooter/shooter_max_current", SHOOTER_STATOR_LIMIT);
+        DogLog.log("Shooter/hood_max_current", HOOD_STATOR_LIMIT);
+}
 
     /**
      * Set the flywheel to coast to preserve rotational inertia
@@ -206,7 +208,6 @@ public class ShooterSubsystem extends SubsystemBase {
         DogLogUtil.logDouble("Shooter/shooter2_stator_current", shooterMotor2.getStatorCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Shooter/shooter1_temperature_C", shooterMotor1.getDeviceTemp().getValueAsDouble());
         DogLogUtil.logDouble("Shooter/shooter2_temperature_C", shooterMotor2.getDeviceTemp().getValueAsDouble());
-        DogLog.log("Shooter/shooter_max_current", SHOOTER_STATOR_LIMIT);
 
         DogLogUtil.logDouble("Shooter/hood_angle", hoodDegrees);
         DogLogUtil.logDouble("Shooter/hood_target_angle", requestedHoodDegrees);
@@ -214,6 +215,5 @@ public class ShooterSubsystem extends SubsystemBase {
         DogLogUtil.logDouble("Shooter/hood_current", hoodMotor.getSupplyCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Shooter/hood_stator_current", hoodMotor.getStatorCurrent().getValueAsDouble());
         DogLogUtil.logDouble("Shooter/hood_temperature_C", hoodMotor.getDeviceTemp().getValueAsDouble());
-        DogLog.log("Shooter/hood_max_current", HOOD_STATOR_LIMIT);
     }
 }
