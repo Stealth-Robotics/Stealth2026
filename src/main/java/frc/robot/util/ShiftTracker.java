@@ -114,6 +114,14 @@ public class ShiftTracker {
         }
     }
 
+    public static boolean triggerRumbleWarning() {
+        return
+            phase != MatchPhase.AUTO &&
+            phase != MatchPhase.AUTO_TELE_TRANSITION &&
+            phase != MatchPhase.ENDGAME &&
+            getTimeLeftInShift() <= 5;
+    }
+
     public static boolean isRunning() {
         return matchTimer.isRunning();
     }

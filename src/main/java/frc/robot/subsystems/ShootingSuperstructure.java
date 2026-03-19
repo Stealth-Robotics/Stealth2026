@@ -1,5 +1,7 @@
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Inches;
+
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
@@ -15,6 +17,8 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.Units;
+import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 
 import edu.wpi.first.wpilibj2.command.Command;
@@ -34,11 +38,13 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private boolean isShooting = false;
     
-    private final Debouncer shotSensorDebouncer = new Debouncer(0.1, Debouncer.DebounceType.kRising);
+    private final Debouncer shotSensorDebouncer = new Debouncer(0.01, Debouncer.DebounceType.kRising);
+    private boolean wasShotDetectedBefore = false;
     private int totalShots = 0;
-    private boolean lastDebouncedShot = false;
     private int hubShots = 0;
     private int passShots = 0;
+
+    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(2);
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -73,6 +79,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public enum ShooterState {
         IDLE,
+        TRENCH,
         PASSING,
         HUB_TRACKING
     }
@@ -97,8 +104,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         //Configure CANRange sensor
         shotSensorConfig.FovParams.FOVRangeX = 6.75;
         shotSensorConfig.FovParams.FOVRangeY = 6.75;
-        shotSensorConfig.ToFParams.UpdateFrequency = 50;
-        shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRangeUserFreq;
+        shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
 
         shotSensor.getConfigurator().apply(shotSensorConfig);
     }
@@ -260,6 +266,11 @@ public class ShootingSuperstructure extends SubsystemBase {
                 }
             }
 
+            case TRENCH -> {
+                shooter.setHoodDegrees(0);
+                applyIdle = true;
+            }
+
             case HUB_TRACKING -> {
                 trackHub();
                 applyIdle = true;
@@ -271,20 +282,18 @@ public class ShootingSuperstructure extends SubsystemBase {
             }
         }
 
-        boolean detected = shotSensor.getIsDetected().getValue();
-        boolean debouncedShot = shotSensorDebouncer.calculate(detected);
+        boolean shotDetected = shotSensorDebouncer.calculate(
+            shotSensor.getDistance().getValue().compareTo(FUEL_DETECTED_DISTANCE_THRESHOLD) <= 0
+        );
         
-        // rising-edge: increment once when debounced input transitions false -> true
-
-        boolean risingEdge = debouncedShot && !lastDebouncedShot;
-        if (risingEdge && isShooting ) {
+        if (shotDetected && !wasShotDetectedBefore) {
             switch (state) {
                 case HUB_TRACKING:
                     hubShots++;
                     break;
                 case PASSING:
                     passShots++;
-                break;
+                    break;
                 default:
                     break;
             }
@@ -292,15 +301,14 @@ public class ShootingSuperstructure extends SubsystemBase {
             totalShots++;
         }
 
-        // log a pulse (1 on the rising edge, 0 otherwise) and the cumulative count
-        DogLog.log("ShootingSuperstructure/Shot_Detected", risingEdge && isShooting ? 1 : 0);
+        wasShotDetectedBefore = shotDetected;
+
+        //Log our shooting stats
         DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
         DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
         DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
-        DogLog.log("ShootingSuperstructure/Shot_Sensor_Detected", detected);
-        
-        lastDebouncedShot = debouncedShot;
-        
+        DogLog.log("ShootingSuperstructure/Shot_Sensor_Detected", shotDetected);
+                
         DogLog.log("ShootingSuperstructure/state", state.name());
         DogLog.log("ShootingSuperstructure/passing_target", passingTarget.name());
         DogLog.log("ShootingSuperstructure/aiming_target", aimingTarget);

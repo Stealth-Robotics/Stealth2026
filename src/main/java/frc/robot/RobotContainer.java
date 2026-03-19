@@ -5,6 +5,7 @@ package frc.robot;
 
 import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
+import dev.doglog.DogLogOptions;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
@@ -15,7 +16,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
-import frc.robot.subsystems.DriveSubsystem.FieldPose;
+import frc.robot.subsystems.LEDSubsystem.DisplayMode;
 import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 
 
@@ -29,13 +30,12 @@ public class RobotContainer {
     private final AutoChooser autoChooser;
     
     public RobotContainer() {
-        //TODO: Enable for competition
-        // DogLog.setOptions(new DogLogOptions()
-        //     .withCaptureDs(true)
-        //     .withLogExtras(true)
-        //     .withCaptureConsole(true)
-        //     .withCaptureNt(true)
-        // );
+        DogLog.setOptions(new DogLogOptions()
+            .withCaptureDs(true)
+            .withLogExtras(true)
+            .withCaptureConsole(true)
+            .withCaptureNt(true)
+        );
 
         DogLog.setPdh(new PowerDistribution(63, ModuleType.kRev));
 
@@ -81,15 +81,11 @@ public class RobotContainer {
 
         operatorController.a().whileTrue(robot.keepRobotLockedWithTurret());
         operatorController.x().whileTrue(robot.activatePrecisionDriving());
-        driverController.a().whileTrue(robot.driveToPose(FieldPose.CLIMB_LEFT));
 
         //Passing target changing
         operatorController.povLeft().onTrue(robot.setPassingTarget(PassingTarget.LEFT));
         operatorController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
         operatorController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
-
-        operatorController.povDown().onTrue(robot.homeClimber());
-        operatorController.y().onTrue(robot.toggleClimb());
     }
 
     /*
@@ -122,7 +118,7 @@ public class RobotContainer {
 
     // Sets default light state when disabled
     public void disabledPeriodic() {
-        robot.disabledLeds();
+        robot.setLEDMode(DisplayMode.DISABLED);
     }
 
     public void resetAfterAuto() {

@@ -17,14 +17,12 @@ public class Autos {
 
     private final IntakeSubsystem intake;
     private final ShootingSuperstructure shooter;
-    private final ClimbSubsystem climb;
 
-    public Autos(AutoFactory autoFactory, IntakeSubsystem intake, ShootingSuperstructure shooter, ClimbSubsystem climb) {
+    public Autos(AutoFactory autoFactory, IntakeSubsystem intake, ShootingSuperstructure shooter) {
         this.autoFactory = autoFactory;
         
         this.intake = intake;
         this.shooter = shooter;
-        this.climb = climb;
     }
 
     public AutoRoutine rightOneCyclePlusOutpost() {
@@ -160,26 +158,26 @@ public class Autos {
         return routine;
     }
 
-    public AutoRoutine centerClimbAuto() {
-        AutoRoutine routine = autoFactory.newRoutine("centerClimbAuto");
-        String pathName = "CenterPreloadPlusClimb";
+    // public AutoRoutine centerClimbAuto() {
+    //     AutoRoutine routine = autoFactory.newRoutine("centerClimbAuto");
+    //     String pathName = "CenterPreloadPlusClimb";
 
-        AutoTrajectory path = routine.trajectory(pathName, 0);
+    //     AutoTrajectory path = routine.trajectory(pathName, 0);
 
-        path.atTime("DeployClimb").onTrue(climb.reach());
-        path.atTime("StartShoot").onTrue(shooter.shoot());
+    //     path.atTime("DeployClimb").onTrue(climb.reach());
+    //     path.atTime("StartShoot").onTrue(shooter.shoot());
 
-        routine.active().onTrue(
-            Commands.sequence(
-                path.resetOdometry(),
-                new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
-                shooter.spinUp(1500),
-                path.cmd().withTimeout(18)
-            )
-        );
-        path.done().onTrue(
-            climb.ascend()
-        );
-        return routine;
-    }
+    //     routine.active().onTrue(
+    //         Commands.sequence(
+    //             path.resetOdometry(),
+    //             new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
+    //             shooter.spinUp(1500),
+    //             path.cmd().withTimeout(18)
+    //         )
+    //     );
+    //     path.done().onTrue(
+    //         climb.ascend()
+    //     );
+    //     return routine;
+    // }
 }

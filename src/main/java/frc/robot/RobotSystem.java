@@ -46,7 +46,6 @@ public class RobotSystem extends SubsystemBase {
     private final DriveSubsystem drive;
     private final IntakeSubsystem intake;
     private final ShootingSuperstructure shooter;
-    private final ClimbSubsystem climb;
     private final LEDSubsystem led;
     
     private final Field2d fieldTelemetry = new Field2d();
@@ -86,36 +85,42 @@ public class RobotSystem extends SubsystemBase {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
         shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
-        climb = new ClimbSubsystem();
         led = new LEDSubsystem();
 
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
 
-        //Trigger to rumble gamepad when it is okay to shoot into our hub
-        Trigger rumbleTrigger = new Trigger(() -> DriverStation.isTeleop() && ShiftTracker.canScore());
+        //Rumble gamepad just before the start and end of the shifts (tells us when to prep for shooting or leaving)
+        Trigger rumbleTrigger = new Trigger(() -> ShiftTracker.triggerRumbleWarning());
         rumbleTrigger
             .onTrue(
-                new SequentialCommandGroup(
-                    new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1)),
-                    new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 1)),
-                    new WaitCommand(0.25),
-                    new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0)),
-                    new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0))
-                )
+                new RepeatCommand(
+                    new SequentialCommandGroup(
+                        new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.75)),
+                        new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0.75)),
+                        new WaitCommand(0.25),
+                        new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0)),
+                        new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0)),
+                        new WaitCommand(0.25)
+                    )
+                ).until(() -> !ShiftTracker.triggerRumbleWarning())
             );
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
-        Command intakeDefaultCommand = run(() -> {
-            intake.setRollerSpeed(rollerSpeed.getAsDouble());
-        }).beforeStarting(() -> {
-            Trigger deployTrigger = new Trigger(deploy);
-            deployTrigger.onTrue(intake.deployCommand());
+        Command intakeDefaultCommand = run(
+            () -> {
+                intake.setRollerSpeed(rollerSpeed.getAsDouble());
+            }
+        ).beforeStarting(
+            () -> {
+                Trigger deployTrigger = new Trigger(deploy);
+                deployTrigger.onTrue(intake.deployCommand());
 
-            Trigger retractTrigger = new Trigger(retract);
-            retractTrigger.onTrue(intake.retractCommand());
-        });
+                Trigger retractTrigger = new Trigger(retract);
+                retractTrigger.onTrue(intake.retractCommand());
+            }
+        );
 
         intakeDefaultCommand.addRequirements(intake);
         intake.setDefaultCommand(intakeDefaultCommand);
@@ -148,6 +153,8 @@ public class RobotSystem extends SubsystemBase {
             shooter.setState(ShooterState.HUB_TRACKING);
         else if (zone.equals(FieldZone.PASS))
             shooter.setState(ShooterState.PASSING);
+        else if (zone.equals(FieldZone.TRENCH))
+            shooter.setState(ShooterState.TRENCH);
         else
             shooter.setState(ShooterState.IDLE);
     }
@@ -221,8 +228,7 @@ public class RobotSystem extends SubsystemBase {
         return new Autos(
             drive.createAutoFactory(),
             intake,
-            shooter,
-            climb
+            shooter
         );
     }
 
@@ -240,16 +246,8 @@ public class RobotSystem extends SubsystemBase {
         }
     }
 
-    public Command homeClimber() {
-        return climb.stow();
-    }
-
-    public Command toggleClimb() { 
-        return climb.toggleClimb();
-    }
-
-    public void disabledLeds() {
-        led.changeDisplayMode(DisplayMode.DISABLED);
+    public void setLEDMode(DisplayMode ledDisplayMode) {
+        led.changeDisplayMode(ledDisplayMode);
     }
 
     @Override
