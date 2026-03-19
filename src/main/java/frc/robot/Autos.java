@@ -38,8 +38,6 @@ public class Autos {
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                //TODO: Should do this automatically
-                // new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 path.cmd()
             )
         );
@@ -69,8 +67,6 @@ public class Autos {
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                //TODO: Should do this automatically
-                // new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 path.cmd()
             )
         );
@@ -81,12 +77,6 @@ public class Autos {
                 path2.cmd().alongWith(shooter.shoot()).alongWith(intake.agitate().repeatedly())
             )
         );
-        
-        // Shouldn't need this now
-        // path2.done().onTrue(new SequentialCommandGroup(
-        //         new WaitCommand(4),
-        //         new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
-        // ));
 
         return routine;
     }
@@ -101,17 +91,10 @@ public class Autos {
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                //TODO: Should do this automatically
-                // new InstantCommand(() -> shooter.setState(ShooterState.HUB_TRACKING)),
                 shooter.shoot(),
                 path.cmd()
             )
         );
-
-        // Shouldn't need this now
-        // path.done().onTrue(
-        //     new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
-        // );
 
         return routine;
     }
@@ -139,24 +122,11 @@ public class Autos {
         );
 
         shoot.done().onTrue(stopspot.cmd());
-        // shoot.active().whileTrue(
-        //     new ParallelDeadlineGroup(
-        //         shooter.shoot(),
-        //         new WaitCommand(10)
-        //     )
-        // );
-
-        // Shouldn't need this now
-        // stopspot.done().onTrue(
-        //     Commands.sequence(
-        //         new WaitCommand(0.5),
-        //         new InstantCommand(() -> shooter.setState(ShooterState.IDLE))
-        //     ));
-        
         
         return routine;
     }
 
+    //Irrelevent until we have a climb
     // public AutoRoutine centerClimbAuto() {
     //     AutoRoutine routine = autoFactory.newRoutine("centerClimbAuto");
     //     String pathName = "CenterPreloadPlusClimb";

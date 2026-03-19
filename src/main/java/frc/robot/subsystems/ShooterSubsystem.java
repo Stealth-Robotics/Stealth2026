@@ -47,7 +47,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 60;
     private final double MAX_POSSIBLE_RPM = 3800;
 
-    public static final double MAX_HOOD_DEGREES = 21.3;
+    private final double MAX_HOOD_DEGREES = 21.3;
     private final double MIN_HOOD_DEGREES = 0;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;
@@ -131,6 +131,10 @@ public class ShooterSubsystem extends SubsystemBase {
 
         //Explictly set the hood motor position on startup
         hoodMotor.setPosition(hoodEncoder.getAbsolutePosition().getValue().times(HOOD_ROTOR_TO_SENSOR_RATIO));
+    }
+
+    public double getMaxHoodDegrees() {
+        return MAX_HOOD_DEGREES;
     }
 
     /**
