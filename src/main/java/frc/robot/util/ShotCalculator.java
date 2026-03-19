@@ -1,10 +1,9 @@
 package frc.robot.util;
 
+import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.geometry.Twist3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
@@ -12,7 +11,7 @@ import edu.wpi.first.math.util.Units;
 public class ShotCalculator {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
 
-    private static final double systemLatency = Units.millisecondsToSeconds(20);
+    private static final double systemPeriod = Units.millisecondsToSeconds(20);
     private static double visionLatency = 0;
 
     //Time needed for ball to travel through feeder towards the flywheel
@@ -27,6 +26,11 @@ public class ShotCalculator {
         put(5.25, 3700.0);
     }};
 
+    //Velocity smoothing filters
+    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
+    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
+    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
+
     //Variables that store the latest calculated values needed to perform a shot
     private static double targetFlywheelRPM = 0.0;
     private static double targetTurretAngle = 0.0;
@@ -34,6 +38,12 @@ public class ShotCalculator {
 
     private static double previousRobotVx = 0.0;
     private static double previousRobotVy = 0.0;
+    private static double previousRobotVOmega = 0.0;
+
+    public static void resetFilters() {
+        vxFilter.reset();
+        vyFilter.reset();
+    }
 
     public static void updateVisionLatency(double ms) {
         visionLatency = Units.millisecondsToSeconds(ms);
@@ -41,28 +51,34 @@ public class ShotCalculator {
 
     /**
      * @param fuelExitPose The position where the fuel will exit the shooter relative to the field
-     * @param robotVelocity The linear velocity of the robot (field relative)
+     * @param robotVelocity The linear velocity of the robot (robot relative)
      * @param targetPose The position of the target we are shooting at
      * @param targetHeight The max height the fuel will ever reach during flight
      */
     public static void update(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight) {
-        double totalLatencySeconds = visionLatency + systemLatency + mechanismLatency;
+        double totalLatencySeconds = visionLatency + systemPeriod + mechanismLatency;
+
+        double filteredVx = vxFilter.calculate(robotVelocity.vxMetersPerSecond);
+        double filteredVy = vyFilter.calculate(robotVelocity.vyMetersPerSecond);
+        double filteredVOmega = vOmegaFilter.calculate(robotVelocity.omegaRadiansPerSecond);
         
         //Estimate the robot's velocity assuming a constant 20 ms periodic loop
-        Translation2d robotAcceleration = new Translation2d(
-            (robotVelocity.vxMetersPerSecond - previousRobotVx) / Units.millisecondsToSeconds(20),
-            (robotVelocity.vyMetersPerSecond - previousRobotVy) / Units.millisecondsToSeconds(20)
+        Translation3d robotAcceleration = new Translation3d(
+            (filteredVx - previousRobotVx) / systemPeriod,
+            (filteredVy - previousRobotVy) / systemPeriod,
+            (filteredVOmega - previousRobotVOmega) / systemPeriod
         );
 
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
-        fuelExitPose = fuelExitPose.plus(
-            new Transform3d(
-                robotVelocity.vxMetersPerSecond * totalLatencySeconds 
+        fuelExitPose = fuelExitPose.exp(
+            new Twist3d(
+                filteredVx * totalLatencySeconds 
                     + (0.5 * robotAcceleration.getX() * Math.pow(totalLatencySeconds, 2)),
-                robotVelocity.vyMetersPerSecond * totalLatencySeconds 
+                filteredVy * totalLatencySeconds 
                     + (0.5 * robotAcceleration.getY() * Math.pow(totalLatencySeconds, 2)),
-                0.0,
-                Rotation3d.kZero
+                0, 0, 0,
+                filteredVOmega * totalLatencySeconds
+                    + (0.5 * robotAcceleration.getZ() * Math.pow(totalLatencySeconds, 2))
             )
         );
 
@@ -79,9 +95,12 @@ public class ShotCalculator {
 
         double fuelZVelo = (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0;
 
+        double futureVx = filteredVx + robotAcceleration.getX() * totalLatencySeconds;
+        double futureVy = filteredVy + robotAcceleration.getY() * totalLatencySeconds;
+
         Translation3d movingShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond,
-            (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond,
+            (targetPose.getX() - fuelExitPose.getX()) / t - futureVx,
+            (targetPose.getY() - fuelExitPose.getY()) / t - futureVy,
             fuelZVelo
         );
 
@@ -105,8 +124,9 @@ public class ShotCalculator {
         targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
 
         //Store velocities for acceleration calculations each loop
-        previousRobotVx = robotVelocity.vxMetersPerSecond;
-        previousRobotVy = robotVelocity.vyMetersPerSecond;
+        previousRobotVx = filteredVx;
+        previousRobotVy = filteredVy;
+        previousRobotVOmega = filteredVOmega;
     }
 
     public static double getTargetFlywheelRPM() {

@@ -19,15 +19,12 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator;
@@ -39,6 +36,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
     private boolean isShooting = false;
+
+    private final double PASS_RPM_SLOWING_FACTOR = 0.8;
     
     private final Debouncer shotSensorDebouncer = new Debouncer(0.002, Debouncer.DebounceType.kRising);
     private boolean wasShotDetectedBefore = false;
@@ -72,7 +71,6 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private final ShotParams leftPass = new ShotParams(new Translation3d(0, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams middlePass = new ShotParams(new Translation3d(0, 4, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(0, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private final Distance FIELD_CENTER_X_COORDINATE = Meters.of(4.07);
@@ -115,8 +113,12 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
 
         shotSensor.getConfigurator().apply(shotSensorConfig);
+
         // Probable should lower this a bit
         shotSensor.getIsDetected().setUpdateFrequency(200, 0.025); 
+
+        //Reset the ShotCalculator's velocity filters 
+        ShotCalculator.resetFilters();
     }
 
     public void setState(ShooterState state) {
@@ -129,7 +131,11 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public Command shoot() {
         return run(() -> {
-            shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
+            double targetRPM = (state.equals(ShooterState.PASSING)) ?
+                PASS_RPM_SLOWING_FACTOR * ShotCalculator.getTargetFlywheelRPM() :
+                ShotCalculator.getTargetFlywheelRPM();
+
+            shooter.spinToRPM(targetRPM);
 
             if (readyToShoot()) {
                 transfer.spin();
@@ -225,7 +231,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         );
 
         //Use the full hood angle to shoot as horizontally as possible
-        shooter.setHoodDegrees(ShooterSubsystem.MAX_HOOD_DEGREES);
+        shooter.setHoodDegrees(shooter.getMaxHoodDegrees());
 
         Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
         Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
