@@ -81,11 +81,6 @@ public class RobotContainer {
 
         operatorController.a().whileTrue(robot.keepRobotLockedWithTurret());
         operatorController.x().whileTrue(robot.activatePrecisionDriving());
-
-        //Passing target changing
-        operatorController.povLeft().onTrue(robot.setPassingTarget(PassingTarget.LEFT));
-        operatorController.povUp().onTrue(robot.setPassingTarget(PassingTarget.MIDDLE));
-        operatorController.povRight().onTrue(robot.setPassingTarget(PassingTarget.RIGHT));
     }
 
     /*

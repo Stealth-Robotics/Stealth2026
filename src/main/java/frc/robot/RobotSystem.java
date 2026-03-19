@@ -126,10 +126,6 @@ public class RobotSystem extends SubsystemBase {
         intake.setDefaultCommand(intakeDefaultCommand);
     }
 
-    public Command setPassingTarget(PassingTarget newTarget) {
-        return runOnce(() -> shooter.setPassingTarget(newTarget));
-    }
-
     public Command shoot() {
         return shooter.shoot().alongWith(intake.agitate().repeatedly());
     }
@@ -232,13 +228,14 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
-    private void updateOdometryEstimateWithLimelight() {
+    private void updateOdometry() {
         double imuAngle = drive.getPose().getRotation().getDegrees();
         LimelightHelpers.SetRobotOrientation(LOCALIZATION_LIMELIGHT, imuAngle, 0, 0, 0, 0, 0);
 
         double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
         if (Math.abs(robotAngularVelocity) < Math.PI) {
             PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LOCALIZATION_LIMELIGHT);
+            
             if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
                 drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
                 ShotCalculator.updateVisionLatency(poseEstimate.latency);
@@ -255,7 +252,9 @@ public class RobotSystem extends SubsystemBase {
         ZoneManager.updateRobotPositionAndVelocity(drive.getPose());
 
         updateShootingState();
-        updateOdometryEstimateWithLimelight();
+
+        //Update odometry with our Limelight's and also log everything
+        updateOdometry();
 
         //Update the field telemetry's robot pose
         fieldTelemetry.setRobotPose(drive.getPose());
@@ -280,7 +279,7 @@ public class RobotSystem extends SubsystemBase {
         }
 
         LimelightHelpers.LimelightResults llResults = LimelightHelpers.getLatestResults(LOCALIZATION_LIMELIGHT);
-        if (llResults != null )
+        if (llResults != null)
         {
            // Log Limelight hardware temperature (if available)
             if (llResults.hardware != null) {

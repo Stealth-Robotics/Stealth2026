@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Meters;
 
 import java.util.function.Supplier;
 
@@ -34,7 +35,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private boolean applyIdle = true;
 
-    private PassingTarget passingTarget = PassingTarget.NONE;
+    private PassingTarget passingTarget = PassingTarget.RIGHT;
 
     private boolean isShooting = false;
     
@@ -73,6 +74,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final ShotParams middlePass = new ShotParams(new Translation3d(0, 4, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(0, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
+    private final Distance FIELD_CENTER_X_COORDINATE = Meters.of(4.07);
+
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
     private final int CAN_RANGE_ID = 15;
@@ -85,9 +88,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public enum PassingTarget {
-        NONE,
         LEFT,
-        MIDDLE,
         RIGHT
     }
 
@@ -111,10 +112,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public void setState(ShooterState state) {
         this.state = state;
-    }
-
-    public void setPassingTarget(PassingTarget newTarget) {
-        passingTarget = newTarget;
     }
 
     public Command spinUp(double rpm) {
@@ -146,10 +143,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         .onlyWhile(() -> {
             return !state.equals(ShooterState.IDLE);
         });
-    }
-
-    public Command shootForTimeCommand(double time) {
-        return new ParallelDeadlineGroup(shoot(), new WaitCommand(time));
     }
 
     public Command clearTransfer() {
@@ -205,17 +198,15 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Aim to pass into our alliance area (dynamic, based off of our field position)
      */
     private void pass() {
-        if (passingTarget.equals(PassingTarget.NONE)) {
-            //Attempts to read the driver station location from the FMS and defaults to the MIDDLE if none is found
-            passingTarget = PassingTarget.values()[DriverStation.getLocation().orElse(2) - 1];
-        }
+        Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
+
+        //Calculate which side of the field to target for passing
+        if (turretPose3d.getMeasureX().compareTo(FIELD_CENTER_X_COORDINATE) >= 0) passingTarget = PassingTarget.LEFT;
+        else passingTarget = PassingTarget.RIGHT;
 
         ShotParams params = AllianceUtility.flipPose(
-            (passingTarget.equals(PassingTarget.LEFT) ? leftPass : 
-            passingTarget.equals(PassingTarget.MIDDLE) ? middlePass : rightPass)
+            (passingTarget.equals(PassingTarget.LEFT) ? leftPass : rightPass)
         );
-            
-        Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
 
         ShotCalculator.update(
             turretPose3d,
@@ -224,6 +215,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             params.maxTrajectoryHeight()
         );
 
+        //Use the full hood angle to shoot as horizontally as possible
         shooter.setHoodDegrees(ShooterSubsystem.MAX_HOOD_DEGREES);
 
         Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
