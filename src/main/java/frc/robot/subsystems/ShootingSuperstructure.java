@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Meters;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
+import com.ctre.phoenix6.configs.ProximityParamsConfigs;
 import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.signals.UpdateModeValue;
 
@@ -39,7 +40,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private boolean isShooting = false;
     
-    private final Debouncer shotSensorDebouncer = new Debouncer(0.01, Debouncer.DebounceType.kRising);
+    private final Debouncer shotSensorDebouncer = new Debouncer(0.002, Debouncer.DebounceType.kRising);
     private boolean wasShotDetectedBefore = false;
     private int totalShots = 0;
     private int hubShots = 0;
@@ -105,9 +106,17 @@ public class ShootingSuperstructure extends SubsystemBase {
         //Configure CANRange sensor
         shotSensorConfig.FovParams.FOVRangeX = 6.75;
         shotSensorConfig.FovParams.FOVRangeY = 6.75;
+        shotSensorConfig.withProximityParams(
+            new ProximityParamsConfigs()
+                .withProximityThreshold(FUEL_DETECTED_DISTANCE_THRESHOLD)
+                .withProximityHysteresis(0.005)
+          );
+
         shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
 
         shotSensor.getConfigurator().apply(shotSensorConfig);
+        // Probable should lower this a bit
+        shotSensor.getIsDetected().setUpdateFrequency(200, 0.025); 
     }
 
     public void setState(ShooterState state) {
@@ -274,8 +283,9 @@ public class ShootingSuperstructure extends SubsystemBase {
             }
         }
 
+        // Might remove the debouncer and see how that works.
         boolean shotDetected = shotSensorDebouncer.calculate(
-            shotSensor.getDistance().getValue().compareTo(FUEL_DETECTED_DISTANCE_THRESHOLD) <= 0
+            shotSensor.getIsDetected().getValue()
         );
         
         if (shotDetected && !wasShotDetectedBefore) {
