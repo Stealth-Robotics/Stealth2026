@@ -3,8 +3,6 @@ package frc.robot;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
-import com.ctre.phoenix6.StatusSignal;
-
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -12,9 +10,6 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.units.measure.Temperature;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -60,7 +55,6 @@ public class RobotSystem extends SubsystemBase {
 
     // Throttle status refreshes to reduce CAN bus usage
     private long lastStatusRefreshMs = 0;
-    private static final long LOGGING_REFRESH_PERIOD_MS = 100; // 10 Hz
 
     public enum DrivingMode {
         NORMAL(1.0),
@@ -86,7 +80,6 @@ public class RobotSystem extends SubsystemBase {
     private final SlewRateLimiter yLimiter = new SlewRateLimiter(2.0);
     private final SlewRateLimiter thetaLimiter = new SlewRateLimiter(2.0);
 
-@SuppressWarnings("unchecked")
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
@@ -298,7 +291,7 @@ public class RobotSystem extends SubsystemBase {
 
         // Throttle logging of this data. Note that swerve updates these values to calling refresh false is correct.
         long nowMs = System.currentTimeMillis();
-        if (nowMs - lastStatusRefreshMs >= LOGGING_REFRESH_PERIOD_MS) {
+        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
             for (var module : drive.getModules()) {
                 DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
                     module.getDriveMotor().getSupplyCurrent(false).getValueAsDouble());

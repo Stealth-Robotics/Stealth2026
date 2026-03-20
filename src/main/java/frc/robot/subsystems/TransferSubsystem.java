@@ -34,6 +34,8 @@ public class TransferSubsystem extends SubsystemBase {
 
     private final int SPINDEXER_STATOR_LIMIT = 50;
     private final int FEEDER_STATOR_LIMIT = 50;
+    
+    private long lastStatusRefreshMs = 0;
 
     public TransferSubsystem() {
         spindexerMotor = new TalonFX(SPINDEXER_MOTOR_ID);
@@ -107,7 +109,4 @@ public class TransferSubsystem extends SubsystemBase {
             DogLogUtil.logDouble("Transfer/feeder_temperature_C", feederMotor.getDeviceTemp(false).getValueAsDouble());
         }
     }
-
-     // Throttle status refreshes to 10 Hz
-     private long lastStatusRefreshMs = 0;
 }
