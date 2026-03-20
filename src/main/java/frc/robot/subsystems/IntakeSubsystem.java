@@ -127,11 +127,11 @@ public class IntakeSubsystem extends SubsystemBase {
     public Command agitate() {
         return new ConditionalCommand(
             new SequentialCommandGroup(
-                new InstantCommand(() -> deployTo(RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE)),
+                new InstantCommand(() -> deployTo(RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE), this),
                 new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
-                new InstantCommand(() -> deploy()),
+                new InstantCommand(() -> deploy(), this),
                 new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS)
-            ), 
+            ),
             new InstantCommand(),
             () -> Math.abs(rollerController.Output) < 0.1
         );
@@ -164,11 +164,11 @@ public class IntakeSubsystem extends SubsystemBase {
     // AUTO COMMANDS
 
     public Command intakeCommand() {
-        return runOnce(() -> setRollerSpeed(MAX_ROLLER_SPEED));
+        return run(() -> setRollerSpeed(MAX_ROLLER_SPEED));
     }
 
     public Command stopCommand() {
-        return runOnce(() -> setRollerSpeed(0));
+        return run(() -> setRollerSpeed(0));
     }
 
     public Command deployCommand() {
@@ -177,13 +177,6 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command retractCommand() {
         return runOnce(() -> retract());
-    }
-
-    public Command startIntaking() {
-        return runOnce(() -> {
-            deploy();
-            setRollerSpeed(MAX_ROLLER_SPEED);
-        });
     }
 
     @Override

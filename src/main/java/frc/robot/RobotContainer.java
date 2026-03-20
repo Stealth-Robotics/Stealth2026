@@ -117,6 +117,6 @@ public class RobotContainer {
     }
 
     public void resetAfterAuto() {
-        CommandScheduler.getInstance().schedule(robot.deactivateShooter());
+        robot.resetAfterAuto();
     }
 }

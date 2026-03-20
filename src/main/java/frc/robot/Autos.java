@@ -6,6 +6,7 @@ import choreo.auto.AutoTrajectory;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
@@ -30,13 +31,60 @@ public class Autos {
         return trajectory.cmd().andThen(new WaitUntilCommand(trajectory.done()));
     }
 
+    private Command stopShooting() {
+        return new InstantCommand(() -> shooter.shoot().cancel());
+    }
+
+    private Command startAgitating() {
+        return intake.agitate().repeatedly();
+    }
+
+    private Command stopAgitating() {
+        //Overrides the agitating using requirements
+        return new InstantCommand(() -> intake.stopCommand());
+    }
+
+    private Command deployAndIntake() {
+        return intake.deployCommand().andThen(intake.intakeCommand());
+    }
+
+    public AutoRoutine left2Cycle() {
+        String pathName = "L2Cycle";
+
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        AutoTrajectory path = routine.trajectory(pathName, 0);
+        path.atTime("StartIntaking").onTrue(deployAndIntake());
+        path.atTime("StopIntaking").onTrue(intake.stopCommand());
+        path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
+        path.atTime("StartShooting").onTrue(shooter.shoot());
+
+        AutoTrajectory path2 = routine.trajectory(pathName, 1);
+        path2.atTime("StartIntaking").onTrue(deployAndIntake());
+        path2.atTime("StopIntaking").onTrue(intake.stopCommand());
+        path2.atTime("SpinUp").onTrue(shooter.spinUp(2500));
+        path2.atTime("StartShooting").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                path.resetOdometry(),
+                followPath(path),
+                new WaitCommand(3), //Shooting time after first cycle
+                stopShooting(),
+                followPath(path2)
+            )
+        );
+
+        return routine;
+    }
+
     public AutoRoutine rightOneCyclePlusOutpost() {
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
         String pathName = "RightOneCyclePlusOutpost";
 
         AutoTrajectory path = routine.trajectory(pathName, 0);
-        path.atTime("StartIntaking").onTrue(intake.startIntaking());
+        path.atTime("StartIntaking").onTrue(deployAndIntake());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500).alongWith(intake.stopCommand()));
         path.atTime("StartShooting").onTrue(shooter.shoot());
         path.atTime("StopShooting").onTrue(shooter.shoot());
@@ -47,6 +95,7 @@ public class Autos {
                 path.cmd()
             )
         );
+
         path.done().onTrue(
             new SequentialCommandGroup(
                 new WaitCommand(5),
@@ -56,17 +105,18 @@ public class Autos {
 
         return routine;
     }
+
     public AutoRoutine leftOneCyclePlusDepot() {
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
         String pathName = "LeftOneCyclePlusDepotSlow";
 
         AutoTrajectory path = routine.trajectory(pathName,0);
-        path.atTime("StartIntaking").onTrue(intake.startIntaking());
+        path.atTime("StartIntaking").onTrue(intake.intakeCommand().alongWith(intake.deployCommand()));
         path.atTime("StopIntaking").onTrue(intake.stopCommand());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
         path.atTime("StartShooting").onTrue(shooter.shoot());
-        path.atTime("StopShooting").onTrue(intake.startIntaking().alongWith(shooter.shoot()));
+        path.atTime("StopShooting").onTrue(intake.intakeCommand().alongWith(shooter.shoot()));
 
         AutoTrajectory path2 = routine.trajectory(pathName,1);
 

@@ -13,13 +13,12 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RepeatCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
@@ -34,8 +33,6 @@ import frc.robot.util.DogLogUtil;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
-import frc.robot.util.ShiftTracker;
-import frc.robot.util.ShotCalculator;
 import frc.robot.util.ZoneManager;
 
 public class RobotSystem extends SubsystemBase {
@@ -115,8 +112,10 @@ public class RobotSystem extends SubsystemBase {
             .finallyDo(() -> currentDrivingMode = DrivingMode.NORMAL);
     }
 
-    public Command deactivateShooter() {
-        return new InstantCommand(() -> shooter.setState(ShooterState.IDLE));
+    public void resetAfterAuto() {
+        CommandScheduler.getInstance().requiring(intake).cancel();
+        CommandScheduler.getInstance().requiring(shooter).cancel();
+        shooter.setState(ShooterState.IDLE);
     }
 
     public Command agitate() {
