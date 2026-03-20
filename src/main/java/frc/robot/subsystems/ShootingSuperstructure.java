@@ -38,7 +38,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     private boolean isShooting = false;
     
     private boolean wasShotDetectedBefore = false;
-    
+    private final Debouncer shotSensorDebouncer = new Debouncer(0.002, Debouncer.DebounceType.kRising);
+
     private int totalShots = 0;
     private int hubShots = 0;
     private int passShots = 0;
@@ -113,7 +114,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensor.getConfigurator().apply(shotSensorConfig);
 
         // Probable should lower this a bit
-        shotSensor.getIsDetected().setUpdateFrequency(200, 0.001); 
+        shotSensor.getIsDetected().setUpdateFrequency(200, 0.05); 
 
         //Reset the ShotCalculator's velocity filters 
         ShotCalculator.resetFilters();
@@ -301,7 +302,10 @@ public class ShootingSuperstructure extends SubsystemBase {
             }
         }
 
-        boolean shotDetected = shotSensor.getIsDetected().getValue();
+        boolean shotDetected = shotSensorDebouncer.calculate(
+            shotSensor.getIsDetected().getValue()
+        );
+
         
         if (shotDetected && !wasShotDetectedBefore) {
             switch (state) {

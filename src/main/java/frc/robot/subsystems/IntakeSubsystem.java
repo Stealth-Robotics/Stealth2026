@@ -1,9 +1,8 @@
 package frc.robot.subsystems;
 
-import java.util.function.DoubleSupplier;
-
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -66,6 +65,10 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.5;
     private final double INTAKE_TOSS_PERCENTAGE = 1.0;
 
+
+    // Throttle refreshes to 10 Hz
+    private long lastStatusRefreshMs = 0;
+ 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
         deployMotor = new TalonFX(DEPLOY_MOTOR_ID);
@@ -114,6 +117,7 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
         DogLog.log("Intake/roller_max_current",ROLLER_STATOR_LIMIT);
         DogLog.log("Intake/intake_max_current", DEPLOY_STATOR_LIMIT);
+
     }
 
     /**
@@ -185,13 +189,29 @@ public class IntakeSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         DogLog.log("Intake/roller_speed", rollerMotor.get());
-        DogLogUtil.logDouble("Intake/roller_current", rollerMotor.getSupplyCurrent().getValueAsDouble());
-        DogLogUtil.logDouble("Intake/roller_stator_current", rollerMotor.getStatorCurrent().getValueAsDouble());
-        DogLogUtil.logDouble("Intake/roller_temperature_C", rollerMotor.getDeviceTemp().getValueAsDouble());
-
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
-        DogLogUtil.logDouble("Intake/intake_current", deployMotor.getSupplyCurrent().getValueAsDouble());
-        DogLogUtil.logDouble("Intake/intake_stator_current", deployMotor.getStatorCurrent().getValueAsDouble());
-        DogLogUtil.logDouble("Intake/intake_temperature_C", deployMotor.getDeviceTemp().getValueAsDouble());
+        logMotorData();
+    }
+
+    private void logMotorData() {
+        // Throttle status refreshes and only log currents/temps when we've refreshed the cached values.
+        long nowMs = System.currentTimeMillis();
+        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+            BaseStatusSignal.refreshAll(
+                rollerMotor.getSupplyCurrent(), rollerMotor.getStatorCurrent(), rollerMotor.getDeviceTemp(),
+                deployMotor.getSupplyCurrent(), deployMotor.getStatorCurrent(), deployMotor.getDeviceTemp()
+            );
+
+            lastStatusRefreshMs = nowMs;
+
+            DogLogUtil.logDouble("Intake/roller_current", rollerMotor.getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_stator_current", rollerMotor.getStatorCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_temperature_C", rollerMotor.getDeviceTemp(false).getValueAsDouble());
+
+            DogLogUtil.logDouble("Intake/intake_current", deployMotor.getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/intake_stator_current", deployMotor.getStatorCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/intake_temperature_C", deployMotor.getDeviceTemp(false).getValueAsDouble());
+        }
+    
     }
 }
