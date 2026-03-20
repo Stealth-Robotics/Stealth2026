@@ -235,7 +235,7 @@ public class RobotSystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        ZoneManager.updateRobotPositionAndVelocity(drive.getPose());
+        ZoneManager.updateRobotPose(drive.getPose());
 
         updateShootingState();
 

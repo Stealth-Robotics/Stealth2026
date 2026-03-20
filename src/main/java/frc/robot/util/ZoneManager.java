@@ -23,7 +23,7 @@ public class ZoneManager {
         UNKNOWN
     }
     
-    public static void updateRobotPositionAndVelocity(Pose2d newRobotPose) {
+    public static void updateRobotPose(Pose2d newRobotPose) {
         robotPose = newRobotPose;
     }
 

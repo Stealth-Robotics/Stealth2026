@@ -31,7 +31,10 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kI = 15.0;
     private final double kD = 0.0;
 
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 8.0;
+    //The unclamped value that the turret is commanded to go to (used to see if it is at the target)
+    private double rawTargetDegrees = 0;
+
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 5.0;
 
     public final double MAX_TURRET_DEGREES = 121;
     private final double TURRET_HOME_DEGREES = 0;
@@ -86,6 +89,7 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void setTargetDegrees(double degrees) {
+        rawTargetDegrees = degrees;
         turretMotor.setControl(turretController.withPosition(
             Units.degreesToRotations(MathUtil.clamp(degrees, MIN_TURRET_DEGREES, MAX_TURRET_DEGREES))
         ));
@@ -95,13 +99,12 @@ public class TurretSubsystem extends SubsystemBase {
      * Checks that the turret is not wrapping (error is relatively low) and that the target is reachable
      */
     public boolean isReady() {
-        var target = getTargetAngleDegrees();
         boolean targetInRange = 
-            target < MAX_TURRET_DEGREES + TURRET_ANGLE_TOLERANCE_DEGREES &&
-            target > MIN_TURRET_DEGREES - TURRET_ANGLE_TOLERANCE_DEGREES;
+            rawTargetDegrees < MAX_TURRET_DEGREES &&
+            rawTargetDegrees > MIN_TURRET_DEGREES;
 
         return targetInRange &&
-            Math.abs(getTurretAngleDegrees() - target) < TURRET_ANGLE_TOLERANCE_DEGREES;
+            Math.abs(getTurretAngleDegrees() - rawTargetDegrees) < TURRET_ANGLE_TOLERANCE_DEGREES;
     }
 
     public double getTurretAngleDegrees() {
