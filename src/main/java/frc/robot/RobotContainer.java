@@ -16,8 +16,8 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
+import frc.robot.RobotSystem.DrivingMode;
 import frc.robot.subsystems.LEDSubsystem.DisplayMode;
-import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 
 
 public class RobotContainer {
@@ -72,12 +72,14 @@ public class RobotContainer {
         );
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
-        driverController.povDown().onTrue(new InstantCommand(() -> robot.toggleDrivingMode()));
+        // driverController.povDown().onTrue(new InstantCommand(() -> robot.toggleDrivingMode()));
 
         operatorController.rightBumper().whileTrue(robot.shoot());
+        operatorController.rightBumper().onTrue(new InstantCommand(() -> robot.setDrivingMode(DrivingMode.SHOOTING)));
+        operatorController.rightBumper().onFalse(new InstantCommand(() -> robot.setDrivingMode(DrivingMode.NORMAL)));
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
         
-        operatorController.b().onTrue(robot.agitate());
+        // operatorController.b().onTrue(robot.agitate());
 
         operatorController.a().whileTrue(robot.keepRobotLockedWithTurret());
         operatorController.x().whileTrue(robot.activatePrecisionDriving());
@@ -114,6 +116,7 @@ public class RobotContainer {
     // Sets default light state when disabled
     public void disabledPeriodic() {
         robot.setLEDMode(DisplayMode.DISABLED);
+        robot.resetFuelShotCount();
     }
 
     public void resetAfterAuto() {

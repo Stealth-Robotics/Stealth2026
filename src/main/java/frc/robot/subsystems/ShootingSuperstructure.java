@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
@@ -21,10 +22,13 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
-
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator;
@@ -36,8 +40,6 @@ public class ShootingSuperstructure extends SubsystemBase {
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
     private boolean isShooting = false;
-
-    private final double PASS_RPM_SLOWING_FACTOR = 0.8;
     
     private final Debouncer shotSensorDebouncer = new Debouncer(0.002, Debouncer.DebounceType.kRising);
     private boolean wasShotDetectedBefore = false;
@@ -70,10 +72,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private final ShotParams leftPass = new ShotParams(new Translation3d(0, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams leftPass = new ShotParams(new Translation3d(0, 5.75, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(0, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private final Distance FIELD_CENTER_X_COORDINATE = Meters.of(4.07);
+    private final double FIELD_CENTER_X_COORDINATE = 4.07;
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
@@ -115,25 +117,25 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensor.getConfigurator().apply(shotSensorConfig);
 
         // Probable should lower this a bit
-        shotSensor.getIsDetected().setUpdateFrequency(200, 0.025); 
+        shotSensor.getIsDetected().setUpdateFrequency(200, 0.001);
 
         //Reset the ShotCalculator's velocity filters 
         ShotCalculator.resetFilters();
+    }
+
+    public void resetFuelShotCount() {
+        totalShots = 0;
+        hubShots = 0;
+        passShots = 0;
     }
 
     public void setState(ShooterState state) {
         this.state = state;
     }
 
-    public Command spinUp(double rpm) {
-        return new InstantCommand(() -> shooter.spinToRPM(rpm));
-    }
-
     public Command shoot() {
         return run(() -> {
-            double targetRPM = (state.equals(ShooterState.PASSING)) ?
-                PASS_RPM_SLOWING_FACTOR * ShotCalculator.getTargetFlywheelRPM() :
-                ShotCalculator.getTargetFlywheelRPM();
+            double targetRPM = ShotCalculator.getTargetFlywheelRPM();
 
             shooter.spinToRPM(targetRPM);
 
@@ -177,7 +179,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     /**
      * Set the hood, turret, and flywheel to their homed/idle states (zeroed and unpowered)
      */
-    private void idleSubsystems() {
+    public void idleSubsystems() {
         shooter.coastShooter();
         shooter.setHoodDegrees(0);
 
@@ -192,7 +194,8 @@ public class ShootingSuperstructure extends SubsystemBase {
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
-            params.maxTrajectoryHeight()
+            params.maxTrajectoryHeight(),
+            false
         );
 
         shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
@@ -216,8 +219,18 @@ public class ShootingSuperstructure extends SubsystemBase {
         Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
 
         //Calculate which side of the field to target for passing
-        if (turretPose3d.getMeasureX().compareTo(FIELD_CENTER_X_COORDINATE) >= 0) passingTarget = PassingTarget.LEFT;
-        else passingTarget = PassingTarget.RIGHT;
+        if (AllianceUtility.getAlliance().equals(Alliance.Blue)) {
+            if (turretPose3d.getY() > FIELD_CENTER_X_COORDINATE) 
+                passingTarget = PassingTarget.LEFT;
+            else 
+                passingTarget = PassingTarget.RIGHT;
+        }
+        else {
+            if (turretPose3d.getY() < FIELD_CENTER_X_COORDINATE) 
+                passingTarget = PassingTarget.LEFT;
+            else 
+                passingTarget = PassingTarget.RIGHT;
+        }
 
         ShotParams params = AllianceUtility.flipPose(
             (passingTarget.equals(PassingTarget.LEFT) ? leftPass : rightPass)
@@ -227,7 +240,8 @@ public class ShootingSuperstructure extends SubsystemBase {
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
-            params.maxTrajectoryHeight()
+            params.maxTrajectoryHeight(),
+            true
         );
 
         //Use the full hood angle to shoot as horizontally as possible
@@ -248,7 +262,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private void calculateTurretLockError(double turretTarget) {
         turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
             turret.MAX_TURRET_DEGREES - turretTarget :
-            (turretTarget < turret.MIN_TURRET_DEGREES) ? turret.MIN_TURRET_DEGREES - turretTarget  : 0;
+            (turretTarget < turret.MIN_TURRET_DEGREES) ? turret.MIN_TURRET_DEGREES - turretTarget : 0;
     }
 
     /**
@@ -256,12 +270,16 @@ public class ShootingSuperstructure extends SubsystemBase {
      * OR if we are in autonomous and just want to shoot no matter what.
      */
     private boolean readyToShoot() {
-        return DriverStation.isAutonomous() || 
+        return state.equals(ShooterState.PASSING) || DriverStation.isAutonomous() ||
         (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
     }
 
     public boolean isShooting() {
         return isShooting;
+    }
+
+    public Command spinUp(double rpm) {
+        return new InstantCommand(() -> shooter.spinToRPM(rpm));
     }
 
     @Override
@@ -290,10 +308,8 @@ public class ShootingSuperstructure extends SubsystemBase {
         }
 
         // Might remove the debouncer and see how that works.
-        boolean shotDetected = shotSensorDebouncer.calculate(
-            shotSensor.getIsDetected().getValue()
-        );
-        
+        boolean shotDetected = shotSensor.getIsDetected().getValue();
+
         if (shotDetected && !wasShotDetectedBefore) {
             switch (state) {
                 case HUB_TRACKING:

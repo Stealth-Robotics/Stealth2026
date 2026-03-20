@@ -28,14 +28,16 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kACCELERATION = 100.0;
     private final double kCRUISE_VELOCITY = 400.0;
     private final double kP = 80.0;
-    private final double kI = 15.0;
+    private final double kI = 20.0;
     private final double kD = 0.0;
+
+    private double unclampedTargetDegrees = 0;
 
     private final double TURRET_ANGLE_TOLERANCE_DEGREES = 8.0;
 
-    public final double MAX_TURRET_DEGREES = 121;
+    public final double MAX_TURRET_DEGREES = 120;
     private final double TURRET_HOME_DEGREES = 0;
-    public final double MIN_TURRET_DEGREES = -54;
+    public final double MIN_TURRET_DEGREES = -53;
 
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.5;
 
@@ -86,6 +88,8 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void setTargetDegrees(double degrees) {
+        unclampedTargetDegrees = degrees;
+
         turretMotor.setControl(turretController.withPosition(
             Units.degreesToRotations(MathUtil.clamp(degrees, MIN_TURRET_DEGREES, MAX_TURRET_DEGREES))
         ));
@@ -95,13 +99,12 @@ public class TurretSubsystem extends SubsystemBase {
      * Checks that the turret is not wrapping (error is relatively low) and that the target is reachable
      */
     public boolean isReady() {
-        var target = getTargetAngleDegrees();
         boolean targetInRange = 
-            target < MAX_TURRET_DEGREES + TURRET_ANGLE_TOLERANCE_DEGREES &&
-            target > MIN_TURRET_DEGREES - TURRET_ANGLE_TOLERANCE_DEGREES;
+            unclampedTargetDegrees < MAX_TURRET_DEGREES + TURRET_ANGLE_TOLERANCE_DEGREES &&
+            unclampedTargetDegrees > MIN_TURRET_DEGREES - TURRET_ANGLE_TOLERANCE_DEGREES;
 
         return targetInRange &&
-            Math.abs(getTurretAngleDegrees() - target) < TURRET_ANGLE_TOLERANCE_DEGREES;
+            Math.abs(getTurretAngleDegrees() - unclampedTargetDegrees) < TURRET_ANGLE_TOLERANCE_DEGREES;
     }
 
     public double getTurretAngleDegrees() {

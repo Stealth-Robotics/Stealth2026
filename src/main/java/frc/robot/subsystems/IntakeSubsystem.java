@@ -16,6 +16,7 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -33,10 +34,11 @@ public class IntakeSubsystem extends SubsystemBase {
     private final TalonFXConfiguration deployConfig = new TalonFXConfiguration();
 
     private final MotionMagicVoltage deployController = new MotionMagicVoltage(0);
-    private final VoltageOut rollerController = new VoltageOut(0)
-        .withEnableFOC(true);
+    private final VoltageOut rollerController = new VoltageOut(0);
 
-    private final double INTAKE_ROLLER_VOLTAGE = 7;
+    private boolean isIntaking = false;
+
+    private final double INTAKE_ROLLER_VOLTAGE = 8;
     private final double MAX_ROLLER_SPEED = 0.8;
 
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.4013671875;
@@ -47,24 +49,24 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.651;
 
     private final double DEPLOYED_ROTATIONS = 0;
-    private final double RETRACTED_ROTATIONS = 0.2;
+    private final double RETRACTED_ROTATIONS = 0.28;
 
-    private final double DEPLOY_kP = 30;
-    private final double RETRACT_kP = 35;
+    private final double DEPLOY_kP = 35;
+    private final double RETRACT_kP = 40;
     private final double DEPLOY_kI = 0;
     private final double RETRACT_kI = 0.09;
-    private final double DEPLOY_kACCEL = 10;
-    private final double DEPLOY_kVELO = 50;
+    private final double DEPLOY_kACCEL = 30;
+    private final double DEPLOY_kVELO = 80;
 
     private final int ROLLER_MOTOR_ID = 16;
     private final int DEPLOY_MOTOR_ID = 17;
     private final int DEPLOY_ENCODER_ID = 18;
 
     private final int DEPLOY_STATOR_LIMIT = 20;
-    private final int ROLLER_STATOR_LIMIT = 90;
+    private final int ROLLER_STATOR_LIMIT = 100;
 
-    private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.5;
-    private final double INTAKE_TOSS_PERCENTAGE = 0.75;
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.15;
+    private final double INTAKE_TOSS_PERCENTAGE = 1.0; //Fix once intake has full range again
 
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
@@ -114,18 +116,26 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
         DogLog.log("Intake/roller_max_current",ROLLER_STATOR_LIMIT);
         DogLog.log("Intake/intake_max_current", DEPLOY_STATOR_LIMIT);
-}
+    }
+
+    public void setIntakingState(boolean isIntaking) {
+        this.isIntaking = isIntaking;
+    }
 
     /**
      * Moves the intake up to the desired percentage of the fully up position and
      * then back down to toss the fuel into the spindexer.
      */
     public Command agitate() {
-        return new SequentialCommandGroup(
-            new InstantCommand(() -> deployTo(RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE)),
-            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
-            new InstantCommand(() -> deploy()),
-            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS)
+        return new ConditionalCommand(
+            new SequentialCommandGroup(
+                new InstantCommand(() -> deployTo(RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE)),
+                new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
+                new InstantCommand(() -> deploy()),
+                new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS)
+            ), 
+            new InstantCommand(),
+            () -> !isIntaking
         );
     }
 
@@ -169,13 +179,6 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command retractCommand() {
         return runOnce(() -> retract());
-    }
-
-    public Command startIntaking() {
-        return runOnce(() -> {
-            deploy();
-            setRollerSpeed(MAX_ROLLER_SPEED);
-        });
     }
 
     @Override

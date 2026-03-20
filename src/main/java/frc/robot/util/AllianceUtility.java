@@ -63,6 +63,15 @@ public class AllianceUtility {
         return original;
     }
 
+    public static RectZone forceFlipRectZone(RectZone original) {
+        return new RectZone(
+            FIELD_CENTER_POINT.getX() + (FIELD_CENTER_POINT.getX() - original.minX),
+            FIELD_CENTER_POINT.getY() + (FIELD_CENTER_POINT.getY() - original.minY), 
+            FIELD_CENTER_POINT.getX() + (FIELD_CENTER_POINT.getX() - original.maxX),
+            FIELD_CENTER_POINT.getY() + (FIELD_CENTER_POINT.getY() - original.maxY)
+        );
+    }
+
     public static void update() {
         latestAlliance = DriverStation.getAlliance().orElse(Alliance.Blue);
     }

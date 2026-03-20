@@ -1,10 +1,14 @@
 package frc.robot;
 
+import java.util.function.DoubleSupplier;
+
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.subsystems.IntakeSubsystem;
@@ -24,13 +28,24 @@ public class Autos {
         this.shooter = shooter;
     }
 
+    private Command autonomousShoot(DoubleSupplier seconds) {
+        return new ParallelDeadlineGroup(
+            new WaitCommand(seconds.getAsDouble()),
+            shooter.shoot().alongWith(intake.agitate().repeatedly())
+        ).finallyDo(() -> {
+            shooter.shoot().cancel();
+            intake.agitate().cancel();
+            shooter.idleSubsystems();
+        });
+    }
+
     public AutoRoutine rightOneCyclePlusOutpost() {
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
         String pathName = "RightOneCyclePlusOutpost";
 
         AutoTrajectory path = routine.trajectory(pathName, 0);
-        path.atTime("StartIntaking").onTrue(intake.startIntaking());
+        path.atTime("StartIntaking").onTrue(intake.intakeCommand().andThen(intake.deployCommand()));
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500).alongWith(intake.stopCommand()));
         path.atTime("StartShooting").onTrue(shooter.shoot());
         path.atTime("StopShooting").onTrue(shooter.shoot());
@@ -50,19 +65,23 @@ public class Autos {
 
         return routine;
     }
+
     public AutoRoutine leftOneCyclePlusDepot() {
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
         String pathName = "LeftOneCyclePlusDepotSlow";
 
-        AutoTrajectory path = routine.trajectory(pathName,0);
-        path.atTime("StartIntaking").onTrue(intake.startIntaking());
+        AutoTrajectory path = routine.trajectory(pathName, 0);
+        path.atTime("StartIntaking").onTrue(intake.intakeCommand().andThen(intake.deployCommand()));
         path.atTime("StopIntaking").onTrue(intake.stopCommand());
         path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
-        path.atTime("StartShooting").onTrue(shooter.shoot());
-        path.atTime("StopShooting").onTrue(intake.startIntaking().alongWith(shooter.shoot()));
+        path.atTime("StartShooting").onTrue(autonomousShoot(() -> 2));
 
-        AutoTrajectory path2 = routine.trajectory(pathName,1);
+        AutoTrajectory path2 = routine.trajectory(pathName, 1);
+        path2.atTime("StartIntaking2").onTrue(intake.intakeCommand().andThen(intake.deployCommand()));
+        path2.atTime("StopIntaking2").onTrue(intake.stopCommand());
+        path2.atTime("SpinUp2").onTrue(shooter.spinUp(2500));
+        path2.atTime("StartShooting2").onTrue(autonomousShoot(() -> 10));
 
         routine.active().onTrue(
             new SequentialCommandGroup(
@@ -73,8 +92,9 @@ public class Autos {
 
         path.done().onTrue(
             new SequentialCommandGroup(
-                new WaitCommand(1.5),
-                path2.cmd().alongWith(shooter.shoot()).alongWith(intake.agitate().repeatedly())
+                new WaitCommand(2),
+                intake.retractCommand(),
+                path2.cmd()
             )
         );
 

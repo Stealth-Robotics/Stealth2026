@@ -2,6 +2,7 @@ package frc.robot;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+import java.util.spi.CurrencyNameProvider;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
@@ -10,17 +11,15 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RepeatCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
@@ -36,7 +35,6 @@ import frc.robot.util.LimelightHelpers;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
 import frc.robot.util.ShiftTracker;
-import frc.robot.util.ShotCalculator;
 import frc.robot.util.ZoneManager;
 
 public class RobotSystem extends SubsystemBase {
@@ -47,7 +45,7 @@ public class RobotSystem extends SubsystemBase {
     
     private final Field2d fieldTelemetry = new Field2d();
 
-    private final double MIN_TAG_REJECTION_METERS = 6;
+    private final double MIN_TAG_REJECTION_METERS = 3;
     private final String LOCALIZATION_LIMELIGHT = "limelight-robot";
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
@@ -56,8 +54,8 @@ public class RobotSystem extends SubsystemBase {
 
     public enum DrivingMode {
         NORMAL(1.0),
-        SHOOTING(0.25),
-        PRECISION(0.2),
+        SHOOTING(0.75),
+        PRECISION(0.75),
         ROBOT_CENTRIC(1.0);
 
         /**
@@ -74,14 +72,14 @@ public class RobotSystem extends SubsystemBase {
         }
     }
 
-    private final SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
-    private final SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);
-    private final SlewRateLimiter thetaLimiter = new SlewRateLimiter(5.0);
+    private final SlewRateLimiter xLimiter = new SlewRateLimiter(2.0);
+    private final SlewRateLimiter yLimiter = new SlewRateLimiter(2.0);
+    private final SlewRateLimiter thetaLimiter = new SlewRateLimiter(3.0);
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
-        shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getRobotRelativeVelocity());
+        shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
         led = new LEDSubsystem();
 
         //Log the field + robot pose to Elastic
@@ -91,23 +89,29 @@ public class RobotSystem extends SubsystemBase {
         Trigger rumbleTrigger = new Trigger(() -> ShiftTracker.triggerRumbleWarning());
         rumbleTrigger
             .onTrue(
-                new RepeatCommand(
-                    new SequentialCommandGroup(
-                        new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.75)),
-                        new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0.75)),
-                        new WaitCommand(0.25),
-                        new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0)),
-                        new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0)),
-                        new WaitCommand(0.25)
-                    )
-                ).until(() -> !ShiftTracker.triggerRumbleWarning())
+                new InstantCommand()
+                // new RepeatCommand(
+                //     new SequentialCommandGroup(
+                //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.75)),
+                //         new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0.75)),
+                //         new WaitCommand(0.25),
+                //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0)),
+                //         new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0)),
+                //         new WaitCommand(0.25)
+                //     )
             );
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
         Command intakeDefaultCommand = run(
             () -> {
-                intake.setRollerSpeed(rollerSpeed.getAsDouble());
+                if (DriverStation.isTeleop()) {
+                    intake.setRollerSpeed(rollerSpeed.getAsDouble());
+                    if (Math.abs(rollerSpeed.getAsDouble()) > 0.01) {
+                        intake.setIntakingState(true);
+                    }
+                    else intake.setIntakingState(false);
+                }
             }
         ).beforeStarting(
             () -> {
@@ -121,6 +125,10 @@ public class RobotSystem extends SubsystemBase {
 
         intakeDefaultCommand.addRequirements(intake);
         intake.setDefaultCommand(intakeDefaultCommand);
+    }
+
+    public void setDrivingMode(DrivingMode newMode) {
+        currentDrivingMode = newMode;
     }
 
     public Command shoot() {
@@ -235,13 +243,16 @@ public class RobotSystem extends SubsystemBase {
             
             if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
                 drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
-                ShotCalculator.updateVisionLatency(poseEstimate.latency);
             }
         }
     }
 
     public void setLEDMode(DisplayMode ledDisplayMode) {
         led.changeDisplayMode(ledDisplayMode);
+    }
+
+    public void resetFuelShotCount() {
+        shooter.resetFuelShotCount();
     }
 
     @Override
