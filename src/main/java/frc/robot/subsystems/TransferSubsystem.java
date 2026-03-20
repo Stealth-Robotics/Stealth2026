@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.VoltageOut;
@@ -55,6 +56,7 @@ public class TransferSubsystem extends SubsystemBase {
 
         spindexerMotor.setControl(coast);
         feederMotor.setControl(coast);
+
         DogLog.log("Transfer/spindexer_max_current", SPINDEXER_STATOR_LIMIT);
         DogLog.log("Transfer/feeder_max_current", FEEDER_STATOR_LIMIT);
     }
@@ -82,14 +84,30 @@ public class TransferSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         // Advantagescope logging
-        DogLogUtil.logDouble("Transfer/spindexer_speed", spindexerMotor.getVelocity().getValueAsDouble());
-        DogLogUtil.logDouble("Transfer/spindexer_current", spindexerMotor.getSupplyCurrent().getValueAsDouble());
-        DogLogUtil.logDouble("Transfer/spindexer_stator_current", spindexerMotor.getStatorCurrent().getValueAsDouble());
-        DogLogUtil.logDouble("Transfer/spindexer_temperature_C", spindexerMotor.getDeviceTemp().getValueAsDouble());
-
-        DogLogUtil.logDouble("Transfer/feeder_speed", feederMotor.getVelocity().getValueAsDouble());
-        DogLogUtil.logDouble("Transfer/feeder_current", feederMotor.getSupplyCurrent().getValueAsDouble());
-        DogLogUtil.logDouble("Transfer/feeder_stator_current", feederMotor.getStatorCurrent().getValueAsDouble());
-        DogLogUtil.logDouble("Transfer/feeder_temperature_C", feederMotor.getDeviceTemp().getValueAsDouble());
+        logMotorData();
     }
+
+    private void logMotorData() {
+        // Throttle status refreshes and only log currents/temps when we've refreshed the cached values.
+        long nowMs = System.currentTimeMillis();
+        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+            BaseStatusSignal.refreshAll(
+                spindexerMotor.getSupplyCurrent(), spindexerMotor.getStatorCurrent(), spindexerMotor.getDeviceTemp(),
+                feederMotor.getSupplyCurrent(), feederMotor.getStatorCurrent(), feederMotor.getDeviceTemp()
+            );
+
+            lastStatusRefreshMs = nowMs;
+
+            DogLogUtil.logDouble("Transfer/spindexer_current", spindexerMotor.getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Transfer/spindexer_stator_current", spindexerMotor.getStatorCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Transfer/spindexer_temperature_C", spindexerMotor.getDeviceTemp(false).getValueAsDouble());
+
+            DogLogUtil.logDouble("Transfer/feeder_current", feederMotor.getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Transfer/feeder_stator_current", feederMotor.getStatorCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Transfer/feeder_temperature_C", feederMotor.getDeviceTemp(false).getValueAsDouble());
+        }
+    }
+
+     // Throttle status refreshes to 10 Hz
+     private long lastStatusRefreshMs = 0;
 }

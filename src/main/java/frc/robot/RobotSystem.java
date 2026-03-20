@@ -3,6 +3,8 @@ package frc.robot;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
+import com.ctre.phoenix6.StatusSignal;
+
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -10,6 +12,8 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -54,6 +58,10 @@ public class RobotSystem extends SubsystemBase {
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
 
+    // Throttle status refreshes to reduce CAN bus usage
+    private long lastStatusRefreshMs = 0;
+    private static final long LOGGING_REFRESH_PERIOD_MS = 100; // 10 Hz
+
     public enum DrivingMode {
         NORMAL(1.0),
         SHOOTING(0.75),
@@ -78,6 +86,7 @@ public class RobotSystem extends SubsystemBase {
     private final SlewRateLimiter yLimiter = new SlewRateLimiter(2.0);
     private final SlewRateLimiter thetaLimiter = new SlewRateLimiter(2.0);
 
+@SuppressWarnings("unchecked")
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
@@ -248,21 +257,7 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLog.log("Driving Mode", currentDrivingMode.name());
 
-        DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
-        DogLog.log("Drive/ModuleStates", drive.getModuleStates());
-        DogLog.log("Drive/Rotation", drive.getPose().getRotation());
-
-        //Advantagescope logging
-        for (var module : drive.getModules()) {
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
-                module.getDriveMotor().getSupplyCurrent().getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
-                module.getSteerMotor().getSupplyCurrent().getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
-                module.getDriveMotor().getDeviceTemp().getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
-                module.getSteerMotor().getDeviceTemp().getValueAsDouble());
-        }
+        this.logDriveStats();
 
         LimelightHelpers.LimelightResults llResults = LimelightHelpers.getLatestResults(LOCALIZATION_LIMELIGHT);
         if (llResults != null)
@@ -270,6 +265,7 @@ public class RobotSystem extends SubsystemBase {
            // Log Limelight hardware temperature (if available)
             if (llResults.hardware != null) {
                 DogLogUtil.logDouble(LOCALIZATION_LIMELIGHT + "/Hardware_Temperature_C", llResults.hardware.temperature);
+                DogLogUtil.logDouble( LOCALIZATION_LIMELIGHT + "/Capture_Latency", llResults.latency_capture);
             }
 
             // Log visible tag poses
@@ -284,15 +280,37 @@ public class RobotSystem extends SubsystemBase {
 
                 DogLog.log(LOCALIZATION_LIMELIGHT + "/VisibleTagPoses", visibleTags);
             }
+            
+            // Log M1 Pose data
+            var m1Pose = llResults.getBotPose3d_wpiBlue();
+            if (m1Pose != null) {
+                DogLog.log(LOCALIZATION_LIMELIGHT + "/wpiBlue_Pose3d", m1Pose);
+            }    
         }
 
-        // Log M1 Pose data
-        var m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(LOCALIZATION_LIMELIGHT);
-        if (m1Pose != null) {
-            DogLog.log(LOCALIZATION_LIMELIGHT + "/wpiBlue_Pose2d", m1Pose.pose);
-            DogLog.log(LOCALIZATION_LIMELIGHT + "/wpiBlue_Timestamp_Sec", m1Pose.timestampSeconds);
-            DogLogUtil.logDouble( LOCALIZATION_LIMELIGHT + "/wpiBlue_Latency", m1Pose.latency);
-            
-        }
+    }
+
+    private void logDriveStats() {
+
+        DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
+        DogLog.log("Drive/ModuleStates", drive.getModuleStates());
+        DogLog.log("Drive/Rotation", drive.getPose().getRotation());
+
+        // Throttle logging of this data. Note that swerve updates these values to calling refresh false is correct.
+        long nowMs = System.currentTimeMillis();
+        if (nowMs - lastStatusRefreshMs >= LOGGING_REFRESH_PERIOD_MS) {
+            for (var module : drive.getModules()) {
+                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
+                    module.getDriveMotor().getSupplyCurrent(false).getValueAsDouble());
+                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
+                    module.getSteerMotor().getSupplyCurrent(false).getValueAsDouble());
+                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
+                    module.getDriveMotor().getDeviceTemp(false).getValueAsDouble());
+                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
+                    module.getSteerMotor().getDeviceTemp(false).getValueAsDouble());
+            }
+
+            lastStatusRefreshMs = nowMs;
+        }        
     }
 }

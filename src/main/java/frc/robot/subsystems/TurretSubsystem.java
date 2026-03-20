@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -48,6 +49,8 @@ public class TurretSubsystem extends SubsystemBase {
     private final int TURRET_ENCODER_ID = 8;
 
     private final int TURRET_STATOR_LIMIT = 40;
+    
+    private long lastStatusRefreshMs = 0;
 
     public TurretSubsystem() {
         turretMotor = new TalonFX(TURRET_MOTOR_ID);
@@ -114,11 +117,25 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLogUtil.logDouble("Turret/turret_degrees", getTurretAngleDegrees());
+        var turretAngle = getTurretAngleDegrees();
+        DogLogUtil.logDouble("Turret/turret_degrees", turretAngle);
         DogLogUtil.logDouble("Turret/turret_target_degrees", getTargetAngleDegrees());
-        DogLogUtil.logDouble("Turret/turret_error_degrees", getTurretAngleDegrees() - getTargetAngleDegrees());
-        DogLogUtil.logDouble("Turret/turret_current", turretMotor.getSupplyCurrent().getValueAsDouble());
-        DogLogUtil.logDouble("Turret/turret_stator_current", turretMotor.getStatorCurrent().getValueAsDouble());
-        DogLogUtil.logDouble("Turret/turret_temperature_C", turretMotor.getDeviceTemp().getValueAsDouble());
+        DogLogUtil.logDouble("Turret/turret_error_degrees", turretAngle - getTargetAngleDegrees());
+        logMotorData();
+    }
+
+    private void logMotorData() {
+        // Throttle status refreshes and only log currents/temps when we've refreshed the cached values.
+        long nowMs = System.currentTimeMillis();
+        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+            BaseStatusSignal.refreshAll(
+                turretMotor.getSupplyCurrent(), turretMotor.getStatorCurrent(), turretMotor.getDeviceTemp()
+            );
+            
+            DogLogUtil.logDouble("Turret/turret_supply_current", turretMotor.getSupplyCurrent().getValueAsDouble());
+            DogLogUtil.logDouble("Turret/turret_stator_current", turretMotor.getStatorCurrent().getValueAsDouble());
+            DogLogUtil.logDouble("Turret/turret_device_temp", turretMotor.getDeviceTemp().getValueAsDouble());
+            lastStatusRefreshMs = nowMs;
+        }
     }
 }
