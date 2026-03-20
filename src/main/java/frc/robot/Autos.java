@@ -56,13 +56,13 @@ public class Autos {
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("StartIntaking").onTrue(deployAndIntake());
         path.atTime("StopIntaking").onTrue(intake.stopCommand());
-        path.atTime("SpinUp").onTrue(shooter.spinUp(2500));
+        path.atTime("SpinUp").onTrue(shooter.spinUp(3000));
         path.atTime("StartShooting").onTrue(shooter.shoot());
 
         AutoTrajectory path2 = routine.trajectory(pathName, 1);
         path2.atTime("StartIntaking").onTrue(deployAndIntake());
         path2.atTime("StopIntaking").onTrue(intake.stopCommand());
-        path2.atTime("SpinUp").onTrue(shooter.spinUp(2500));
+        path2.atTime("SpinUp").onTrue(shooter.spinUp(3000));
         path2.atTime("StartShooting").onTrue(shooter.shoot().alongWith(startAgitating()));
 
         routine.active().onTrue(
