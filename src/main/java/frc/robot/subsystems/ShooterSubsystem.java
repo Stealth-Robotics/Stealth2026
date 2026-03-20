@@ -38,7 +38,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = 0.161;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = 0.1122;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.75;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
@@ -48,12 +48,12 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double MAX_POSSIBLE_RPM = 3800;
 
     private final double MAX_HOOD_DEGREES = 34.1;
-    private final double MIN_HOOD_DEGREES = 12.5;
+    private final double MIN_HOOD_DEGREES = 12.6;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;
 
-    private final double SHOOTING_kP = 1;
-    private final double SHOOTING_kI = 1;
+    private final double SHOOTING_kP = 1.0;
+    private final double SHOOTING_kI = 1.0;
     private final double SHOOTING_kD = 0.0;
     private final double SHOOTING_kA = 0.0072909;
     private final double SHOOTING_kV = 0.18437;
@@ -169,7 +169,7 @@ public class ShooterSubsystem extends SubsystemBase {
      * @return Whether or not the shooter is at its target velocity (within a tolerance)
      */
     public boolean isShooterAtVelocity() {
-        return MathUtil.clamp(Math.abs(getRPM() - getTargetRPM()), 0, MAX_POSSIBLE_RPM) < SHOOTER_VELOCITY_TOLERANCE_RPM;
+        return Math.abs(getRPM() - Math.min(getTargetRPM(), MAX_POSSIBLE_RPM)) < SHOOTER_VELOCITY_TOLERANCE_RPM;
     }
 
     /**

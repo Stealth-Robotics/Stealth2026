@@ -56,8 +56,8 @@ public class RobotSystem extends SubsystemBase {
 
     public enum DrivingMode {
         NORMAL(1.0),
-        SHOOTING(0.25),
-        PRECISION(0.2),
+        SHOOTING(0.75),
+        PRECISION(0.75),
         ROBOT_CENTRIC(1.0);
 
         /**
@@ -74,34 +74,18 @@ public class RobotSystem extends SubsystemBase {
         }
     }
 
-    private final SlewRateLimiter xLimiter = new SlewRateLimiter(3.0);
-    private final SlewRateLimiter yLimiter = new SlewRateLimiter(3.0);
-    private final SlewRateLimiter thetaLimiter = new SlewRateLimiter(5.0);
+    private final SlewRateLimiter xLimiter = new SlewRateLimiter(2.0);
+    private final SlewRateLimiter yLimiter = new SlewRateLimiter(2.0);
+    private final SlewRateLimiter thetaLimiter = new SlewRateLimiter(2.0);
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
-        shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getRobotRelativeVelocity());
+        shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
         led = new LEDSubsystem();
 
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
-
-        //Rumble gamepad just before the start and end of the shifts (tells us when to prep for shooting or leaving)
-        Trigger rumbleTrigger = new Trigger(() -> ShiftTracker.triggerRumbleWarning());
-        rumbleTrigger
-            .onTrue(
-                new RepeatCommand(
-                    new SequentialCommandGroup(
-                        new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.75)),
-                        new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0.75)),
-                        new WaitCommand(0.25),
-                        new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0)),
-                        new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0)),
-                        new WaitCommand(0.25)
-                    )
-                ).until(() -> !ShiftTracker.triggerRumbleWarning())
-            );
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
@@ -124,7 +108,9 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command shoot() {
-        return shooter.shoot().alongWith(intake.agitate().repeatedly());
+        return shooter.shoot().alongWith(intake.agitate().repeatedly())
+            .beforeStarting(() -> currentDrivingMode = DrivingMode.SHOOTING)
+            .finallyDo(() -> currentDrivingMode = DrivingMode.NORMAL);
     }
 
     public Command deactivateShooter() {
@@ -235,13 +221,16 @@ public class RobotSystem extends SubsystemBase {
             
             if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
                 drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
-                ShotCalculator.updateVisionLatency(poseEstimate.latency);
             }
         }
     }
 
     public void setLEDMode(DisplayMode ledDisplayMode) {
         led.changeDisplayMode(ledDisplayMode);
+    }
+
+    public void resetFuelShotCount() {
+        shooter.resetFuelShotCount();
     }
 
     @Override

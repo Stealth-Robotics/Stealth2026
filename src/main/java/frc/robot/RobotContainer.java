@@ -77,9 +77,8 @@ public class RobotContainer {
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
         
-        operatorController.b().onTrue(robot.agitate());
-
         operatorController.a().whileTrue(robot.keepRobotLockedWithTurret());
+        operatorController.b().onTrue(robot.agitate());        
         operatorController.x().whileTrue(robot.activatePrecisionDriving());
     }
 
@@ -114,6 +113,7 @@ public class RobotContainer {
     // Sets default light state when disabled
     public void disabledPeriodic() {
         robot.setLEDMode(DisplayMode.DISABLED);
+        robot.resetFuelShotCount();
     }
 
     public void resetAfterAuto() {

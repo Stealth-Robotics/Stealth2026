@@ -48,10 +48,12 @@ public class ZoneManager {
     }
 
     private static boolean inLeftTrenchZone() {
-        return AllianceUtility.flipRectZone(leftTrench).contains(robotPose.getTranslation());
+        return AllianceUtility.forceFlipRectZone(leftTrench).contains(robotPose.getTranslation()) ||
+            leftTrench.contains(robotPose.getTranslation());
     }
 
     private static boolean inRightTrenchZone() {
-        return AllianceUtility.flipRectZone(rightTrench).contains(robotPose.getTranslation());
+        return AllianceUtility.forceFlipRectZone(rightTrench).contains(robotPose.getTranslation()) ||
+            rightTrench.contains(robotPose.getTranslation());
     }
 }

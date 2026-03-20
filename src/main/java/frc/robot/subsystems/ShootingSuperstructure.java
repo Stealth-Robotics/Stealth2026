@@ -21,7 +21,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
-
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -36,11 +36,9 @@ public class ShootingSuperstructure extends SubsystemBase {
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
     private boolean isShooting = false;
-
-    private final double PASS_RPM_SLOWING_FACTOR = 0.8;
     
-    private final Debouncer shotSensorDebouncer = new Debouncer(0.002, Debouncer.DebounceType.kRising);
     private boolean wasShotDetectedBefore = false;
+    
     private int totalShots = 0;
     private int hubShots = 0;
     private int passShots = 0;
@@ -70,10 +68,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private final ShotParams leftPass = new ShotParams(new Translation3d(0, 6.84, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams leftPass = new ShotParams(new Translation3d(0, 5.75, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(0, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private final Distance FIELD_CENTER_X_COORDINATE = Meters.of(4.07);
+    private final double FIELD_CENTER_Y_DIVIDER = 4.07;
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
@@ -115,7 +113,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensor.getConfigurator().apply(shotSensorConfig);
 
         // Probable should lower this a bit
-        shotSensor.getIsDetected().setUpdateFrequency(200, 0.025); 
+        shotSensor.getIsDetected().setUpdateFrequency(200, 0.001); 
 
         //Reset the ShotCalculator's velocity filters 
         ShotCalculator.resetFilters();
@@ -125,17 +123,19 @@ public class ShootingSuperstructure extends SubsystemBase {
         this.state = state;
     }
 
+    public void resetFuelShotCount() {
+        totalShots = 0;
+        hubShots = 0;
+        passShots = 0;
+    }
+
     public Command spinUp(double rpm) {
         return new InstantCommand(() -> shooter.spinToRPM(rpm));
     }
 
     public Command shoot() {
         return run(() -> {
-            double targetRPM = (state.equals(ShooterState.PASSING)) ?
-                PASS_RPM_SLOWING_FACTOR * ShotCalculator.getTargetFlywheelRPM() :
-                ShotCalculator.getTargetFlywheelRPM();
-
-            shooter.spinToRPM(targetRPM);
+            shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
 
             if (readyToShoot()) {
                 transfer.spin();
@@ -192,7 +192,8 @@ public class ShootingSuperstructure extends SubsystemBase {
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
-            params.maxTrajectoryHeight()
+            params.maxTrajectoryHeight(),
+            false
         );
 
         shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
@@ -216,8 +217,18 @@ public class ShootingSuperstructure extends SubsystemBase {
         Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
 
         //Calculate which side of the field to target for passing
-        if (turretPose3d.getMeasureX().compareTo(FIELD_CENTER_X_COORDINATE) >= 0) passingTarget = PassingTarget.LEFT;
-        else passingTarget = PassingTarget.RIGHT;
+        if (AllianceUtility.getAlliance().equals(Alliance.Blue)) {
+            if (turretPose3d.getY() > FIELD_CENTER_Y_DIVIDER)
+                passingTarget = PassingTarget.LEFT;
+            else 
+                passingTarget = PassingTarget.RIGHT;
+        }
+        else {
+            if (turretPose3d.getY() < FIELD_CENTER_Y_DIVIDER) 
+                passingTarget = PassingTarget.LEFT;
+            else 
+                passingTarget = PassingTarget.RIGHT;
+        }
 
         ShotParams params = AllianceUtility.flipPose(
             (passingTarget.equals(PassingTarget.LEFT) ? leftPass : rightPass)
@@ -227,7 +238,8 @@ public class ShootingSuperstructure extends SubsystemBase {
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
-            params.maxTrajectoryHeight()
+            params.maxTrajectoryHeight(),
+            true
         );
 
         //Use the full hood angle to shoot as horizontally as possible
@@ -248,7 +260,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private void calculateTurretLockError(double turretTarget) {
         turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
             turret.MAX_TURRET_DEGREES - turretTarget :
-            (turretTarget < turret.MIN_TURRET_DEGREES) ? turret.MIN_TURRET_DEGREES - turretTarget  : 0;
+            (turretTarget < turret.MIN_TURRET_DEGREES) ? turret.MIN_TURRET_DEGREES - turretTarget : 0;
     }
 
     /**
@@ -256,7 +268,7 @@ public class ShootingSuperstructure extends SubsystemBase {
      * OR if we are in autonomous and just want to shoot no matter what.
      */
     private boolean readyToShoot() {
-        return DriverStation.isAutonomous() || 
+        return DriverStation.isAutonomous() || state.equals(ShooterState.PASSING) ||
         (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
     }
 
@@ -289,10 +301,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             }
         }
 
-        // Might remove the debouncer and see how that works.
-        boolean shotDetected = shotSensorDebouncer.calculate(
-            shotSensor.getIsDetected().getValue()
-        );
+        boolean shotDetected = shotSensor.getIsDetected().getValue();
         
         if (shotDetected && !wasShotDetectedBefore) {
             switch (state) {
