@@ -32,8 +32,10 @@ public class Robot extends TimedRobot {
          * Mode 3 - INTERNAL_MT1_ASSIST: Fuses the internal IMU with MegaTag1 (MT1) vision yaw estimates to slowly correct IMU drift.
          * Mode 4 - INTERNAL_EXTERNAL_ASSIST (Recommended): Fuses the internal IMU with external IMU data using a complementary filter, offering 1kHz motion updates while eliminating drift through external correction. 
         */
-
-        LimelightHelpers.SetIMUMode("limelight-robot", 0);
+        
+        //Converge faster
+        LimelightHelpers.SetIMUAssistAlpha("limelight-robot", 0.004);
+        LimelightHelpers.SetIMUMode("limelight-robot", 1);
     }
 
     @Override
@@ -46,7 +48,7 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledInit() {
-    
+        LimelightHelpers.SetIMUMode("limelight-robot", 1);
     }
 
     @Override
@@ -56,6 +58,8 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledExit() {
+        //Set the robot to fuse the limelight's imu and the internal imu using a complementary filter
+        LimelightHelpers.SetIMUMode("limelight-robot", 4);
     }
 
     @Override

@@ -13,7 +13,6 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -33,12 +32,13 @@ public class IntakeSubsystem extends SubsystemBase {
     private final TalonFXConfiguration deployConfig = new TalonFXConfiguration();
 
     private final MotionMagicVoltage deployController = new MotionMagicVoltage(0);
-    private final VoltageOut rollerController = new VoltageOut(0);
+    private final VoltageOut rollerController = new VoltageOut(0)
+        .withEnableFOC(true);
 
     private final double INTAKE_ROLLER_VOLTAGE = 7;
     private final double MAX_ROLLER_SPEED = 0.8;
 
-    private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.4013671875;
+    private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.402588;
 
     private final double DEPLOY_ENCODER_TO_MECHANISM_RATIO = 1.0;
     private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 52.0;
@@ -60,11 +60,12 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_ENCODER_ID = 18;
 
     private final int DEPLOY_STATOR_LIMIT = 20;
-    private final int ROLLER_STATOR_LIMIT = 100;
+    private final int ROLLER_STATOR_LIMIT = 90;
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.5;
-    private final double INTAKE_TOSS_PERCENTAGE = 1.0;
+    private final double INTAKE_TOSS_PERCENTAGE = 0.75;
 
+    private boolean isIntaking = false;
 
     // Throttle refreshes to 10 Hz
     private long lastStatusRefreshMs = 0;
@@ -120,28 +121,34 @@ public class IntakeSubsystem extends SubsystemBase {
 
     }
 
+    public void isIntaking(boolean stateUpdate) {
+        this.isIntaking = stateUpdate;
+    }
+
     /**
      * Moves the intake up to the desired percentage of the fully up position and
      * then back down to toss the fuel into the spindexer.
      */
     public Command agitate() {
-        return new ConditionalCommand(
-            new SequentialCommandGroup(
-                new InstantCommand(() -> deployTo(RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE), this),
-                new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
-                new InstantCommand(() -> deploy(), this),
-                new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS)
-            ),
-            new InstantCommand(),
-            () -> Math.abs(rollerController.Output) < 0.1
-        );
-    }
-
-    public boolean isDeployed() {
-        return !MathUtil.isNear(
-            deployMotor.getPosition().getValueAsDouble(), 
-            RETRACTED_ROTATIONS, 
-            0.2
+        // return new ConditionalCommand(
+        //     new SequentialCommandGroup(
+        //         // new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED)),
+        //         new InstantCommand(() -> deployTo(RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE), this),
+        //         new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
+        //         new InstantCommand(() -> deploy(), this),
+        //         new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS / 0.5)
+        //         // new InstantCommand(() -> setRollerSpeed(0))
+        //     ),
+        //     new InstantCommand(),
+        //     () -> !isIntaking
+        // );
+        return new SequentialCommandGroup(
+            // new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED)),
+            new InstantCommand(() -> deployTo(RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE), this),
+            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
+            new InstantCommand(() -> deploy(), this),
+            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS / 0.5)
+            // new InstantCommand(() -> setRollerSpeed(0))
         );
     }
 

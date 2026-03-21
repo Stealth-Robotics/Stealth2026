@@ -18,8 +18,6 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.DogLogUtil;
 import frc.robot.util.Elastic;
@@ -42,7 +40,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = 0.1122;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = 0.1075;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.75;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;

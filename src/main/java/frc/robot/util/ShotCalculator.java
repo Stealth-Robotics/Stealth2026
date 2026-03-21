@@ -23,12 +23,12 @@ public class ShotCalculator {
         put(2.04, 2700.0);
         put(2.5, 2950.0);
         put(2.75, 3050.0);
-        put(3.0, 3150.0);
-        put(3.28, 3200.0);
-        put(3.5, 3215.0);
-        put(4.0, 3250.0);
-        put(4.5, 3302.0);
-        put(5.0, 3580.0);
+        put(3.0, 3125.0);
+        put(3.28, 3100.0);
+        put(3.5, 3100.0);
+        put(4.0, 3200.0);
+        put(4.5, 3300.0);
+        put(5.0, 3550.0);
     }};
 
     private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{

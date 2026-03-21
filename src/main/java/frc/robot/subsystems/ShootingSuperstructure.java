@@ -1,8 +1,6 @@
 package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.Meters;
-
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
@@ -44,7 +42,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private int hubShots = 0;
     private int passShots = 0;
 
-    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(2);
+    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(.5);
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -77,7 +75,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
     private final int CAN_RANGE_ID = 15;
-
+    
     public enum ShooterState {
         IDLE,
         TRENCH,
@@ -106,7 +104,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensorConfig.withProximityParams(
             new ProximityParamsConfigs()
                 .withProximityThreshold(FUEL_DETECTED_DISTANCE_THRESHOLD)
-                .withProximityHysteresis(0.005)
+                .withProximityHysteresis(Inches.of(.01))
           );
 
         shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
@@ -302,9 +300,11 @@ public class ShootingSuperstructure extends SubsystemBase {
             }
         }
 
-        boolean shotDetected = shotSensorDebouncer.calculate(
-            shotSensor.getIsDetected().getValue()
-        );
+        // boolean shotDetected = shotSensorDebouncer.calculate(
+        //     shotSensor.getIsDetected().getValue()
+        // );
+
+        boolean shotDetected = shotSensor.getIsDetected().getValue();
 
         
         if (shotDetected && !wasShotDetectedBefore) {
@@ -325,13 +325,13 @@ public class ShootingSuperstructure extends SubsystemBase {
         wasShotDetectedBefore = shotDetected;
 
         //Log our shooting stats
-        DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
-        DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
-        DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
-        DogLog.log("ShootingSuperstructure/Shot_Sensor_Detected", shotDetected);
-                
-        DogLog.log("ShootingSuperstructure/state", state.name());
-        DogLog.log("ShootingSuperstructure/passing_target", passingTarget.name());
-        DogLog.log("ShootingSuperstructure/aiming_target", aimingTarget);
+            DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
+            DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
+            DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
+            DogLog.log("ShootingSuperstructure/Shot_Sensor_Detected", shotDetected);
+                    
+            DogLog.log("ShootingSuperstructure/state", state.name());
+            DogLog.log("ShootingSuperstructure/passing_target", passingTarget.name());
+            DogLog.log("ShootingSuperstructure/aiming_target", aimingTarget);
     }
 }

@@ -11,23 +11,30 @@ import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.subsystems.LEDSubsystem.DisplayMode;
-import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 
 
 public class RobotContainer {
+    private final Driver driver = Driver.MATT;
+
     private final CommandXboxController driverController = new CommandXboxController(0);
     private final CommandXboxController operatorController = new CommandXboxController(1);
+
+    private enum Driver {
+        MATT,
+        MO
+    }
     
     private final RobotSystem robot;
 
     private final Autos autos;
     private final AutoChooser autoChooser;
+
+    private boolean deploy = true;
     
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
@@ -65,14 +72,25 @@ public class RobotContainer {
             () -> driverController.getRightX()
         );
 
-        robot.setIntakeDefaultCommand(
-            () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-            () -> driverController.rightTrigger().getAsBoolean(),
-            () -> driverController.rightBumper().getAsBoolean()
-        );
+        if (driver.equals(Driver.MATT)) {
+            robot.setIntakeDefaultCommand(
+                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+                () -> driverController.y().getAsBoolean() && deploy,
+                () -> driverController.y().getAsBoolean() && !deploy
+            );
+
+            driverController.y().onTrue(new InstantCommand(() -> deploy = !deploy));
+        }
+        else {
+            robot.setIntakeDefaultCommand(
+                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+                () -> driverController.getRightTriggerAxis() > 0.01,
+                () -> driverController.rightBumper().getAsBoolean()
+            );
+        }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
-        driverController.povDown().onTrue(new InstantCommand(() -> robot.toggleDrivingMode()));
+        driverController.b().onTrue(robot.agitate());
 
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
