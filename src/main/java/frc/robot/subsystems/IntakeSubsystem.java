@@ -3,22 +3,26 @@ package frc.robot.subsystems;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.controls.DynamicMotionMagicVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.DogLogUtil;
 
 public class IntakeSubsystem extends SubsystemBase {
@@ -35,9 +39,9 @@ public class IntakeSubsystem extends SubsystemBase {
     private final VoltageOut rollerController = new VoltageOut(0);
 
     private final double INTAKE_ROLLER_VOLTAGE = 12;
-    private final double MAX_ROLLER_SPEED = 0.8;
+    private final double MAX_ROLLER_SPEED = 0.75;
 
-    private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.402588;
+    private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.395;
 
     private final double DEPLOY_ENCODER_TO_MECHANISM_RATIO = 1.0;
     private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 52.0;
@@ -45,31 +49,32 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.651;
 
     private final double DEPLOYED_ROTATIONS = 0;
-    private final double RETRACTED_ROTATIONS = 0.308;
+    private final double RETRACTED_ROTATIONS = 0.315;
 
-    private final double DEPLOY_kP = 50;
-    private final double RETRACT_kP = 50;
+    private final double ARM_POSITION_TOLERANCE = 0.01;
+
+    private final double DEPLOY_kP = 28;
+    private final double RETRACT_kP = 38;
     private final double DEPLOY_kI = 0;
-    private final double RETRACT_kI = 0.09;
+    private final double RETRACT_kI = 0;
     private final double DEPLOY_kACCEL = 20;
-    private final double DEPLOY_kVELO = 60;
+    private final double DEPLOY_kVELO = 30;
 
     private final int ROLLER_MOTOR_ID = 16;
     private final int DEPLOY_MOTOR_ID = 17;
     private final int DEPLOY_ENCODER_ID = 18;
 
-    private final int DEPLOY_STATOR_LIMIT = 20;
+    private final int DEPLOY_STATOR_LIMIT = 55;
     private final int ROLLER_STATOR_LIMIT = 90;
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.35;
-    private final double INTAKE_TOSS_PERCENTAGE = 1;
-
+    private final double INTAKE_TOSS_PERCENTAGE = 0.6;
+    // This would actually need the device to be on the CANivor
+    private final DynamicMotionMagicVoltage fastDeployController = new DynamicMotionMagicVoltage(0, 20, 50);
     private boolean isIntaking = false;
 
     // Throttle refreshes to 10 Hz
     private long lastStatusRefreshMs = 0;
-
-    private boolean first = true;
  
     public IntakeSubsystem() {
         rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
@@ -77,13 +82,13 @@ public class IntakeSubsystem extends SubsystemBase {
         deployEncoder = new CANcoder(DEPLOY_ENCODER_ID);
 
         //Roller motor config
-        rollerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        rollerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         rollerConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
-        // rollerConfig.CurrentLimits.StatorCurrentLimit = ROLLER_STATOR_LIMIT;
-        // rollerConfig.CurrentLimits.SupplyCurrentLimit = 30;
-        // rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-        // rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        rollerConfig.CurrentLimits.StatorCurrentLimit = ROLLER_STATOR_LIMIT;
+        rollerConfig.CurrentLimits.SupplyCurrentLimit = 30;
+        rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
         rollerMotor.getConfigurator().apply(rollerConfig);
 
@@ -91,12 +96,13 @@ public class IntakeSubsystem extends SubsystemBase {
         deployEncoderConfig.MagnetSensor.MagnetOffset = DEPLOY_ENCODER_ZERO_OFFSET;
         deployEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
         deployEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = TURRET_ENCODER_DISCONTINUTY_POINT;
-
+        
         deployEncoder.getConfigurator().apply(deployEncoderConfig);
         
         //Deploy motor config
         deployConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        deployConfig.MotorOutput.DutyCycleNeutralDeadband = ARM_POSITION_TOLERANCE / 2;
 
         deployConfig.Feedback.FeedbackRemoteSensorID = deployEncoder.getDeviceID();
         deployConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
@@ -108,10 +114,13 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.CurrentLimits.StatorCurrentLimit = DEPLOY_STATOR_LIMIT;
 
         deployConfig.Slot0.kP = RETRACT_kP;
-        deployConfig.Slot0.kI = RETRACT_kI;
+        deployConfig.Slot0.kI = 0;
 
         deployConfig.Slot1.kP = DEPLOY_kP;
         deployConfig.Slot1.kI = DEPLOY_kI;
+        deployConfig.Slot1.kD = 0;
+        deployConfig.Slot2.kP = 50;
+
         
         deployConfig.MotionMagic.MotionMagicAcceleration = DEPLOY_kACCEL;
         deployConfig.MotionMagic.MotionMagicCruiseVelocity = DEPLOY_kVELO;
@@ -133,21 +142,24 @@ public class IntakeSubsystem extends SubsystemBase {
      * then back down to toss the fuel into the spindexer.
      */
     public Command agitate() {
+        double tossPose = RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE;
         return new ConditionalCommand(
             new SequentialCommandGroup(
-                new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED)),
-                new InstantCommand(() -> retract(), this),
+                new InstantCommand(() -> moveFastTo(tossPose), this),
+                new WaitUntilCommand(()->isAtPosition(tossPose)).withTimeout(.3),
+                new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
                 new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
                 new InstantCommand(() -> deploy(), this),
-                new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS / 0.25),
+                new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(1),
                 new InstantCommand(() -> setRollerSpeed(0))
+
             ),
             new InstantCommand(),
             () -> !isIntaking
         );
         // return new SequentialCommandGroup(
         //     new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED)),
-        //     new InstantCommand(() -> deployTo(RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE), this),
+        //     new InstantCommand(() -> fastDeployTo(RETRACTED_ROTATIONS * INTAKE_TOSS_PERCENTAGE), this),
         //     new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
         //     new InstantCommand(() -> deploy(), this),
         //     new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS / 0.5),
@@ -155,12 +167,19 @@ public class IntakeSubsystem extends SubsystemBase {
         // );
     }
 
-    public void setRollerSpeed(double percentOfVoltage) {
-        // rollerMotor.setControl(rollerController.withOutput(INTAKE_ROLLER_VOLTAGE * percentOfVoltage));
+    public void setRollerSpeed(double speed) {
+        rollerMotor.setControl(
+            rollerController.withOutput(
+                INTAKE_ROLLER_VOLTAGE * MathUtil.clamp(speed, -MAX_ROLLER_SPEED, MAX_ROLLER_SPEED))
+                .withEnableFOC(true));
     }
 
-    private void deployTo(double rotations) {
-        deployMotor.setControl(deployController.withSlot(0).withPosition(rotations));
+    private void moveFastTo(double rotations) {
+    deployMotor.setControl(
+        fastDeployController
+            .withPosition(rotations)
+            .withSlot(2)
+    );
     }
 
     public void deploy() {
@@ -169,6 +188,12 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public void retract() {
         deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS));
+    }
+
+    public boolean isAtPosition(double rotations) {
+        double curPos = deployMotor.getPosition().getValueAsDouble();
+        double error = Math.abs(curPos - rotations);
+        return error <= ARM_POSITION_TOLERANCE;
     }
 
     // AUTO COMMANDS
@@ -191,11 +216,6 @@ public class IntakeSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (first) {
-            rollerMotor.set(-1.0);
-            first = false;
-        }
-
         DogLog.log("Intake/roller_speed", rollerMotor.get());
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
         logMotorData();

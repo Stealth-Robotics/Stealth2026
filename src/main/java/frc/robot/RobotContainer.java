@@ -72,22 +72,22 @@ public class RobotContainer {
             () -> driverController.getRightX()
         );
 
-        // if (driver.equals(Driver.MATT)) {
-        //     robot.setIntakeDefaultCommand(
-        //         () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-        //         () -> driverController.y().getAsBoolean() && deploy,
-        //         () -> driverController.y().getAsBoolean() && !deploy
-        //     );
+        if (driver.equals(Driver.MATT)) {
+            robot.setIntakeDefaultCommand(
+                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+                () -> driverController.y().getAsBoolean() && deploy,
+                () -> driverController.y().getAsBoolean() && !deploy
+            );
 
-        //     driverController.y().onTrue(new InstantCommand(() -> deploy = !deploy));
-        // }
-        // else {
-        //     robot.setIntakeDefaultCommand(
-        //         () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-        //         () -> driverController.getRightTriggerAxis() > 0.01,
-        //         () -> driverController.rightBumper().getAsBoolean()
-        //     );
-        // }
+            driverController.y().onTrue(new InstantCommand(() -> deploy = !deploy));
+        }
+        else {
+            robot.setIntakeDefaultCommand(
+                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+                () -> driverController.getRightTriggerAxis() > 0.01,
+                () -> driverController.rightBumper().getAsBoolean()
+            );
+        }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.b().onTrue(robot.agitate());
