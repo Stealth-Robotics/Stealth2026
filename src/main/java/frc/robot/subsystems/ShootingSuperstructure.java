@@ -3,6 +3,8 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
@@ -38,13 +40,12 @@ public class ShootingSuperstructure extends SubsystemBase {
     private boolean isShooting = false;
     
     private boolean wasShotDetectedBefore = false;
-    private final Debouncer shotSensorDebouncer = new Debouncer(0.002, Debouncer.DebounceType.kRising);
 
     private int totalShots = 0;
     private int hubShots = 0;
     private int passShots = 0;
 
-    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(2);
+    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(0.5);
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -106,7 +107,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensorConfig.withProximityParams(
             new ProximityParamsConfigs()
                 .withProximityThreshold(FUEL_DETECTED_DISTANCE_THRESHOLD)
-                .withProximityHysteresis(0.005)
+                .withProximityHysteresis(Inches.of(0.01))
           );
 
         shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
@@ -269,8 +270,8 @@ public class ShootingSuperstructure extends SubsystemBase {
      * OR if we are in autonomous and just want to shoot no matter what.
      */
     private boolean readyToShoot() {
-        return DriverStation.isAutonomous() || state.equals(ShooterState.PASSING) ||
-        (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady());
+        return robotVelocitySupplier.get().omegaRadiansPerSecond < Math.PI && (DriverStation.isAutonomous() || state.equals(ShooterState.PASSING) ||
+        (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady()));
     }
 
     public boolean isShooting() {
@@ -302,11 +303,8 @@ public class ShootingSuperstructure extends SubsystemBase {
             }
         }
 
-        boolean shotDetected = shotSensorDebouncer.calculate(
-            shotSensor.getIsDetected().getValue()
-        );
+        boolean shotDetected = shotSensor.getIsDetected().getValue();
 
-        
         if (shotDetected && !wasShotDetectedBefore) {
             switch (state) {
                 case HUB_TRACKING:

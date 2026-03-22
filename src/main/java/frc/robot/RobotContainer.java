@@ -21,6 +21,13 @@ import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 
 
 public class RobotContainer {
+    private final Driver driver = Driver.MO;
+
+    private enum Driver {
+        MATT,
+        MO
+    }
+
     private final CommandXboxController driverController = new CommandXboxController(0);
     private final CommandXboxController operatorController = new CommandXboxController(1);
     
@@ -28,6 +35,8 @@ public class RobotContainer {
 
     private final Autos autos;
     private final AutoChooser autoChooser;
+
+    private boolean deployOverRetract = true;
     
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
@@ -65,14 +74,26 @@ public class RobotContainer {
             () -> driverController.getRightX()
         );
 
-        robot.setIntakeDefaultCommand(
-            () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-            () -> driverController.rightTrigger().getAsBoolean(),
-            () -> driverController.rightBumper().getAsBoolean()
-        );
+        if (driver.equals(Driver.MATT)) {
+            robot.setIntakeDefaultCommand(
+                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+                () -> driverController.y().getAsBoolean() && deployOverRetract,
+                () -> driverController.y().getAsBoolean() && !deployOverRetract
+            );
+
+            driverController.y().onTrue(new InstantCommand(() -> deployOverRetract = !deployOverRetract));
+        }
+        else {
+            robot.setIntakeDefaultCommand(
+                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+                () -> driverController.getRightTriggerAxis() > 0.01,
+                () -> driverController.rightBumper().getAsBoolean()
+            );
+        }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
-        driverController.povDown().onTrue(new InstantCommand(() -> robot.toggleDrivingMode()));
+        
+        driverController.b().onTrue(robot.agitate());
 
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
@@ -86,10 +107,11 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selecting on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addRoutine("RightOneCyclePlusOutpost", () -> autos.rightOneCyclePlusOutpost());
-        autoChooser.addRoutine("LeftOneCyclePlusDepot", () -> autos.leftOneCyclePlusDepot());
-        autoChooser.addRoutine("CenterPreload", () -> autos.centerPreload());
-        autoChooser.addRoutine("SimpleCenterAuto", () -> autos.simpleCenterAuto());
+        // autoChooser.addRoutine("RightOneCyclePlusOutpost", () -> autos.rightOneCyclePlusOutpost());
+        // autoChooser.addRoutine("LeftOneCyclePlusDepot", () -> autos.leftOneCyclePlusDepot());
+        // autoChooser.addRoutine("CenterPreload", () -> autos.centerPreload());
+        // autoChooser.addRoutine("SimpleCenterAuto", () -> autos.simpleCenterAuto());
+        autoChooser.addRoutine("L2Cycle", () -> autos.left2Cycle());
     } 
 
     //Used mostly for telemetry and logging general match info

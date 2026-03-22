@@ -90,7 +90,11 @@ public class RobotSystem extends SubsystemBase {
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
         Command intakeDefaultCommand = run(
             () -> {
-                intake.setRollerSpeed(rollerSpeed.getAsDouble());
+                double targetRollerSpeed = rollerSpeed.getAsDouble();
+                intake.setRollerSpeed(targetRollerSpeed);
+
+                if (Math.abs(targetRollerSpeed) > 0.1) intake.isIntaking(true);
+                else intake.isIntaking(false);
             }
         ).beforeStarting(
             () -> {
@@ -107,7 +111,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command shoot() {
-        return shooter.shoot().alongWith(intake.agitate().repeatedly())
+        return shooter.shoot()
             .beforeStarting(() -> currentDrivingMode = DrivingMode.SHOOTING)
             .finallyDo(() -> currentDrivingMode = DrivingMode.NORMAL);
     }
@@ -257,7 +261,7 @@ public class RobotSystem extends SubsystemBase {
            // Log Limelight hardware temperature (if available)
             if (llResults.hardware != null) {
                 DogLogUtil.logDouble(LOCALIZATION_LIMELIGHT + "/Hardware_Temperature_C", llResults.hardware.temperature);
-                DogLogUtil.logDouble( LOCALIZATION_LIMELIGHT + "/Capture_Latency", llResults.latency_capture);
+                DogLogUtil.logDouble(LOCALIZATION_LIMELIGHT + "/Capture_Latency", llResults.latency_capture);
             }
 
             // Log visible tag poses
@@ -283,14 +287,13 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void logDriveStats() {
-
-        DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
-        DogLog.log("Drive/ModuleStates", drive.getModuleStates());
-        DogLog.log("Drive/Rotation", drive.getPose().getRotation());
-
         // Throttle logging of this data. Note that swerve updates these values to calling refresh false is correct.
         long nowMs = System.currentTimeMillis();
         if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+            DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
+            DogLog.log("Drive/ModuleStates", drive.getModuleStates());
+            DogLog.log("Drive/Rotation", drive.getPose().getRotation());
+
             for (var module : drive.getModules()) {
                 DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
                     module.getDriveMotor().getSupplyCurrent(false).getValueAsDouble());

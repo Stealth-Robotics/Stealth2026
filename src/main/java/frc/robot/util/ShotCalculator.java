@@ -23,18 +23,19 @@ public class ShotCalculator {
         put(2.04, 2700.0);
         put(2.5, 2950.0);
         put(2.75, 3050.0);
-        put(3.0, 3150.0);
-        put(3.28, 3200.0);
-        put(3.5, 3215.0);
-        put(4.0, 3250.0);
-        put(4.5, 3302.0);
-        put(5.0, 3580.0);
+        put(3.0, 3075.0);
+        put(3.28, 3100.0);
+        put(3.5, 3100.0);
+        put(4.0, 3150.0);
+        put(4.5, 3250.0);
+        put(5.0, 3500.0);
     }};
 
     private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
         put(3.0, 3200.0);
         put(5.0, 3600.0);
         put(8.0, 3700.0);
+        put(14.0, 4000.0);
     }};
 
     //Velocity smoothing filters
