@@ -1,5 +1,6 @@
 package frc.robot.util;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -23,18 +24,19 @@ public class ShotCalculator {
         put(2.04, 2700.0);
         put(2.5, 2950.0);
         put(2.75, 3050.0);
-        put(3.0, 3125.0);
+        put(3.0, 3075.0);
         put(3.28, 3100.0);
         put(3.5, 3100.0);
-        put(4.0, 3200.0);
-        put(4.5, 3300.0);
-        put(5.0, 3550.0);
+        put(4.0, 3150.0);
+        put(4.5, 3250.0);
+        put(5.0, 3500.0);
     }};
 
     private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
         put(3.0, 3200.0);
         put(5.0, 3600.0);
         put(8.0, 3700.0);
+        put(14.0, 4200.0);
     }};
 
     //Velocity smoothing filters
@@ -118,6 +120,7 @@ public class ShotCalculator {
         );
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
+        DogLog.log("MeterToGoal", metersToGoal);
 
         double baseRPM = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToRPM.get(metersToGoal);
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();

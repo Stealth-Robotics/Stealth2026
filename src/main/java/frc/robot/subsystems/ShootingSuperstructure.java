@@ -20,6 +20,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -116,6 +117,8 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         //Reset the ShotCalculator's velocity filters 
         ShotCalculator.resetFilters();
+
+        SmartDashboard.putNumber("rpm", 0);
     }
 
     public void setState(ShooterState state) {
@@ -134,7 +137,8 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public Command shoot() {
         return run(() -> {
-            shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
+            // shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
+            shooter.spinToRPM(SmartDashboard.getNumber("rpm", 0));
 
             if (readyToShoot()) {
                 transfer.spin();

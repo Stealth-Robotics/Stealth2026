@@ -19,7 +19,7 @@ import frc.robot.subsystems.LEDSubsystem.DisplayMode;
 
 
 public class RobotContainer {
-    private final Driver driver = Driver.MATT;
+    private final Driver driver = Driver.MO;
 
     private final CommandXboxController driverController = new CommandXboxController(0);
     private final CommandXboxController operatorController = new CommandXboxController(1);
@@ -72,22 +72,22 @@ public class RobotContainer {
             () -> driverController.getRightX()
         );
 
-        if (driver.equals(Driver.MATT)) {
-            robot.setIntakeDefaultCommand(
-                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-                () -> driverController.y().getAsBoolean() && deploy,
-                () -> driverController.y().getAsBoolean() && !deploy
-            );
+        // if (driver.equals(Driver.MATT)) {
+        //     robot.setIntakeDefaultCommand(
+        //         () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+        //         () -> driverController.y().getAsBoolean() && deploy,
+        //         () -> driverController.y().getAsBoolean() && !deploy
+        //     );
 
-            driverController.y().onTrue(new InstantCommand(() -> deploy = !deploy));
-        }
-        else {
-            robot.setIntakeDefaultCommand(
-                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-                () -> driverController.getRightTriggerAxis() > 0.01,
-                () -> driverController.rightBumper().getAsBoolean()
-            );
-        }
+        //     driverController.y().onTrue(new InstantCommand(() -> deploy = !deploy));
+        // }
+        // else {
+        //     robot.setIntakeDefaultCommand(
+        //         () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+        //         () -> driverController.getRightTriggerAxis() > 0.01,
+        //         () -> driverController.rightBumper().getAsBoolean()
+        //     );
+        // }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.b().onTrue(robot.agitate());
@@ -104,10 +104,11 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selecting on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addRoutine("RightOneCyclePlusOutpost", () -> autos.rightOneCyclePlusOutpost());
-        autoChooser.addRoutine("LeftOneCyclePlusDepot", () -> autos.leftOneCyclePlusDepot());
-        autoChooser.addRoutine("CenterPreload", () -> autos.centerPreload());
-        autoChooser.addRoutine("SimpleCenterAuto", () -> autos.simpleCenterAuto());
+        // autoChooser.addRoutine("RightOneCyclePlusOutpost", () -> autos.rightOneCyclePlusOutpost());
+        // autoChooser.addRoutine("LeftOneCyclePlusDepot", () -> autos.leftOneCyclePlusDepot());
+        // autoChooser.addRoutine("CenterPreload", () -> autos.centerPreload());
+        // autoChooser.addRoutine("SimpleCenterAuto", () -> autos.simpleCenterAuto());
+        autoChooser.addRoutine("L2Cycle", () -> autos.left2Cycle());
     } 
 
     //Used mostly for telemetry and logging general match info

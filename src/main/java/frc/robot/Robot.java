@@ -59,7 +59,7 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledExit() {
         //Set the robot to fuse the limelight's imu and the internal imu using a complementary filter
-        LimelightHelpers.SetIMUMode("limelight-robot", 4);
+        // LimelightHelpers.SetIMUMode("limelight-robot", 4);
     }
 
     @Override

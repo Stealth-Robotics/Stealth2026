@@ -45,7 +45,9 @@ public class Autos {
     }
 
     private Command deployAndIntake() {
-        return intake.deployCommand().andThen(intake.intakeCommand());
+        // return intake.deployCommand().andThen(intake.intakeCommand());
+        // return intake.deployCommand();
+        return new InstantCommand();
     }
 
     public AutoRoutine left2Cycle() {
@@ -56,22 +58,27 @@ public class Autos {
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("StartIntaking").onTrue(deployAndIntake());
         path.atTime("StopIntaking").onTrue(intake.stopCommand());
-        path.atTime("SpinUp").onTrue(shooter.spinUp(3000));
+        path.atTime("SpinUp").onTrue(shooter.spinUp(2000));
         path.atTime("StartShooting").onTrue(shooter.shoot());
 
         AutoTrajectory path2 = routine.trajectory(pathName, 1);
-        path2.atTime("StartIntaking").onTrue(deployAndIntake());
-        path2.atTime("StopIntaking").onTrue(intake.stopCommand());
-        path2.atTime("SpinUp").onTrue(shooter.spinUp(3000));
-        path2.atTime("StartShooting").onTrue(shooter.shoot().alongWith(startAgitating()));
+        path2.atTime("StartIntaking2").onTrue(deployAndIntake());
+        path2.atTime("StopIntaking2").onTrue(intake.stopCommand());
+        path2.atTime("SpinUp2").onTrue(shooter.spinUp(2000));
+        path2.atTime("StartShooting2").onTrue(shooter.shoot().alongWith(startAgitating()));
 
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                followPath(path),
-                new WaitCommand(3), //Shooting time after first cycle
+                path.cmd()
+            )
+        );
+
+        path.done().onTrue(
+            new SequentialCommandGroup(
+                new WaitCommand(4), //Shooting time after first cycle
                 stopShooting(),
-                followPath(path2)
+                path2.cmd()
             )
         );
 
