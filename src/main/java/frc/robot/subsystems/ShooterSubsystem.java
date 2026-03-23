@@ -1,7 +1,6 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
@@ -18,8 +17,6 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.DogLogUtil;
 import frc.robot.util.Elastic;
@@ -208,7 +205,7 @@ public class ShooterSubsystem extends SubsystemBase {
         double hoodDegrees = getHoodDegrees();
 
         if (!disableHood) {
-            if (hoodDegrees < MIN_HOOD_DEGREES - 8 || hoodDegrees > MAX_HOOD_DEGREES + 8) {
+            if (hoodDegrees < 0 || hoodDegrees < MIN_HOOD_DEGREES - 8 || hoodDegrees > MAX_HOOD_DEGREES + 8) {
                 hoodMotor.setControl(coast);
 
                 Elastic.sendNotification(hoodLimitExceededError);

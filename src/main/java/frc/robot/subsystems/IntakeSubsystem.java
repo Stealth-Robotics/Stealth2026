@@ -145,14 +145,15 @@ public class IntakeSubsystem extends SubsystemBase {
      * then back down to toss the fuel into the spindexer.
      */
     public Command agitate() {
+        double tossPercentage = RETRACTED_ROTATIONS * 0.6;
         return new ConditionalCommand(
             new SequentialCommandGroup(
-                new InstantCommand(() -> moveFastTo(RETRACTED_ROTATIONS), this),
-                new WaitUntilCommand(()-> isAtPosition(RETRACTED_ROTATIONS)).withTimeout(0.3),
+                new InstantCommand(() -> moveFastTo(tossPercentage), this),
+                new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.3),
                 new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
                 new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
                 new InstantCommand(() -> deploy(), this),
-                new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(1),
+                new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.5),
                 new InstantCommand(() -> setRollerSpeed(0))
             ),
             new InstantCommand(),

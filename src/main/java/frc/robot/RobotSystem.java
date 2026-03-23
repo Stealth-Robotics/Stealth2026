@@ -1,5 +1,6 @@
 package frc.robot;
 
+import java.util.ArrayList;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
@@ -44,7 +45,7 @@ public class RobotSystem extends SubsystemBase {
     private final Field2d fieldTelemetry = new Field2d();
 
     private final double MIN_TAG_REJECTION_METERS = 6;
-    private final String LOCALIZATION_LIMELIGHT = "limelight-robot";
+    private final String[] LIMELIGHTS = { "limelight-front", "limelight-left" };
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
@@ -55,7 +56,6 @@ public class RobotSystem extends SubsystemBase {
 
     public enum DrivingMode {
         NORMAL(1.0),
-        SHOOTING(0.75),
         PRECISION(0.75),
         ROBOT_CENTRIC(1.0);
 
@@ -73,9 +73,13 @@ public class RobotSystem extends SubsystemBase {
         }
     }
 
-    private final SlewRateLimiter xLimiter = new SlewRateLimiter(2.0);
-    private final SlewRateLimiter yLimiter = new SlewRateLimiter(2.0);
-    private final SlewRateLimiter thetaLimiter = new SlewRateLimiter(2.0);
+    private final SlewRateLimiter normalXLimiter = new SlewRateLimiter(5.0);
+    private final SlewRateLimiter normalYLimiter = new SlewRateLimiter(5.0);
+    private final SlewRateLimiter normalThetaLimiter = new SlewRateLimiter(10.0);
+
+    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(2.0);
+    private final SlewRateLimiter precisionYLimiter = new SlewRateLimiter(2.0);
+    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(3.0);
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -112,7 +116,7 @@ public class RobotSystem extends SubsystemBase {
 
     public Command shoot() {
         return shooter.shoot()
-            .beforeStarting(() -> currentDrivingMode = DrivingMode.SHOOTING)
+            .beforeStarting(() -> currentDrivingMode = DrivingMode.PRECISION)
             .finallyDo(() -> currentDrivingMode = DrivingMode.NORMAL);
     }
 
@@ -155,9 +159,29 @@ public class RobotSystem extends SubsystemBase {
     public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
-                double filteredX = xLimiter.calculate(x.getAsDouble());
-                double filteredY = yLimiter.calculate(y.getAsDouble());
-                double filteredTheta = thetaLimiter.calculate(theta.getAsDouble());
+                double filteredX, filteredY, filteredTheta;
+
+                if (currentDrivingMode.equals(DrivingMode.PRECISION)) {
+                    filteredX = precisionXLimiter.calculate(x.getAsDouble());
+                    filteredY = precisionYLimiter.calculate(y.getAsDouble());
+                    filteredTheta = precisionThetaLimiter.calculate(theta.getAsDouble());
+
+                    //Reset other slew rate limiters
+                    normalXLimiter.reset(0);
+                    normalYLimiter.reset(0);
+                    normalThetaLimiter.reset(0);
+                }
+                else {
+                    filteredX = normalXLimiter.calculate(x.getAsDouble());
+                    filteredY = normalYLimiter.calculate(y.getAsDouble());
+                    filteredTheta = normalThetaLimiter.calculate(theta.getAsDouble());
+
+                    //Reset other slew rate limiters
+                    precisionXLimiter.reset(0);
+                    precisionYLimiter.reset(0);
+                    precisionThetaLimiter.reset(0);
+                }
+
                 double speed = currentDrivingMode.getSlowingFactor();
 
                 return (currentDrivingMode.equals(DrivingMode.ROBOT_CENTRIC)) ?
@@ -218,14 +242,24 @@ public class RobotSystem extends SubsystemBase {
 
     private void updateOdometry() {
         double imuAngle = drive.getPose().getRotation().getDegrees();
-        LimelightHelpers.SetRobotOrientation(LOCALIZATION_LIMELIGHT, imuAngle, 0, 0, 0, 0, 0);
+
+        for (String limelight : LIMELIGHTS) {
+            LimelightHelpers.SetRobotOrientation(limelight, imuAngle, 0, 0, 0, 0, 0);
+        }
 
         double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
         if (Math.abs(robotAngularVelocity) < Math.PI) {
-            PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LOCALIZATION_LIMELIGHT);
+            PoseEstimate bestEstimate = null;
+
+            for (String limelight : LIMELIGHTS) {
+                PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+                if (bestEstimate == null || poseEstimate.avgTagDist < bestEstimate.avgTagArea) {
+                    bestEstimate = poseEstimate;
+                }
+            }
             
-            if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
-                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
+            if (bestEstimate != null && bestEstimate.tagCount > 0 && bestEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
+                drive.addVisionMeasurement(bestEstimate.pose, bestEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
             }
         }
     }
@@ -255,35 +289,37 @@ public class RobotSystem extends SubsystemBase {
 
         this.logDriveStats();
 
-        LimelightHelpers.LimelightResults llResults = LimelightHelpers.getLatestResults(LOCALIZATION_LIMELIGHT);
-        if (llResults != null)
-        {
-           // Log Limelight hardware temperature (if available)
-            if (llResults.hardware != null) {
-                DogLogUtil.logDouble(LOCALIZATION_LIMELIGHT + "/Hardware_Temperature_C", llResults.hardware.temperature);
-                DogLogUtil.logDouble(LOCALIZATION_LIMELIGHT + "/Capture_Latency", llResults.latency_capture);
-            }
+        Pose3d[] visibleTags = new Pose3d[33];
+        int arrayIndex = 0;
 
-            // Log visible tag poses
-            var currentTags = llResults.targets_Fiducials;
-            if (currentTags != null && currentTags.length > 0) {
-                Pose3d[] visibleTags = new Pose3d[currentTags.length];
-                for (int i = 0; i < currentTags.length; i++) {
-                    Pose3d tagPose = tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
-                    if (tagPose != null)
-                        visibleTags[i] = tagPose;
+        for (String limelight : LIMELIGHTS) {
+            LimelightHelpers.LimelightResults llResults = LimelightHelpers.getLatestResults(limelight);
+            if (llResults != null) {
+                // Log Limelight hardware temperature (if available)
+                if (llResults.hardware != null) {
+                    DogLogUtil.logDouble(limelight + "/Hardware_Temperature_C", llResults.hardware.temperature);
+                    DogLogUtil.logDouble(limelight + "/Capture_Latency", llResults.latency_capture);
                 }
 
-                DogLog.log(LOCALIZATION_LIMELIGHT + "/VisibleTagPoses", visibleTags);
+                // Log visible tag poses
+                var currentTags = llResults.targets_Fiducials;
+                if (currentTags != null && currentTags.length > 0) {
+                    for (int i = 0; i < currentTags.length; i++) {
+                        Pose3d tagPose = tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
+                        if (tagPose != null)
+                            visibleTags[arrayIndex++] = tagPose;
+                    }
+                }
+                
+                // Log M1 Pose data
+                var m1Pose = llResults.getBotPose3d_wpiBlue();
+                if (m1Pose != null) {
+                    DogLog.log(limelight + "/wpiBlue_Pose3d", m1Pose);
+                }    
             }
-            
-            // Log M1 Pose data
-            var m1Pose = llResults.getBotPose3d_wpiBlue();
-            if (m1Pose != null) {
-                DogLog.log(LOCALIZATION_LIMELIGHT + "/wpiBlue_Pose3d", m1Pose);
-            }    
         }
 
+        DogLog.log("Limelights/VisibleTagPoses", visibleTags);
     }
 
     private void logDriveStats() {
