@@ -17,7 +17,6 @@ import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.subsystems.LEDSubsystem.DisplayMode;
 
-
 public class RobotContainer {
     private final Driver driver = Driver.MO;
 
@@ -28,33 +27,32 @@ public class RobotContainer {
         MATT,
         MO
     }
-    
+
     private final RobotSystem robot;
 
     private final Autos autos;
     private final AutoChooser autoChooser;
 
     private boolean deploy = true;
-    
+
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
-            .withCaptureDs(true)
-            .withLogExtras(true)
-            .withCaptureConsole(true)
-            .withCaptureNt(true)
-        );
+                .withCaptureDs(true)
+                .withLogExtras(true)
+                .withCaptureConsole(true)
+                .withCaptureNt(true));
 
         DogLog.setPdh(new PowerDistribution(63, ModuleType.kRev));
 
         robot = new RobotSystem(driverController, operatorController);
 
-        //Add the auto chooser to our dashboard
+        // Add the auto chooser to our dashboard
         autos = robot.getAutos();
 
         autoChooser = new AutoChooser();
         SmartDashboard.putData("Auto Chooser", autoChooser);
 
-        //Hahaha stopped the annoying warnings
+        // Hahaha stopped the annoying warnings
         DriverStation.silenceJoystickConnectionWarning(true);
 
         configureBindings();
@@ -67,26 +65,27 @@ public class RobotContainer {
 
     private void configureBindings() {
         robot.setDriveDefaultCommand(
-            () -> driverController.getLeftX(),
-            () -> driverController.getLeftY(),
-            () -> driverController.getRightX()
-        );
+                () -> driverController.getLeftX(),
+                () -> driverController.getLeftY(),
+                () -> driverController.getRightX());
 
         // if (driver.equals(Driver.MATT)) {
-        //     robot.setIntakeDefaultCommand(
-        //         () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-        //         () -> driverController.y().getAsBoolean() && deploy,
-        //         () -> driverController.y().getAsBoolean() && !deploy
-        //     );
+        // robot.setIntakeDefaultCommand(
+        // () -> driverController.getRightTriggerAxis() -
+        // driverController.getLeftTriggerAxis(),
+        // () -> driverController.y().getAsBoolean() && deploy,
+        // () -> driverController.y().getAsBoolean() && !deploy
+        // );
 
-        //     driverController.y().onTrue(new InstantCommand(() -> deploy = !deploy));
+        // driverController.y().onTrue(new InstantCommand(() -> deploy = !deploy));
         // }
         // else {
-        //     robot.setIntakeDefaultCommand(
-        //         () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-        //         () -> driverController.getRightTriggerAxis() > 0.01,
-        //         () -> driverController.rightBumper().getAsBoolean()
-        //     );
+        // robot.setIntakeDefaultCommand(
+        // () -> driverController.getRightTriggerAxis() -
+        // driverController.getLeftTriggerAxis(),
+        // () -> driverController.getRightTriggerAxis() > 0.01,
+        // () -> driverController.rightBumper().getAsBoolean()
+        // );
         // }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
@@ -94,24 +93,28 @@ public class RobotContainer {
 
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
-        
+
         operatorController.a().whileTrue(robot.keepRobotLockedWithTurret());
-        operatorController.b().onTrue(robot.agitate());        
+        operatorController.b().onTrue(robot.agitate());
         operatorController.x().whileTrue(robot.activatePrecisionDriving());
     }
 
     /*
-     * Add all our working autonomous routines to the chooser for selecting on Elastic
+     * Add all our working autonomous routines to the chooser for selecting on
+     * Elastic
      */
     private void addAutosToChooser() {
-        // autoChooser.addRoutine("RightOneCyclePlusOutpost", () -> autos.rightOneCyclePlusOutpost());
-        // autoChooser.addRoutine("LeftOneCyclePlusDepot", () -> autos.leftOneCyclePlusDepot());
+        // autoChooser.addRoutine("RightOneCyclePlusOutpost", () ->
+        // autos.rightOneCyclePlusOutpost());
+        // autoChooser.addRoutine("LeftOneCyclePlusDepot", () ->
+        // autos.leftOneCyclePlusDepot());
         // autoChooser.addRoutine("CenterPreload", () -> autos.centerPreload());
         // autoChooser.addRoutine("SimpleCenterAuto", () -> autos.simpleCenterAuto());
         autoChooser.addRoutine("L2Cycle", () -> autos.left2Cycle());
-    } 
+        autoChooser.addRoutine("L2 bump", () -> autos.left2_bump());
+    }
 
-    //Used mostly for telemetry and logging general match info
+    // Used mostly for telemetry and logging general match info
     public void periodic() {
         AllianceUtility.update();
         ShiftTracker.update();
@@ -120,10 +123,9 @@ public class RobotContainer {
         DogLog.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
 
         String timeString = String.format(
-            "%d:%02d",
-            (int) ShiftTracker.getTimeLeftInShift() / 60,
-            (int) ShiftTracker.getTimeLeftInShift() % 60
-        );
+                "%d:%02d",
+                (int) ShiftTracker.getTimeLeftInShift() / 60,
+                (int) ShiftTracker.getTimeLeftInShift() % 60);
         DogLog.log("Shift Time Left", timeString);
 
         DogLog.log("Hub Scorable", ShiftTracker.canScore());
