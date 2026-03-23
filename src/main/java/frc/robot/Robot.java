@@ -33,7 +33,7 @@ public class Robot extends TimedRobot {
          * Mode 4 - INTERNAL_EXTERNAL_ASSIST (Recommended): Fuses the internal IMU with external IMU data using a complementary filter, offering 1kHz motion updates while eliminating drift through external correction. 
         */
 
-        LimelightHelpers.SetIMUMode("limelight-robot", 0);
+        LimelightHelpers.SetIMUMode("limelight-front", 0);
     }
 
     @Override
