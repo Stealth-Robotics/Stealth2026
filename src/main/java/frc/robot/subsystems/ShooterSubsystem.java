@@ -42,7 +42,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = 0.1075;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = 0.1122;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.75;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
