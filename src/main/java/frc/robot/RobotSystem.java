@@ -40,13 +40,14 @@ public class RobotSystem extends SubsystemBase {
     private final IntakeSubsystem intake;
     private final ShootingSuperstructure shooter;
     private final LEDSubsystem led;
-    
+
     private final Field2d fieldTelemetry = new Field2d();
 
     private final double MIN_TAG_REJECTION_METERS = 6;
     private final String LOCALIZATION_LIMELIGHT = "limelight-robot";
 
-    private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
+    private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout
+            .loadField(AprilTagFields.k2026RebuiltAndymark);
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
 
@@ -60,7 +61,8 @@ public class RobotSystem extends SubsystemBase {
         ROBOT_CENTRIC(1.0);
 
         /**
-         * Allows us to slow down when performing certain actions like shooting or climbing
+         * Allows us to slow down when performing certain actions like shooting or
+         * climbing
          */
         final double slowingFactor;
 
@@ -83,28 +85,28 @@ public class RobotSystem extends SubsystemBase {
         shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
         led = new LEDSubsystem();
 
-        //Log the field + robot pose to Elastic
+        // Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
         Command intakeDefaultCommand = run(
-            () -> {
-                double targetRollerSpeed = rollerSpeed.getAsDouble();
-                intake.setRollerSpeed(targetRollerSpeed);
+                () -> {
+                    double targetRollerSpeed = rollerSpeed.getAsDouble();
+                    intake.setRollerSpeed(targetRollerSpeed);
 
-                if (Math.abs(targetRollerSpeed) > 0.2) intake.isIntaking(true);
-                else intake.isIntaking(false);
-            }
-        ).beforeStarting(
-            () -> {
-                Trigger deployTrigger = new Trigger(deploy);
-                deployTrigger.onTrue(intake.deployCommand());
+                    if (Math.abs(targetRollerSpeed) > 0.2)
+                        intake.isIntaking(true);
+                    else
+                        intake.isIntaking(false);
+                }).beforeStarting(
+                        () -> {
+                            Trigger deployTrigger = new Trigger(deploy);
+                            deployTrigger.onTrue(intake.deployCommand());
 
-                Trigger retractTrigger = new Trigger(retract);
-                retractTrigger.onTrue(intake.retractCommand());
-            }
-        );
+                            Trigger retractTrigger = new Trigger(retract);
+                            retractTrigger.onTrue(intake.retractCommand());
+                        });
 
         intakeDefaultCommand.addRequirements(intake);
         intake.setDefaultCommand(intakeDefaultCommand);
@@ -112,13 +114,13 @@ public class RobotSystem extends SubsystemBase {
 
     public Command shoot() {
         return shooter.shoot()
-        // .alongWith(intake.agitate().repeatedly())
-            .beforeStarting(() -> {
-                currentDrivingMode = DrivingMode.SHOOTING;
-            })
-            .finallyDo(() -> { 
-                currentDrivingMode = DrivingMode.NORMAL;
-            });
+                // .alongWith(intake.agitate().repeatedly())
+                .beforeStarting(() -> {
+                    currentDrivingMode = DrivingMode.SHOOTING;
+                })
+                .finallyDo(() -> {
+                    currentDrivingMode = DrivingMode.NORMAL;
+                });
     }
 
     public void resetAfterAuto() {
@@ -157,39 +159,43 @@ public class RobotSystem extends SubsystemBase {
     }
 
     /**
-     * @param x The supplier for driving the robot forward (field centric)
-     * @param y The supplier for driving the robot sideways (field centric)
-     * @param theta The supplier for rotating the robot
+     * @param x              The supplier for driving the robot forward (field
+     *                       centric)
+     * @param y              The supplier for driving the robot sideways (field
+     *                       centric)
+     * @param theta          The supplier for rotating the robot
      * @param isFieldCentric Supplier that allows us to toggle between driving modes
      * 
-     * <p>Makes the wheels brake if no gamepad input is provided. Using the isFieldCentric supplier
-     * allows us to change modes mid match.</p>
+     *                       <p>
+     *                       Makes the wheels brake if no gamepad input is provided.
+     *                       Using the isFieldCentric supplier
+     *                       allows us to change modes mid match.
+     *                       </p>
      */
     public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta) {
         drive.setDefaultCommand(
-            drive.applyRequest(() -> {
-                double filteredX = xLimiter.calculate(x.getAsDouble());
-                double filteredY = yLimiter.calculate(y.getAsDouble());
-                double filteredTheta = thetaLimiter.calculate(theta.getAsDouble());
-                double speed = currentDrivingMode.getSlowingFactor();
+                drive.applyRequest(() -> {
+                    double filteredX = xLimiter.calculate(x.getAsDouble());
+                    double filteredY = yLimiter.calculate(y.getAsDouble());
+                    double filteredTheta = thetaLimiter.calculate(theta.getAsDouble());
+                    double speed = currentDrivingMode.getSlowingFactor();
 
-                return (currentDrivingMode.equals(DrivingMode.ROBOT_CENTRIC)) ?
-                    drive.robotCentric
-                        .withVelocityX(filteredY * drive.MAX_SPEED * speed)
-                        .withVelocityY(filteredX * drive.MAX_SPEED * speed)
-                        .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed) :
-                    drive.fieldCentric
-                        .withVelocityX(-filteredY * drive.MAX_SPEED * speed)
-                        .withVelocityY(-filteredX * drive.MAX_SPEED * speed)
-                        .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed);
-            })
-        );
+                    return (currentDrivingMode.equals(DrivingMode.ROBOT_CENTRIC)) ? drive.robotCentric
+                            .withVelocityX(filteredY * drive.MAX_SPEED * speed)
+                            .withVelocityY(filteredX * drive.MAX_SPEED * speed)
+                            .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed)
+                            : drive.fieldCentric
+                                    .withVelocityX(-filteredY * drive.MAX_SPEED * speed)
+                                    .withVelocityY(-filteredX * drive.MAX_SPEED * speed)
+                                    .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed);
+                }));
     }
 
     public void toggleDrivingMode() {
         if (currentDrivingMode.equals(DrivingMode.ROBOT_CENTRIC))
             currentDrivingMode = DrivingMode.NORMAL;
-        else currentDrivingMode = DrivingMode.ROBOT_CENTRIC;
+        else
+            currentDrivingMode = DrivingMode.ROBOT_CENTRIC;
     }
 
     public Command driveToPose(FieldPose targetPose) {
@@ -198,23 +204,22 @@ public class RobotSystem extends SubsystemBase {
 
     public Command activatePrecisionDriving() {
         return new StartEndCommand(
-            () -> {
-                currentDrivingMode = DrivingMode.PRECISION;
-            },
-            () -> {
-                currentDrivingMode = DrivingMode.NORMAL;
-            }
-        );
+                () -> {
+                    currentDrivingMode = DrivingMode.PRECISION;
+                },
+                () -> {
+                    currentDrivingMode = DrivingMode.NORMAL;
+                });
     }
 
     public Command keepRobotLockedWithTurret() {
         return new RepeatCommand(
-            new ConditionalCommand(
-                drive.rotateToAngle(() -> drive.getPose().getRotation().plus(Rotation2d.fromDegrees(shooter.turretLockError + (5 * Math.signum(shooter.turretLockError))))), 
-                new InstantCommand(),
-                () -> Math.abs(shooter.turretLockError) > 0
-            )
-        );
+                new ConditionalCommand(
+                        drive.rotateToAngle(() -> drive.getPose().getRotation()
+                                .plus(Rotation2d.fromDegrees(
+                                        shooter.turretLockError + (5 * Math.signum(shooter.turretLockError))))),
+                        new InstantCommand(),
+                        () -> Math.abs(shooter.turretLockError) > 0));
     }
 
     public Command seedFieldCentric() {
@@ -223,10 +228,18 @@ public class RobotSystem extends SubsystemBase {
 
     public Autos getAutos() {
         return new Autos(
-            drive.createAutoFactory(),
-            intake,
-            shooter
-        );
+                drive.createAutoFactory(),
+                intake,
+                shooter);
+    }
+
+    // TODO: actually utilize these, need to figure out logic for activation
+    private void setIMUMode_Waiting(String ll_name) {
+        LimelightHelpers.SetIMUMode(ll_name, 1);
+    }
+
+    private void setIMUMode_Active(String ll_name) {
+        LimelightHelpers.SetIMUMode(ll_name, 4);
     }
 
     private void updateOdometry() {
@@ -236,9 +249,11 @@ public class RobotSystem extends SubsystemBase {
         double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
         if (Math.abs(robotAngularVelocity) < Math.PI) {
             PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LOCALIZATION_LIMELIGHT);
-            
-            if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
-                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
+
+            if (poseEstimate != null && poseEstimate.tagCount > 0
+                    && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
+                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds,
+                        VecBuilder.fill(.7, .7, 99999));
             }
         }
     }
@@ -257,10 +272,10 @@ public class RobotSystem extends SubsystemBase {
 
         updateShootingState();
 
-        //Update odometry with our Limelight's and also log everything
+        // Update odometry with our Limelight's and also log everything
         updateOdometry();
 
-        //Update the field telemetry's robot pose
+        // Update the field telemetry's robot pose
         fieldTelemetry.setRobotPose(drive.getPose());
 
         DogLog.log("Current Zone", ZoneManager.getZone().name());
@@ -269,11 +284,11 @@ public class RobotSystem extends SubsystemBase {
         this.logDriveStats();
 
         LimelightHelpers.LimelightResults llResults = LimelightHelpers.getLatestResults(LOCALIZATION_LIMELIGHT);
-        if (llResults != null)
-        {
-           // Log Limelight hardware temperature (if available)
+        if (llResults != null) {
+            // Log Limelight hardware temperature (if available)
             if (llResults.hardware != null) {
-                DogLogUtil.logDouble(LOCALIZATION_LIMELIGHT + "/Hardware_Temperature_C", llResults.hardware.temperature);
+                DogLogUtil.logDouble(LOCALIZATION_LIMELIGHT + "/Hardware_Temperature_C",
+                        llResults.hardware.temperature);
                 DogLogUtil.logDouble(LOCALIZATION_LIMELIGHT + "/Capture_Latency", llResults.latency_capture);
             }
 
@@ -289,19 +304,20 @@ public class RobotSystem extends SubsystemBase {
 
                 DogLog.log(LOCALIZATION_LIMELIGHT + "/VisibleTagPoses", visibleTags);
             }
-            
+
             // Log M1 Pose data
             var m1Pose = llResults.getBotPose3d_wpiBlue();
             if (m1Pose != null) {
                 DogLog.log(LOCALIZATION_LIMELIGHT + "/wpiBlue_Pose3d", m1Pose);
-            }    
+            }
         }
 
     }
 
     private void logDriveStats() {
 
-        // Throttle logging of this data. Note that swerve updates these values to calling refresh false is correct.
+        // Throttle logging of this data. Note that swerve updates these values to
+        // calling refresh false is correct.
         long nowMs = System.currentTimeMillis();
         if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
             DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
@@ -309,17 +325,23 @@ public class RobotSystem extends SubsystemBase {
             DogLog.log("Drive/Rotation", drive.getPose().getRotation());
 
             for (var module : drive.getModules()) {
-                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
-                    module.getDriveMotor().getSupplyCurrent(false).getValueAsDouble());
-                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
-                    module.getSteerMotor().getSupplyCurrent(false).getValueAsDouble());
-                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
-                    module.getDriveMotor().getDeviceTemp(false).getValueAsDouble());
-                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
-                    module.getSteerMotor().getDeviceTemp(false).getValueAsDouble());
+                DogLogUtil.logDouble(
+                        "Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
+                        module.getDriveMotor().getSupplyCurrent(false).getValueAsDouble());
+                DogLogUtil.logDouble(
+                        "Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
+                        module.getSteerMotor().getSupplyCurrent(false).getValueAsDouble());
+                DogLogUtil.logDouble(
+                        "Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID())
+                                + "_Temperature_C",
+                        module.getDriveMotor().getDeviceTemp(false).getValueAsDouble());
+                DogLogUtil.logDouble(
+                        "Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID())
+                                + "_Temperature_C",
+                        module.getSteerMotor().getDeviceTemp(false).getValueAsDouble());
             }
 
             lastStatusRefreshMs = nowMs;
-        }        
+        }
     }
 }
