@@ -427,12 +427,12 @@
   "splits":[0,142]
  },
  "events":[
-   {"name":"StartIntaking", "from":{"target":0, "targetTimestamp":0.0, "offset":{"exp":"0.7 s", "val":0.7}}, "event":null},
-   {"name":"StopIntaking", "from":{"target":5, "targetTimestamp":3.39004, "offset":{"exp":"0.3 s", "val":0.3}}, "event":null},
-   {"name":"StartShooting", "from":{"target":9, "targetTimestamp":5.59806, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
-   {"name":"SpinUp", "from":{"target":5, "targetTimestamp":3.39004, "offset":{"exp":"0.5 s", "val":0.5}}, "event":null},
-   {"name":"StartIntaking2", "from":{"target":13, "targetTimestamp":7.46821, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
+   {"name":"StartIntaking", "from":{"target":1, "targetTimestamp":0.97929, "offset":{"exp":"0.2 s", "val":0.2}}, "event":null},
+   {"name":"StopIntaking", "from":{"target":4, "targetTimestamp":2.83102, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
+   {"name":"StartShooting", "from":{"target":6, "targetTimestamp":3.96764, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
+   {"name":"SpinUp", "from":{"target":5, "targetTimestamp":3.39004, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
+   {"name":"StartIntaking2", "from":{"target":12, "targetTimestamp":7.09685, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
    {"name":"StopIntaking2", "from":{"target":16, "targetTimestamp":9.09978, "offset":{"exp":"1.25 s", "val":1.25}}, "event":null},
-   {"name":"SpinUp2", "from":{"target":null, "targetTimestamp":null, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
-   {"name":"StartShooting2", "from":{"target":19, "targetTimestamp":11.39713, "offset":{"exp":"0 s", "val":0.0}}, "event":{"type":"named", "data":{"name":""}}}]
+   {"name":"SpinUp2", "from":{"target":16, "targetTimestamp":9.09978, "offset":{"exp":"1 s", "val":1.0}}, "event":null},
+   {"name":"StartShooting2", "from":{"target":18, "targetTimestamp":10.76347, "offset":{"exp":"0 s", "val":0.0}}, "event":{"type":"named", "data":{"name":""}}}]
 }
