@@ -40,7 +40,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
     private final double HOOD_ENCODER_MAGNET_OFFSET = 0.1122;
-    private final double HOOD_ENCODER_DISCONTINUTY_POINT = 0.75;
+    private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1.0;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
     private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 8.0;
@@ -48,10 +48,10 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 60;
     private final double MAX_POSSIBLE_RPM = 3800;
 
-    private final double MAX_HOOD_DEGREES = 34.1;
-    private final double MIN_HOOD_DEGREES = 12.6;
+    private final double MAX_HOOD_DEGREES = 34.35;
+    private final double MIN_HOOD_DEGREES = 12.5;
 
-    private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.5;
+    private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 1.0;
 
     private final double SHOOTING_kP = 1.0;
     private final double SHOOTING_kI = 1.0;
@@ -134,7 +134,7 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterMotor2.setControl(new Follower(SHOOTER_MOTOR_1_ID, MotorAlignmentValue.Opposed)); 
 
         //Explictly set the hood motor position on startup
-        hoodMotor.setPosition(hoodEncoder.getAbsolutePosition().getValue().times(HOOD_ROTOR_TO_SENSOR_RATIO));
+        hoodEncoder.setPosition(hoodEncoder.getAbsolutePosition().getValue());
 
         DogLog.log("Shooter/shooter_max_current", SHOOTER_STATOR_LIMIT);
         DogLog.log("Shooter/hood_max_current", HOOD_STATOR_LIMIT);
@@ -239,6 +239,7 @@ public class ShooterSubsystem extends SubsystemBase {
             DogLogUtil.logDouble("Shooter/shooter1_temperature_C", shooterMotor1.getDeviceTemp(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/shooter2_temperature_C", shooterMotor2.getDeviceTemp(false).getValueAsDouble());
 
+            DogLog.log("Shooter/hood_is_disabled", disableHood);
             DogLogUtil.logDouble("Shooter/hood_current", hoodMotor.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/hood_stator_current", hoodMotor.getStatorCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/hood_temperature_C", hoodMotor.getDeviceTemp(false).getValueAsDouble());

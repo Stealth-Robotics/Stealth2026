@@ -92,15 +92,16 @@ public class RobotContainer {
         }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
+        driverController.leftBumper().whileTrue(robot.keepRobotLockedWithTurret());
         
         driverController.b().onTrue(robot.agitate());
+
+        //Operator Controls
 
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
         
-        operatorController.a().whileTrue(robot.keepRobotLockedWithTurret());
-        operatorController.b().onTrue(robot.agitate());        
-        operatorController.x().whileTrue(robot.activatePrecisionDriving());
+        operatorController.b().onTrue(robot.agitate());
     }
 
     /*

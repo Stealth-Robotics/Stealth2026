@@ -57,6 +57,9 @@ public class ShootingSuperstructure extends SubsystemBase {
     //The error of the turret if the target angle is beyond its limits
     public double turretLockError = 0;
 
+    //Flag used to spin up for shooting and then forget checking rpms
+    private boolean alreadySpinningAtTarget = false;
+
     private final double SHOOTER_REVERSE_RPM = -2000;
 
     private final CANrange shotSensor;
@@ -139,13 +142,18 @@ public class ShootingSuperstructure extends SubsystemBase {
         return run(() -> {
             shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM());
 
-            if (readyToShoot()) {
-                transfer.spin();
-                transfer.feed();
+            if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity()) {
+                alreadySpinningAtTarget = true;
             }
             else {
-                transfer.stopSpinning();
-                transfer.stopFeeding();
+                if (safeToShoot()) {
+                    transfer.spin();
+                    transfer.feed();
+                }
+                else {
+                    transfer.stopSpinning();
+                    transfer.stopFeeding();
+                }
             }
 
             isShooting = true;
@@ -156,9 +164,10 @@ public class ShootingSuperstructure extends SubsystemBase {
             transfer.stopFeeding();
 
             isShooting = false;
+            alreadySpinningAtTarget = false;
         })
         .onlyWhile(() -> {
-            return !state.equals(ShooterState.IDLE);
+            return state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING);
         });
     }
 
@@ -266,12 +275,11 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     /**
-     * Make sure that we are in a shooting mode and the subsystems are within an acceptable tolerance
-     * OR if we are in autonomous and just want to shoot no matter what.
+     * Makes sure we aren't shooting off the field or that we are going to definitely miss
      */
-    private boolean readyToShoot() {
-        return robotVelocitySupplier.get().omegaRadiansPerSecond < Math.PI && (DriverStation.isAutonomous() || state.equals(ShooterState.PASSING) ||
-        (!state.equals(ShooterState.IDLE) && shooter.isShooterAtVelocity() && turret.isReady()));
+    private boolean safeToShoot() {
+        boolean rotatingSlowEnough = robotVelocitySupplier.get().omegaRadiansPerSecond < Math.PI;
+        return rotatingSlowEnough && turret.isReady();
     }
 
     public boolean isShooting() {

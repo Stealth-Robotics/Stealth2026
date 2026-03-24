@@ -221,7 +221,12 @@ public class RobotSystem extends SubsystemBase {
     public Command keepRobotLockedWithTurret() {
         return new RepeatCommand(
             new ConditionalCommand(
-                drive.rotateToAngle(() -> drive.getPose().getRotation().plus(Rotation2d.fromDegrees(shooter.turretLockError + (5 * Math.signum(shooter.turretLockError))))), 
+                drive.rotateToAngle(
+                    () -> drive.getPose().getRotation()
+                            .plus(Rotation2d.fromDegrees(
+                                shooter.turretLockError + (5 * Math.signum(shooter.turretLockError)))
+                            )
+                ), 
                 new InstantCommand(),
                 () -> Math.abs(shooter.turretLockError) > 0
             )
@@ -289,37 +294,37 @@ public class RobotSystem extends SubsystemBase {
 
         this.logDriveStats();
 
-        Pose3d[] visibleTags = new Pose3d[33];
-        int arrayIndex = 0;
+        // Pose3d[] visibleTags = new Pose3d[33];
+        // int arrayIndex = 0;
 
-        for (String limelight : LIMELIGHTS) {
-            LimelightHelpers.LimelightResults llResults = LimelightHelpers.getLatestResults(limelight);
-            if (llResults != null) {
-                // Log Limelight hardware temperature (if available)
-                if (llResults.hardware != null) {
-                    DogLogUtil.logDouble(limelight + "/Hardware_Temperature_C", llResults.hardware.temperature);
-                    DogLogUtil.logDouble(limelight + "/Capture_Latency", llResults.latency_capture);
-                }
+        // for (String limelight : LIMELIGHTS) {
+        //     LimelightHelpers.LimelightResults llResults = LimelightHelpers.getLatestResults(limelight);
+        //     if (llResults != null) {
+        //         // Log Limelight hardware temperature (if available)
+        //         if (llResults.hardware != null) {
+        //             DogLogUtil.logDouble(limelight + "/Hardware_Temperature_C", llResults.hardware.temperature);
+        //             DogLogUtil.logDouble(limelight + "/Capture_Latency", llResults.latency_capture);
+        //         }
 
-                // Log visible tag poses
-                var currentTags = llResults.targets_Fiducials;
-                if (currentTags != null && currentTags.length > 0) {
-                    for (int i = 0; i < currentTags.length; i++) {
-                        Pose3d tagPose = tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
-                        if (tagPose != null)
-                            visibleTags[arrayIndex++] = tagPose;
-                    }
-                }
+        //         // Log visible tag poses
+        //         var currentTags = llResults.targets_Fiducials;
+        //         if (currentTags != null && currentTags.length > 0) {
+        //             for (int i = 0; i < currentTags.length; i++) {
+        //                 Pose3d tagPose = tagFieldLayout.getTagPose((int) currentTags[i].fiducialID).orElse(null);
+        //                 if (tagPose != null)
+        //                     visibleTags[arrayIndex++] = tagPose;
+        //             }
+        //         }
                 
-                // Log M1 Pose data
-                var m1Pose = llResults.getBotPose3d_wpiBlue();
-                if (m1Pose != null) {
-                    DogLog.log(limelight + "/wpiBlue_Pose3d", m1Pose);
-                }    
-            }
-        }
+        //         // Log M1 Pose data
+        //         var m1Pose = llResults.getBotPose3d_wpiBlue();
+        //         if (m1Pose != null) {
+        //             DogLog.log(limelight + "/wpiBlue_Pose3d", m1Pose);
+        //         }    
+        //     }
+        // }
 
-        DogLog.log("Limelights/VisibleTagPoses", visibleTags);
+        // DogLog.log("Limelights/VisibleTagPoses", visibleTags);
     }
 
     private void logDriveStats() {
