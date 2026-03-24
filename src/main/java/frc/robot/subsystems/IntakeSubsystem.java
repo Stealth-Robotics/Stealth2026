@@ -153,7 +153,7 @@ public class IntakeSubsystem extends SubsystemBase {
                 new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
                 new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
                 new InstantCommand(() -> deploy(), this),
-                new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.5),
+                new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.25),
                 new InstantCommand(() -> setRollerSpeed(0))
             ),
             new InstantCommand(),

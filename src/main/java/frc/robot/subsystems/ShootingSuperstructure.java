@@ -73,8 +73,8 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private final ShotParams leftPass = new ShotParams(new Translation3d(0, 5.75, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams rightPass = new ShotParams(new Translation3d(0, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams leftPass = new ShotParams(new Translation3d(1, 5.75, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private final double FIELD_CENTER_Y_DIVIDER = 4.07;
 
@@ -118,7 +118,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensor.getConfigurator().apply(shotSensorConfig);
 
         // Probable should lower this a bit
-        shotSensor.getIsDetected().setUpdateFrequency(200, 0.05); 
+        shotSensor.getIsDetected().setUpdateFrequency(200, 0.1); 
 
         //Reset the ShotCalculator's velocity filters 
         ShotCalculator.resetFilters();
@@ -145,7 +145,8 @@ public class ShootingSuperstructure extends SubsystemBase {
             if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity()) {
                 alreadySpinningAtTarget = true;
             }
-            else {
+            
+            if (alreadySpinningAtTarget) {
                 if (safeToShoot()) {
                     transfer.spin();
                     transfer.feed();
@@ -269,7 +270,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     private void calculateTurretLockError(double turretTarget) {
-        turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ? 
+        turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ?
             turret.MAX_TURRET_DEGREES - turretTarget :
             (turretTarget < turret.MIN_TURRET_DEGREES) ? turret.MIN_TURRET_DEGREES - turretTarget : 0;
     }
@@ -335,6 +336,8 @@ public class ShootingSuperstructure extends SubsystemBase {
         DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
         DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
         DogLog.log("ShootingSuperstructure/Shot_Sensor_Detected", shotDetected);
+
+        DogLog.log("ShootingSuperstructure/alreadySpinningAtTarget", alreadySpinningAtTarget);
                 
         DogLog.log("ShootingSuperstructure/state", state.name());
         DogLog.log("ShootingSuperstructure/passing_target", passingTarget.name());

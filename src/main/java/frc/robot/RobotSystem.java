@@ -248,23 +248,27 @@ public class RobotSystem extends SubsystemBase {
     private void updateOdometry() {
         double imuAngle = drive.getPose().getRotation().getDegrees();
 
-        for (String limelight : LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(limelight, imuAngle, 0, 0, 0, 0, 0);
-        }
+        LimelightHelpers.SetRobotOrientation("limelight-front", imuAngle, 0, 0, 0, 0, 0);
+        // for (String limelight : LIMELIGHTS) {
+        //     LimelightHelpers.SetRobotOrientation(limelight, imuAngle, 0, 0, 0, 0, 0);
+        // }
 
         double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
         if (Math.abs(robotAngularVelocity) < Math.PI) {
-            PoseEstimate bestEstimate = null;
+            // PoseEstimate bestEstimate = null;
 
-            for (String limelight : LIMELIGHTS) {
-                PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-                if (bestEstimate == null || poseEstimate.avgTagDist < bestEstimate.avgTagArea) {
-                    bestEstimate = poseEstimate;
-                }
-            }
+            // for (String limelight : LIMELIGHTS) {
+                // PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+            //     // if (bestEstimate == null || poseEstimate.avgTagDist < bestEstimate.avgTagArea) {
+            //     //     bestEstimate = poseEstimate;
+            //     // }
+            //     bestEstimate = poseEstimate;
+            // }
+            PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight-front");
+
             
-            if (bestEstimate != null && bestEstimate.tagCount > 0 && bestEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
-                drive.addVisionMeasurement(bestEstimate.pose, bestEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
+            if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
+                drive.addVisionMeasurement(poseEstimate.pose, poseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
             }
         }
     }

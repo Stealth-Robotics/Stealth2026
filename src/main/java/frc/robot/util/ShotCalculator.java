@@ -18,23 +18,24 @@ public class ShotCalculator {
     private static final double mechanismLatency = Units.millisecondsToSeconds(0);
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(1.71, 2450.0);
-        put(2.04, 2700.0);
-        put(2.5, 2950.0);
-        put(2.75, 3050.0);
-        put(3.0, 3075.0);
-        put(3.28, 3100.0);
-        put(3.5, 3100.0);
-        put(4.0, 3150.0);
-        put(4.5, 3250.0);
-        put(5.0, 3500.0);
+        put(1.71, 2400.0);
+        put(2.04, 2600.0);
+        put(2.5, 2900.0);
+        put(2.75, 2900.0);
+        put(3.0, 2900.0);
+        put(3.28, 3000.0);
+        put(3.5, 3000.0);
+        put(4.0, 3100.0);
+        put(4.5, 3200.0);
+        put(5.0, 3400.0);
     }};
 
     private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
         put(3.0, 3200.0);
         put(5.0, 3600.0);
-        put(8.0, 3700.0);
-        put(14.0, 4000.0);
+        put(8.0, 4000.0);
+        put(11.0, 4200.0);
+        put(14.0, 6000.0);
     }};
 
     //Velocity smoothing filters

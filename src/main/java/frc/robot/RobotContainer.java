@@ -11,13 +11,11 @@ import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.subsystems.LEDSubsystem.DisplayMode;
-import frc.robot.subsystems.ShootingSuperstructure.PassingTarget;
 
 
 public class RobotContainer {
@@ -113,6 +111,7 @@ public class RobotContainer {
         // autoChooser.addRoutine("CenterPreload", () -> autos.centerPreload());
         // autoChooser.addRoutine("SimpleCenterAuto", () -> autos.simpleCenterAuto());
         autoChooser.addRoutine("L2Cycle", () -> autos.left2Cycle());
+        autoChooser.addRoutine("RightOPAuto", () -> autos.rightOPAuto());
     } 
 
     //Used mostly for telemetry and logging general match info
