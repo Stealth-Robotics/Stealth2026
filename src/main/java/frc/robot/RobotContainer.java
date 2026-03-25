@@ -38,11 +38,14 @@ public class RobotContainer {
     private boolean deployOverRetract = true;
     
     public RobotContainer() {
+        //TODO: Try to disable this and see if performance increases
+        DogLog.setEnabled(true);
+
         DogLog.setOptions(new DogLogOptions()
             .withCaptureDs(true)
             .withLogExtras(true)
             .withCaptureConsole(true)
-            .withCaptureNt(true)
+            .withLogEntryQueueCapacity(1500) //Raise the maximum number of logs that can be queued
         );
 
         DogLog.setPdh(new PowerDistribution(63, ModuleType.kRev));

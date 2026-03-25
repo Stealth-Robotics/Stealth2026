@@ -84,7 +84,8 @@ public class TurretSubsystem extends SubsystemBase {
 
         turretMotor.getConfigurator().apply(turretConfig);
         turretEncoder.getConfigurator().apply(turretEncoderConfig);
-        DogLog.log("Turret/turret_  ", TURRET_STATOR_LIMIT);
+        
+        DogLog.log("Turret/turret_stator_current_limit", TURRET_STATOR_LIMIT);
     }
 
     public void homeTurret() {
