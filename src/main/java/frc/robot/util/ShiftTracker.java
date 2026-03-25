@@ -2,6 +2,7 @@ package frc.robot.util;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj.Timer;
 
 /**
@@ -21,6 +22,14 @@ public class ShiftTracker {
 
     //Just in case we start teleop without auto and we need to correctly offset the time
     private static double timeOffset = 0;
+
+    private static Trigger shiftWarningTrigger = new Trigger(() -> {
+        return
+            phase != MatchPhase.AUTO &&
+            phase != MatchPhase.AUTO_TELE_TRANSITION &&
+            phase != MatchPhase.ENDGAME &&
+            getTimeLeftInShift() <= 5;
+    });
 
     public static void start() {
         reset();
@@ -114,12 +123,8 @@ public class ShiftTracker {
         }
     }
 
-    public static boolean triggerRumbleWarning() {
-        return
-            phase != MatchPhase.AUTO &&
-            phase != MatchPhase.AUTO_TELE_TRANSITION &&
-            phase != MatchPhase.ENDGAME &&
-            getTimeLeftInShift() <= 5;
+    public static Trigger shiftWarningTrigger() {
+        return shiftWarningTrigger;
     }
 
     public static boolean isRunning() {

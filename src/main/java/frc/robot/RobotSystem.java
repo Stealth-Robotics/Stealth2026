@@ -10,6 +10,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -17,8 +18,10 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RepeatCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
@@ -31,6 +34,7 @@ import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 import frc.robot.util.DogLogUtil;
 import frc.robot.util.LimelightHelpers;
+import frc.robot.util.ShiftTracker;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
 import frc.robot.util.ZoneManager;
@@ -91,6 +95,14 @@ public class RobotSystem extends SubsystemBase {
 
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
+
+        //Rumble shift warning
+        ShiftTracker.shiftWarningTrigger().onTrue(
+            new StartEndCommand(
+                () -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.75),
+                () -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0)
+            ).withTimeout(0.5)
+        );
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
