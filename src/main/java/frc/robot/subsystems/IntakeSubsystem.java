@@ -4,12 +4,14 @@ import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.controls.DynamicMotionMagicVoltage;
+import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
@@ -25,7 +27,8 @@ import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.DogLogUtil;
 
 public class IntakeSubsystem extends SubsystemBase {
-    private final TalonFX rollerMotor;
+    private final TalonFX rollerMotorLeft;
+    private final TalonFX rollerMotorRight;
     private final TalonFX deployMotor;
 
     private final CANcoder deployEncoder;
@@ -33,6 +36,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final TalonFXConfiguration rollerConfig = new TalonFXConfiguration();
     private final TalonFXConfiguration deployConfig = new TalonFXConfiguration();
+
 
     private final MotionMagicVoltage deployController = new MotionMagicVoltage(0);
     private final VoltageOut rollerController = new VoltageOut(0);
@@ -62,7 +66,8 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_kACCEL = 20;
     private final double DEPLOY_kVELO = 30;
 
-    private final int ROLLER_MOTOR_ID = 16;
+    private final int ROLLER_MOTOR_LEFT_ID = 16;
+    private final int ROLLER_MOTOR_RIGHT_ID = 26;
     private final int DEPLOY_MOTOR_ID = 17;
     private final int DEPLOY_ENCODER_ID = 18;
 
@@ -79,7 +84,8 @@ public class IntakeSubsystem extends SubsystemBase {
     private long lastStatusRefreshMs = 0;
  
     public IntakeSubsystem() {
-        rollerMotor = new TalonFX(ROLLER_MOTOR_ID);
+        rollerMotorLeft = new TalonFX(ROLLER_MOTOR_LEFT_ID);
+        rollerMotorRight = new TalonFX(ROLLER_MOTOR_RIGHT_ID);
         deployMotor = new TalonFX(DEPLOY_MOTOR_ID);
         deployEncoder = new CANcoder(DEPLOY_ENCODER_ID);
 
@@ -93,7 +99,9 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerConfig.CurrentLimits.SupplyCurrentLimit = ROLLER_SUPPLY_CURRENT_LIMIT;
         rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
-        rollerMotor.getConfigurator().apply(rollerConfig);
+        rollerMotorLeft.getConfigurator().apply(rollerConfig);
+        rollerMotorRight.getConfigurator().apply(rollerConfig);
+        rollerMotorRight.setControl(new Follower(ROLLER_MOTOR_LEFT_ID, MotorAlignmentValue.Opposed));
 
         //CANCoder config
         deployEncoderConfig.MagnetSensor.MagnetOffset = DEPLOY_ENCODER_ZERO_OFFSET;
@@ -162,7 +170,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void setRollerSpeed(double speed) {
-        rollerMotor.setControl(
+        rollerMotorLeft.setControl(
             rollerController.withOutput(
                 INTAKE_ROLLER_VOLTAGE * MathUtil.clamp(speed, -MAX_ROLLER_SPEED, MAX_ROLLER_SPEED))
                 .withEnableFOC(true));
@@ -210,7 +218,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.log("Intake/roller_speed", rollerMotor.get());
+        DogLog.log("Intake/roller_speed", rollerMotorLeft.get());
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
         logMotorData();
     }
@@ -220,17 +228,17 @@ public class IntakeSubsystem extends SubsystemBase {
         long nowMs = System.currentTimeMillis();
         if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
             BaseStatusSignal.refreshAll(
-                rollerMotor.getSupplyCurrent(), rollerMotor.getStatorCurrent(), rollerMotor.getDeviceTemp(),
+                rollerMotorLeft.getSupplyCurrent(), rollerMotorLeft.getStatorCurrent(), rollerMotorLeft.getDeviceTemp(),
                 deployMotor.getSupplyCurrent(), deployMotor.getStatorCurrent(), deployMotor.getDeviceTemp()
             );
 
             lastStatusRefreshMs = nowMs;
 
-            DogLogUtil.logDouble("Intake/roller_current", rollerMotor.getSupplyCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Intake/roller_stator_current", rollerMotor.getStatorCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Intake/roller_temperature_C", rollerMotor.getDeviceTemp(false).getValueAsDouble());
-            DogLogUtil.logDouble("Intake/roller_rpm", rollerMotor.getVelocity().getValueAsDouble() * 60.0);
-            DogLogUtil.logDouble("Intake/roller_supply_current", rollerMotor.getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_current", rollerMotorLeft.getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_stator_current", rollerMotorLeft.getStatorCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_temperature_C", rollerMotorLeft.getDeviceTemp(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_rpm", rollerMotorLeft.getVelocity().getValueAsDouble() * 60.0);
+            DogLogUtil.logDouble("Intake/roller_supply_current", rollerMotorLeft.getSupplyCurrent(false).getValueAsDouble());
 
             DogLogUtil.logDouble("Intake/intake_current", deployMotor.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/intake_stator_current", deployMotor.getStatorCurrent(false).getValueAsDouble());
