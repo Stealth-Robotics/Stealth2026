@@ -9,8 +9,9 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 public class AllianceUtility {
     private static Alliance latestAlliance = Alliance.Blue;
 
-    private static final double FIELD_LENGTH_METERS = 16.54;
-    private static final double FIELD_WIDTH_METERS = 8.07;
+    private static final double FIELD_LENGTH_METERS = 16.540988;
+    private static final double FIELD_WIDTH_METERS = 8.069326;
+    
     private static final Pose2d FIELD_CENTER_POINT = new Pose2d(FIELD_LENGTH_METERS / 2.0, FIELD_WIDTH_METERS / 2.0, Rotation2d.kZero);
 
     public static Alliance getAlliance() {

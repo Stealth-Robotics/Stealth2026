@@ -76,7 +76,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final ShotParams leftPass = new ShotParams(new Translation3d(1, 5.75, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private final double FIELD_CENTER_Y_DIVIDER = 4.07;
+    private final double FIELD_CENTER_Y_DIVIDER = 4.034663;
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
