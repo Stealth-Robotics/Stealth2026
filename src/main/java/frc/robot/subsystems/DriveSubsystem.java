@@ -3,7 +3,6 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.*;
 
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.SignalLogger;
@@ -25,7 +24,6 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
@@ -44,7 +42,6 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
  * https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
  */
 public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////
     public enum FieldPose {
         CLIMB_LEFT(new Pose2d(14.922, 3.891, Rotation2d.kZero)),
         CLIMB_RIGHT(new Pose2d(0, 0, Rotation2d.kZero));
@@ -93,8 +90,6 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     private final PIDController m_pathXController = new PIDController(8, 0, 0);
     private final PIDController m_pathYController = new PIDController(8, 0, 0);
     private final PIDController m_pathThetaController = new PIDController(10, 0, 0);
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private static final double kSimLoopPeriod = 0.004; // 4 ms
     private Notifier m_simNotifier = null;
@@ -302,7 +297,6 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
 
     public String getSysIdRoutineName() { return m_sysIdRoutineName; }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     public Pose2d getPose() {
         return getState().Pose;
     }
@@ -336,19 +330,13 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         );
     }
 
-    public Command rotateToAngle(Supplier<Rotation2d> targetRot) {
-        return run(() -> {
-            var pose = getPose();
-            ChassisSpeeds targetSpeeds = new ChassisSpeeds();
-
-            targetSpeeds.omegaRadiansPerSecond += m_pathThetaController.calculate(
-                pose.getRotation().getRadians(), targetRot.get().getRadians()
-            );
-
-            setControl(
-                m_pathApplyFieldSpeeds.withSpeeds(targetSpeeds)
-            );
-        }).until(() -> Math.abs(getPose().getRotation().getDegrees() - targetRot.get().getDegrees()) < ANGLE_TOLERANCE_DEGREES);
+    public void setRotationTarget(Rotation2d targetRot) {
+        setControl(m_pathApplyFieldSpeeds.withSpeeds(
+            new ChassisSpeeds(
+                0, 0,
+                m_pathThetaController.calculate(getPose().getRotation().getRadians(), targetRot.getRadians())
+            )
+        ));
     }
 
     public Command goToPose(Supplier<FieldPose> targetPose) {
@@ -403,8 +391,6 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
                 .withWheelForceFeedforwardsY(sample.moduleForcesY())
         );
     }
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Override
     public void periodic() {

@@ -91,7 +91,7 @@ public class RobotContainer {
         }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
-        driverController.leftBumper().whileTrue(robot.keepRobotLockedWithTurret());
+        driverController.leftBumper().whileTrue(robot.lockRobotRotationWithTurret());
         
         driverController.b().onTrue(robot.agitate());
 

@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -219,20 +220,23 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
-    //TODO: FIXXX
-    public Command keepRobotLockedWithTurret() {
-        return new RepeatCommand(
-            new ConditionalCommand(
-                drive.rotateToAngle(
-                    () -> drive.getPose().getRotation()
-                            .plus(Rotation2d.fromDegrees(
-                                shooter.turretLockError + (5 * Math.signum(shooter.turretLockError)))
-                            )
-                ), 
-                new InstantCommand(),
-                () -> Math.abs(shooter.turretLockError) > 0
-            )
-        );
+    /*
+     * Lock the robot's rotation with the turret. If the turret is out of range then this command rotates the robot
+     * such that the turret is back into its range. If the turret is within range then we make sure the robot doesn't 
+     * rotate beyond its limits.
+     */
+    public Command lockRobotRotationWithTurret() {
+        return run(() -> {
+            //Don't bother if we are within half a degree of our goal
+            if (Math.abs(shooter.turretLockError) < 0.5)
+                return;
+
+            double turretError = shooter.turretLockError + (5 * Math.signum(shooter.turretLockError));
+
+            drive.setRotationTarget(
+                drive.getPose().getRotation().plus(Rotation2d.fromDegrees(turretError))
+            );
+        });
     }
 
     public Command seedFieldCentric() {
