@@ -20,11 +20,21 @@ public class Autos {
     private final IntakeSubsystem intake;
     private final ShootingSuperstructure shooter;
 
+    private final AutoRoutine nothingAuto;
+
     public Autos(AutoFactory autoFactory, IntakeSubsystem intake, ShootingSuperstructure shooter) {
         this.autoFactory = autoFactory;
         
         this.intake = intake;
         this.shooter = shooter;
+
+        nothingAuto = autoFactory.newRoutine("nothing");
+    }
+
+    public enum AutoPosition {
+        LEFT,
+        MIDDLE,
+        RIGHT
     }
 
     private Command stopShooting() {
@@ -46,17 +56,35 @@ public class Autos {
     private Command deployAndIntake() {
         return intake.deployCommand().andThen(intake.intakeCommand());
     }
+
+    private Command spinupShooter() {
+        return shooter.spinUp(2500);
+    }
     
-    public AutoRoutine rightBumpAuto() {
-        String pathName = "RightBumpAuto";
+    /*
+     * Auto that does one sweep through the trench, shoots, and does another through the trench and back over the bump
+     * to finish shooting.
+     */
+    public AutoRoutine bumpAuto(AutoPosition position) {
+        String pathName = switch (position) {
+            case LEFT -> "LeftBumpAuto";
+            case RIGHT -> "RightBumpAuto";
+            default -> "";
+        };
+
+        if (pathName.isBlank())
+            return nothingAuto;
+
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
         AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
         firstCycle.atTime("Intake").onTrue(deployAndIntake());
+        firstCycle.atTime("Spinup").onTrue(spinupShooter());
         firstCycle.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
 
         AutoTrajectory secondCycle = routine.trajectory(pathName, 1);
         secondCycle.atTime("Intake2").onTrue(deployAndIntake());
+        secondCycle.atTime("Spinup2").onTrue(spinupShooter());
         secondCycle.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
 
         routine.active().onTrue(
@@ -78,70 +106,19 @@ public class Autos {
         return routine;
     }
 
-    public AutoRoutine leftBumpAuto() {
-        String pathName = "LeftBumpAuto";
-        AutoRoutine routine = autoFactory.newRoutine("routine");
+    /*
+     * Auto that does two different sweeps through the trench and comes back to shoot.
+     */
+    public AutoRoutine OPAuto(AutoPosition position) {
+        String pathName = switch (position) {
+            case LEFT -> "LeftOPAuto";
+            case RIGHT -> "RightOPAuto";
+            default -> "";
+        };
 
-        AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
-        firstCycle.atTime("Intake").onTrue(deployAndIntake());
-        firstCycle.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
+        if (pathName.isBlank())
+            return nothingAuto;
 
-        AutoTrajectory secondCycle = routine.trajectory(pathName, 1);
-        secondCycle.atTime("Intake2").onTrue(deployAndIntake());
-        secondCycle.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
-
-        routine.active().onTrue(
-            new SequentialCommandGroup(
-                firstCycle.resetOdometry(),
-                firstCycle.cmd()
-            )
-        );
-
-        firstCycle.done().onTrue(
-            new SequentialCommandGroup(
-                new WaitCommand(5), //Shooting time after first cycle
-                stopAgitating(),
-                stopShooting(),
-                secondCycle.cmd()
-            )
-        );
-
-        return routine;
-    }
-
-    public AutoRoutine rightOPAuto() {
-        String pathName = "RightOPAuto";
-        AutoRoutine routine = autoFactory.newRoutine("routine");
-
-        AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
-        firstCycle.atTime("Intake").onTrue(deployAndIntake());
-        firstCycle.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
-
-        AutoTrajectory secondCycle = routine.trajectory(pathName, 1);
-        secondCycle.atTime("Intake2").onTrue(deployAndIntake());
-        secondCycle.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
-
-        routine.active().onTrue(
-            new SequentialCommandGroup(
-                firstCycle.resetOdometry(),
-                firstCycle.cmd()
-            )
-        );
-
-        firstCycle.done().onTrue(
-            new SequentialCommandGroup(
-                new WaitCommand(4), //Shooting time after first cycle
-                stopAgitating(),
-                stopShooting(),
-                secondCycle.cmd()
-            )
-        );
-
-        return routine;
-    }
-
-    public AutoRoutine leftOPAuto() {
-        String pathName = "LeftOPAuto";
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
         AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
@@ -222,39 +199,4 @@ public class Autos {
 
         return routine;
     }
-
-    // public AutoRoutine left2Cycle() {
-    //     String pathName = "L2Cycle";
-
-    //     AutoRoutine routine = autoFactory.newRoutine("routine");
-
-    //     AutoTrajectory path = routine.trajectory(pathName, 0);
-    //     path.atTime("StartIntaking").onTrue(deployAndIntake());
-    //     path.atTime("StopIntaking").onTrue(intake.stopCommand());
-    //     path.atTime("SpinUp").onTrue(shooter.spinUp(2000));
-    //     path.atTime("StartShooting").onTrue(shooter.shoot());
-
-    //     AutoTrajectory path2 = routine.trajectory(pathName, 1);
-    //     path2.atTime("StartIntaking2").onTrue(deployAndIntake());
-    //     path2.atTime("StopIntaking2").onTrue(intake.stopCommand());
-    //     path2.atTime("SpinUp2").onTrue(shooter.spinUp(2000));
-    //     path2.atTime("StartShooting2").onTrue(shooter.shoot().alongWith(startAgitating()));
-
-    //     routine.active().onTrue(
-    //         new SequentialCommandGroup(
-    //             path.resetOdometry(),
-    //             path.cmd()
-    //         )
-    //     );
-
-    //     path.done().onTrue(
-    //         new SequentialCommandGroup(
-    //             new WaitCommand(4), //Shooting time after first cycle
-    //             stopShooting(),
-    //             path2.cmd()
-    //         )
-    //     );
-
-    //     return routine;
-    // }
 }

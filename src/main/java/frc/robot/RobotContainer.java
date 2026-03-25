@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
+import frc.robot.Autos.AutoPosition;
 import frc.robot.subsystems.LEDSubsystem.DisplayMode;
 
 
@@ -106,15 +107,16 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
+        //Newgen autos
+        autoChooser.addRoutine("LeftOPAuto", () -> autos.OPAuto(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightOPAuto", () -> autos.OPAuto(AutoPosition.RIGHT));
+
+        autoChooser.addRoutine("LeftBumpAuto", () -> autos.bumpAuto(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightBumpAuto", () -> autos.bumpAuto(AutoPosition.RIGHT));
+        
         //OG autos
         autoChooser.addRoutine("Right1CyclePlusOutpost", () -> autos.right1CyclePlusOutpost());
         autoChooser.addRoutine("Left1CyclePlusDepot", () -> autos.left1CyclePlusDepot());
-
-        //Newgen autos
-        autoChooser.addRoutine("LeftOPAuto", () -> autos.leftOPAuto());
-        autoChooser.addRoutine("RightBumpAuto", () -> autos.rightBumpAuto());
-        autoChooser.addRoutine("LeftBumpAuto", () -> autos.leftBumpAuto());
-        autoChooser.addRoutine("RightOPAuto", () -> autos.rightOPAuto());
     } 
 
     //Used mostly for telemetry and logging general match info
