@@ -110,7 +110,9 @@ public class RobotContainer {
         // autoChooser.addRoutine("LeftOneCyclePlusDepot", () -> autos.leftOneCyclePlusDepot());
         // autoChooser.addRoutine("CenterPreload", () -> autos.centerPreload());
         // autoChooser.addRoutine("SimpleCenterAuto", () -> autos.simpleCenterAuto());
-        autoChooser.addRoutine("L2Cycle", () -> autos.left2Cycle());
+        autoChooser.addRoutine("LeftOPAuto", () -> autos.leftOPAuto());
+        autoChooser.addRoutine("RightBumpAuto", () -> autos.rightBumpAuto());
+        autoChooser.addRoutine("LeftBumpAuto", () -> autos.leftBumpAuto());
         autoChooser.addRoutine("RightOPAuto", () -> autos.rightOPAuto());
     } 
 
@@ -135,6 +137,9 @@ public class RobotContainer {
     // Sets default light state when disabled
     public void disabledPeriodic() {
         robot.setLEDMode(DisplayMode.DISABLED);
+    }
+
+    public void resetFuelCounter() {
         robot.resetFuelShotCount();
     }
 

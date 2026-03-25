@@ -32,7 +32,10 @@ public class Autos {
     }
 
     private Command startAgitating() {
-        return intake.agitate().repeatedly();
+        return new SequentialCommandGroup(
+            new WaitCommand(1),
+            intake.agitate().repeatedly()
+        );
     }
 
     private Command stopAgitating() {
@@ -42,6 +45,68 @@ public class Autos {
 
     private Command deployAndIntake() {
         return intake.deployCommand().andThen(intake.intakeCommand());
+    }
+    
+    public AutoRoutine rightBumpAuto() {
+        String pathName = "RightBumpAuto";
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
+        firstCycle.atTime("Intake").onTrue(deployAndIntake());
+        firstCycle.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        AutoTrajectory secondCycle = routine.trajectory(pathName, 1);
+        secondCycle.atTime("Intake2").onTrue(deployAndIntake());
+        secondCycle.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                firstCycle.resetOdometry(),
+                firstCycle.cmd()
+            )
+        );
+
+        firstCycle.done().onTrue(
+            new SequentialCommandGroup(
+                new WaitCommand(5), //Shooting time after first cycle
+                stopAgitating(),
+                stopShooting(),
+                secondCycle.cmd()
+            )
+        );
+
+        return routine;
+    }
+
+    public AutoRoutine leftBumpAuto() {
+        String pathName = "LeftBumpAuto";
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
+        firstCycle.atTime("Intake").onTrue(deployAndIntake());
+        firstCycle.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        AutoTrajectory secondCycle = routine.trajectory(pathName, 1);
+        secondCycle.atTime("Intake2").onTrue(deployAndIntake());
+        secondCycle.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                firstCycle.resetOdometry(),
+                firstCycle.cmd()
+            )
+        );
+
+        firstCycle.done().onTrue(
+            new SequentialCommandGroup(
+                new WaitCommand(5), //Shooting time after first cycle
+                stopAgitating(),
+                stopShooting(),
+                secondCycle.cmd()
+            )
+        );
+
+        return routine;
     }
 
     public AutoRoutine rightOPAuto() {
