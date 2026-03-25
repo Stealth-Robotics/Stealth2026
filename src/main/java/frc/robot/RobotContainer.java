@@ -103,13 +103,14 @@ public class RobotContainer {
     }
 
     /*
-     * Add all our working autonomous routines to the chooser for selecting on Elastic
+     * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
-        // autoChooser.addRoutine("RightOneCyclePlusOutpost", () -> autos.rightOneCyclePlusOutpost());
-        // autoChooser.addRoutine("LeftOneCyclePlusDepot", () -> autos.leftOneCyclePlusDepot());
-        // autoChooser.addRoutine("CenterPreload", () -> autos.centerPreload());
-        // autoChooser.addRoutine("SimpleCenterAuto", () -> autos.simpleCenterAuto());
+        //OG autos
+        autoChooser.addRoutine("Right1CyclePlusOutpost", () -> autos.right1CyclePlusOutpost());
+        autoChooser.addRoutine("Left1CyclePlusDepot", () -> autos.left1CyclePlusDepot());
+
+        //Newgen autos
         autoChooser.addRoutine("LeftOPAuto", () -> autos.leftOPAuto());
         autoChooser.addRoutine("RightBumpAuto", () -> autos.rightBumpAuto());
         autoChooser.addRoutine("LeftBumpAuto", () -> autos.leftBumpAuto());

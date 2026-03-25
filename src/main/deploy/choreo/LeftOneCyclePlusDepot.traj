@@ -1,5 +1,5 @@
 {
- "name":"LeftOneCyclePlusDepotSlow",
+ "name":"LeftOneCyclePlusDepot",
  "version":3,
  "snapshot":{
   "waypoints":[
@@ -421,6 +421,6 @@
    {"name":"StartIntaking", "from":{"target":0, "targetTimestamp":0.0, "offset":{"exp":"0.7 s", "val":0.7}}, "event":null},
    {"name":"StopIntaking", "from":{"target":5, "targetTimestamp":4.48719, "offset":{"exp":"0.3 s", "val":0.3}}, "event":null},
    {"name":"StartShooting", "from":{"target":6, "targetTimestamp":5.0386, "offset":{"exp":"2.1 s", "val":2.1}}, "event":null},
-   {"name":"StopShooting", "from":{"target":9, "targetTimestamp":9.58177, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
+   {"name":"Shoot2", "from":{"target":12, "targetTimestamp":11.92476, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
    {"name":"SpinUp", "from":{"target":5, "targetTimestamp":4.48719, "offset":{"exp":"0.5 s", "val":0.5}}, "event":null}]
 }
