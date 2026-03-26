@@ -3,6 +3,7 @@ package frc.robot;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.filter.SlewRateLimiter;
@@ -11,8 +12,11 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
@@ -48,9 +52,10 @@ public class RobotSystem extends SubsystemBase {
 
     private final double MAX_VISION_ANGULAR_VELOCITY = Math.PI; //Rad/s
 
-    private final double MIN_TAG_REJECTION_METERS = 10;
+    private final double MIN_TAG_REJECTION_METERS = 5;
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
+    private DrivingMode lastDrivingMode = DrivingMode.NORMAL;
 
     //Throttle status refreshes to reduce CAN bus usage
     private long lastStatusRefreshMs = 0;
@@ -73,6 +78,8 @@ public class RobotSystem extends SubsystemBase {
         }
     }
 
+    private double filteredX, filteredY, filteredTheta, lastFilteredX, lastFilteredY, lastFilteredTheta;
+
     private final SlewRateLimiter normalXLimiter = new SlewRateLimiter(5.0);
     private final SlewRateLimiter normalYLimiter = new SlewRateLimiter(5.0);
     private final SlewRateLimiter normalThetaLimiter = new SlewRateLimiter(10.0);
@@ -92,10 +99,11 @@ public class RobotSystem extends SubsystemBase {
 
         //Rumble shift warning
         ShiftTracker.shiftWarningTrigger.onTrue(
-            new StartEndCommand(
-                () -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1.0),
-                () -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0)
-            ).withTimeout(1)
+            new SequentialCommandGroup(
+                new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1.0)),
+                new WaitCommand(1),
+                new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0))
+            )
         );
 
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
@@ -161,36 +169,48 @@ public class RobotSystem extends SubsystemBase {
      * @param x The supplier for driving the robot forward (field centric)
      * @param y The supplier for driving the robot sideways (field centric)
      * @param theta The supplier for rotating the robot
-     * @param isFieldCentric Supplier that allows us to toggle between driving modes
-     * 
-     * <p>Makes the wheels brake if no gamepad input is provided. Using the isFieldCentric supplier
-     * allows us to change modes mid match.</p>
      */
     public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
-                double filteredX, filteredY, filteredTheta;
+                double xInput = x.getAsDouble(), yInput = y.getAsDouble(), thetaInput = theta.getAsDouble();
+
+                //Apply deadbands to reduce jitter around zero
+                xInput = MathUtil.applyDeadband(xInput, 0.05);
+                yInput = MathUtil.applyDeadband(yInput, 0.05);
+                thetaInput = MathUtil.applyDeadband(thetaInput, 0.05);
+                
+                //Square inputs for finer control around zero
+                xInput = Math.copySign(xInput * xInput, xInput);
+                yInput = Math.copySign(yInput * yInput, yInput);
+                thetaInput = Math.copySign(thetaInput * thetaInput, thetaInput);
+
+                if (currentDrivingMode != lastDrivingMode) {
+                    normalXLimiter.reset(lastFilteredX);
+                    normalYLimiter.reset(lastFilteredY);
+                    normalThetaLimiter.reset(lastFilteredTheta);
+
+                    precisionXLimiter.reset(lastFilteredX);
+                    precisionYLimiter.reset(lastFilteredY);
+                    precisionThetaLimiter.reset(lastFilteredTheta);
+
+                    lastDrivingMode = currentDrivingMode;
+                }
 
                 if (currentDrivingMode.equals(DrivingMode.PRECISION)) {
-                    filteredX = precisionXLimiter.calculate(x.getAsDouble());
-                    filteredY = precisionYLimiter.calculate(y.getAsDouble());
-                    filteredTheta = precisionThetaLimiter.calculate(theta.getAsDouble());
-
-                    //Reset other slew rate limiters
-                    normalXLimiter.reset(0);
-                    normalYLimiter.reset(0);
-                    normalThetaLimiter.reset(0);
+                    filteredX = precisionXLimiter.calculate(xInput);
+                    filteredY = precisionYLimiter.calculate(yInput);
+                    filteredTheta = precisionThetaLimiter.calculate(thetaInput);
                 }
                 else {
-                    filteredX = normalXLimiter.calculate(x.getAsDouble());
-                    filteredY = normalYLimiter.calculate(y.getAsDouble());
-                    filteredTheta = normalThetaLimiter.calculate(theta.getAsDouble());
-
-                    //Reset other slew rate limiters
-                    precisionXLimiter.reset(0);
-                    precisionYLimiter.reset(0);
-                    precisionThetaLimiter.reset(0);
+                    filteredX = normalXLimiter.calculate(xInput);
+                    filteredY = normalYLimiter.calculate(yInput);
+                    filteredTheta = normalThetaLimiter.calculate(thetaInput);
                 }
+
+                lastFilteredX = filteredX;
+                lastFilteredY = filteredY;
+                lastFilteredTheta = filteredTheta;
 
                 double speed = currentDrivingMode.getSlowingFactor();
 
@@ -239,23 +259,27 @@ public class RobotSystem extends SubsystemBase {
             var frontPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(FRONT_LL);
             var rightPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(RIGHT_LL);
 
-            if (isGoodPoseEstimate(frontPoseEstimate))
+            if (isGoodPoseEstimate(frontPoseEstimate)) {
                 drive.addVisionMeasurement(
                     frontPoseEstimate.pose, 
                     frontPoseEstimate.timestampSeconds, 
                     VISION_STDDEVS
                 );
-            else if (isGoodPoseEstimate(rightPoseEstimate))
+            }
+
+            if (isGoodPoseEstimate(rightPoseEstimate)) {
                 drive.addVisionMeasurement(
                     rightPoseEstimate.pose, 
                     rightPoseEstimate.timestampSeconds, 
                     VISION_STDDEVS
                 );
+            }
         }
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
-        return poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS;
+        return poseEstimate != null && poseEstimate.pose != null &&
+            poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS;
     }
 
     public void setLEDMode(DisplayMode ledDisplayMode) {
@@ -279,10 +303,10 @@ public class RobotSystem extends SubsystemBase {
         fieldTelemetry.setRobotPose(drive.getPose());
 
         //Update LED state
-        if (ShiftTracker.hubIsActive())
-            led.changeDisplayMode(DisplayMode.HUB_ACTIVE);
-        else 
-            led.changeDisplayMode(DisplayMode.HUB_INACTIVE);
+        if (!led.isBlinking()) {
+            if (ShiftTracker.hubIsActive()) led.changeDisplayMode(DisplayMode.HUB_ACTIVE);
+            else led.changeDisplayMode(DisplayMode.HUB_INACTIVE);
+        }
 
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLog.log("Driving Mode", currentDrivingMode.name());

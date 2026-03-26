@@ -33,6 +33,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private double turretTargetDegrees = 0;
 
+    private final PassingMode PASSING_MODE = PassingMode.CONSTANT;
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
     private boolean isShooting = false;
@@ -90,6 +91,11 @@ public class ShootingSuperstructure extends SubsystemBase {
     public enum PassingTarget {
         LEFT,
         RIGHT
+    }
+
+    public enum PassingMode {
+        CONSTANT, //Always aims at the same target and shoots over the hub
+        DYNAMIC //Changes the target based on which side of the field we are on (shoots a flatter arc around the hub)
     }
 
     public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier) {

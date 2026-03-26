@@ -60,6 +60,10 @@ public class LEDSubsystem extends SubsystemBase {
         currentDisplayMode = mode;
     }
 
+    public boolean isBlinking() {
+        return blinking;
+    }
+
     public Command blink() {
         Command blinkCommand = new SequentialCommandGroup(
             new InstantCommand(() -> {
