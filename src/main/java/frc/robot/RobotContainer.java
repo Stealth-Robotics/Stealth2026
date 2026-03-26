@@ -72,8 +72,7 @@ public class RobotContainer {
         robot.setDriveDefaultCommand(
             () -> driverController.getLeftX(),
             () -> driverController.getLeftY(),
-            () -> driverController.getRightX(),
-            () -> driverController.leftBumper().getAsBoolean()
+            () -> driverController.getRightX()
         );
 
         if (driver.equals(Driver.MATT)) {

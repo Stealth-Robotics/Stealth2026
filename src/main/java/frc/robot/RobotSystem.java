@@ -36,10 +36,8 @@ public class RobotSystem extends SubsystemBase {
     
     private final Field2d fieldTelemetry = new Field2d();
 
-    private final String[] LIMELIGHTS = {
-        "limelight-front",
-        "limelight-right"
-    };
+    private final String FRONT_LL = "limelight-front";
+    private final String RIGHT_LL = "limelight-right";
 
     private final double MIN_TAG_REJECTION_METERS = 10;
 
@@ -161,7 +159,7 @@ public class RobotSystem extends SubsystemBase {
      * <p>Makes the wheels brake if no gamepad input is provided. Using the isFieldCentric supplier
      * allows us to change modes mid match.</p>
      */
-    public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta, BooleanSupplier lock) {
+    public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
                 double filteredX, filteredY, filteredTheta;
@@ -227,34 +225,24 @@ public class RobotSystem extends SubsystemBase {
     private void updateOdometry() {
         double imuAngle = drive.getPose().getRotation().getDegrees();
 
-        // for (String limelight : LIMELIGHTS) {
-        //     LimelightHelpers.SetRobotOrientation(limelight, imuAngle, 0, 0, 0, 0, 0);
-        // }
-        LimelightHelpers.SetRobotOrientation(LIMELIGHTS[0], imuAngle, 0, 0, 0, 0, 0);
+        LimelightHelpers.SetRobotOrientation(FRONT_LL, imuAngle, 0, 0, 0, 0, 0);
+        LimelightHelpers.SetRobotOrientation(RIGHT_LL, imuAngle, 0, 0, 0, 0, 0);
 
         double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
+
         if (Math.abs(robotAngularVelocity) < Math.PI) {
-            // for (String limelight : LIMELIGHTS) {
-            //     PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+            var frontPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(FRONT_LL);
+            var rightPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(RIGHT_LL);
 
-            //     if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
-            //         drive.addVisionMeasurement(
-            //             poseEstimate.pose,
-            //             poseEstimate.timestampSeconds,
-            //             VecBuilder.fill(0.25, 0.25, Units.degreesToRadians(5))
-            //         );
-            //     }
-            // }
-            PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LIMELIGHTS[0]);
-
-            if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
-                drive.addVisionMeasurement(
-                    poseEstimate.pose,
-                    poseEstimate.timestampSeconds,
-                    VecBuilder.fill(.7, .7, 99999)
-                );
-            }
+            if (isGoodPoseEstimate(frontPoseEstimate))
+                drive.addVisionMeasurement(frontPoseEstimate.pose, frontPoseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
+            else if (isGoodPoseEstimate(rightPoseEstimate))
+                drive.addVisionMeasurement(rightPoseEstimate.pose, rightPoseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
         }
+    }
+
+    private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
+        return poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS;
     }
 
     public void setLEDMode(DisplayMode ledDisplayMode) {
@@ -289,15 +277,22 @@ public class RobotSystem extends SubsystemBase {
         logDriveStats();
 
         //Log the megatag 1 poses of our limelights
-        for (String limelight : LIMELIGHTS) {
-            LimelightHelpers.LimelightResults llResults = LimelightHelpers.getLatestResults(limelight);
-            if (llResults != null) {
-                var m1Pose = llResults.getBotPose3d_wpiBlue();
-                if (m1Pose != null) {
-                    DogLog.log(limelight + "/wpiBlue_Pose3d", m1Pose);
-                }
+        LimelightHelpers.LimelightResults frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
+        LimelightHelpers.LimelightResults rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
+
+        if (frontLLResults != null) {
+            var m1Pose = frontLLResults.getBotPose3d_wpiBlue();
+            if (m1Pose != null) {
+                DogLog.log(FRONT_LL + "/wpiBlue_Pose3d", m1Pose);
             }
-        }        
+        }
+
+        if (rightLLResults != null) {
+            var m1Pose = rightLLResults.getBotPose3d_wpiBlue();
+            if (m1Pose != null) {
+                DogLog.log(RIGHT_LL + "/wpiBlue_Pose3d", m1Pose);
+            }
+        }
     }
 
     private void logDriveStats() {
