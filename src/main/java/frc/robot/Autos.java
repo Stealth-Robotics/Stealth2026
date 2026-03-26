@@ -60,15 +60,56 @@ public class Autos {
     private Command spinupShooter() {
         return shooter.spinUp(2500);
     }
+
+    public AutoRoutine doubleBump(AutoPosition position) {
+        String pathName = switch (position) {
+            case LEFT -> "LeftDoubleBump";
+            case RIGHT -> "RightDoubleBump";
+            default -> "";
+        };
+
+        if (pathName.isBlank())
+            return nothingAuto;
+
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
+        firstCycle.atTime("Intake").onTrue(deployAndIntake());
+        firstCycle.atTime("Spinup").onTrue(spinupShooter());
+        firstCycle.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        AutoTrajectory secondCycle = routine.trajectory(pathName, 1);
+        secondCycle.atTime("Intake2").onTrue(deployAndIntake());
+        secondCycle.atTime("Spinup2").onTrue(spinupShooter());
+        secondCycle.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                firstCycle.resetOdometry(),
+                firstCycle.cmd()
+            )
+        );
+
+        firstCycle.done().onTrue(
+            new SequentialCommandGroup(
+                new WaitCommand(6), //Shooting time after first cycle
+                stopAgitating(),
+                stopShooting(),
+                secondCycle.cmd()
+            )
+        );
+
+        return routine;
+    }
     
     /*
      * Auto that does one sweep through the trench, shoots, and does another through the trench and back over the bump
      * to finish shooting.
      */
-    public AutoRoutine bumpAuto(AutoPosition position) {
+    public AutoRoutine trenchBump(AutoPosition position) {
         String pathName = switch (position) {
-            case LEFT -> "LeftBumpAuto";
-            case RIGHT -> "RightBumpAuto";
+            case LEFT -> "LeftTrenchBump";
+            case RIGHT -> "RightTrenchBump";
             default -> "";
         };
 
@@ -109,10 +150,10 @@ public class Autos {
     /*
      * Auto that does two different sweeps through the trench and comes back to shoot.
      */
-    public AutoRoutine OPAuto(AutoPosition position) {
+    public AutoRoutine trench2Cycle(AutoPosition position) {
         String pathName = switch (position) {
-            case LEFT -> "LeftOPAuto";
-            case RIGHT -> "RightOPAuto";
+            case LEFT -> "LeftTrench2Cycle";
+            case RIGHT -> "RightTrench2Cycle";
             default -> "";
         };
 

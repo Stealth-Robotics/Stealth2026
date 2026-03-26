@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
@@ -102,8 +103,8 @@ public class RobotContainer {
         
         operatorController.b().onTrue(robot.agitate());
 
-        operatorController.povUp().onTrue(new InstantCommand(() -> robot.changeRPMOffset(50)));
-        operatorController.povDown().onTrue(new InstantCommand(() -> robot.changeRPMOffset(-50)));
+        operatorController.povUp().whileTrue(new RepeatCommand(new InstantCommand(() -> robot.changeRPMOffset(2))));
+        operatorController.povDown().whileTrue(new RepeatCommand(new InstantCommand(() -> robot.changeRPMOffset(-2))));
     }
 
     /*
@@ -111,11 +112,14 @@ public class RobotContainer {
      */
     private void addAutosToChooser() {
         //Newgen autos
-        autoChooser.addRoutine("LeftOPAuto", () -> autos.OPAuto(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightOPAuto", () -> autos.OPAuto(AutoPosition.RIGHT));
+        autoChooser.addRoutine("LeftTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftBumpAuto", () -> autos.bumpAuto(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightBumpAuto", () -> autos.bumpAuto(AutoPosition.RIGHT));
+        autoChooser.addRoutine("LeftTrenchBump", () -> autos.trenchBump(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightTrenchBump", () -> autos.trenchBump(AutoPosition.RIGHT));
+
+        autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
         
         //OG autos
         autoChooser.addRoutine("Right1CyclePlusOutpost", () -> autos.right1CyclePlusOutpost());
