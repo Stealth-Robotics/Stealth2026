@@ -14,6 +14,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Notifier;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -370,6 +371,11 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLog.log("Driving Mode", currentDrivingMode.name());
         
+        // var canStatus = RobotController.getCANStatus();
+        // DogLog.log("CAN/Utilization", canStatus.percentBusUtilization * 100);
+        // DogLog.log("CAN/TxError", canStatus.txFullCount);
+        // DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
+
         if (!LOG_LIMELIGHTS) return;
 
         //Log the megatag 1 poses of our limelights

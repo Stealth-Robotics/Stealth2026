@@ -42,7 +42,7 @@ public class RobotContainer {
 
         DogLog.setOptions(new DogLogOptions()
             .withCaptureDs(true)
-            .withLogExtras(true)
+            .withLogExtras(false)
             .withCaptureConsole(true)
             .withLogEntryQueueCapacity(1500) //Raise the maximum number of logs that can be queued
         );
