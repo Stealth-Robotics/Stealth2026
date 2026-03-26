@@ -93,6 +93,7 @@ public class RobotContainer {
         }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
+        driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
         
         //Operator Controls
 

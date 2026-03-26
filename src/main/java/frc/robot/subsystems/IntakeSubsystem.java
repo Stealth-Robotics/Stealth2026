@@ -3,7 +3,6 @@ package frc.robot.subsystems;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.controls.DynamicMotionMagicVoltage;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
@@ -139,9 +138,6 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.getConfigurator().apply(deployConfig);
 
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
-        DogLog.log("Intake/roller_max_current",ROLLER_STATOR_LIMIT);
-        DogLog.log("Intake/intake_max_current", DEPLOY_STATOR_LIMIT);
-
     }
 
     public void isIntaking(boolean stateUpdate) {
@@ -183,11 +179,8 @@ public class IntakeSubsystem extends SubsystemBase {
     public boolean isAtPosition(double rotations) {
         double curPos = deployMotor.getPosition().getValueAsDouble();
         double error = Math.abs(curPos - rotations);
+        
         return error <= ARM_POSITION_TOLERANCE;
-    }
-
-    private void deployTo(double rotations) {
-        deployMotor.setControl(deployController.withSlot(0).withPosition(rotations));
     }
 
     public void deploy() {
@@ -220,6 +213,7 @@ public class IntakeSubsystem extends SubsystemBase {
     public void periodic() {
         DogLog.log("Intake/roller_speed", rollerMotorLeft.get());
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
+
         logMotorData();
     }
 
@@ -244,6 +238,5 @@ public class IntakeSubsystem extends SubsystemBase {
             DogLogUtil.logDouble("Intake/intake_stator_current", deployMotor.getStatorCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/intake_temperature_C", deployMotor.getDeviceTemp(false).getValueAsDouble());
         }
-    
     }
 }

@@ -135,9 +135,6 @@ public class ShooterSubsystem extends SubsystemBase {
 
         //Explictly set the hood motor position on startup
         hoodEncoder.setPosition(hoodEncoder.getAbsolutePosition().getValue());
-
-        DogLog.log("Shooter/shooter_max_current", SHOOTER_STATOR_LIMIT);
-        DogLog.log("Shooter/hood_max_current", HOOD_STATOR_LIMIT);
     }
 
     public double getMaxHoodDegrees() {
@@ -239,7 +236,6 @@ public class ShooterSubsystem extends SubsystemBase {
             DogLogUtil.logDouble("Shooter/shooter1_temperature_C", shooterMotor1.getDeviceTemp(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/shooter2_temperature_C", shooterMotor2.getDeviceTemp(false).getValueAsDouble());
 
-            DogLog.log("Shooter/hood_is_disabled", disableHood);
             DogLogUtil.logDouble("Shooter/hood_current", hoodMotor.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/hood_stator_current", hoodMotor.getStatorCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/hood_temperature_C", hoodMotor.getDeviceTemp(false).getValueAsDouble());

@@ -60,17 +60,24 @@ public class LEDSubsystem extends SubsystemBase {
         currentDisplayMode = mode;
     }
 
+    public boolean isBlinking() {
+        return blinking;
+    }
+
     public Command blink() {
-        return new SequentialCommandGroup(
+        Command blinkCommand = new SequentialCommandGroup(
             new InstantCommand(() -> {
                 candle.setControl(blinkAnimation.withColor(
                     (currentDisplayMode.equals(DisplayMode.HUB_ACTIVE) ? greenColor : redColor)
                 ));
-            }),
+            }, this),
             new WaitCommand(5) //Blink for this many seconds
-        )
-        .beforeStarting(() -> blinking = true)
+        ).beforeStarting(() -> blinking = true)
         .finallyDo(() -> blinking = false);
+
+        blinkCommand.addRequirements(this);
+
+        return blinkCommand;
     }
 
     @Override

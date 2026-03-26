@@ -17,6 +17,11 @@ public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
     private final RobotContainer m_robotContainer;
 
+    private final String FRONT_LL = "limelight-front";
+    private final String RIGHT_LL = "limelight-right";
+
+    private final int LIMELIGHT_DISABLED_THROTTLE = 100;
+
     public Robot() {
         m_robotContainer = new RobotContainer();
 
@@ -39,11 +44,11 @@ public class Robot extends TimedRobot {
     public void disabledInit() {
         m_robotContainer.disabledLeds();
 
-        LimelightHelpers.SetThrottle("limelight-front", 100);
-        LimelightHelpers.SetThrottle("limelight-right", 100);
+        LimelightHelpers.SetThrottle(FRONT_LL, LIMELIGHT_DISABLED_THROTTLE);
+        LimelightHelpers.SetThrottle(RIGHT_LL, LIMELIGHT_DISABLED_THROTTLE);
 
-        LimelightHelpers.SetIMUMode("limelight-front", 1);
-        LimelightHelpers.SetIMUMode("limelight-right", 1);
+        LimelightHelpers.SetIMUMode(FRONT_LL, 1);
+        LimelightHelpers.SetIMUMode(RIGHT_LL, 1);
     }
 
     @Override
@@ -54,11 +59,11 @@ public class Robot extends TimedRobot {
     public void disabledExit() {
         m_robotContainer.resetFuelCounter();
 
-        LimelightHelpers.SetThrottle("limelight-front", 0);
-        LimelightHelpers.SetThrottle("limelight-right", 0);
+        LimelightHelpers.SetThrottle(FRONT_LL, 0);
+        LimelightHelpers.SetThrottle(RIGHT_LL, 0);
 
-        LimelightHelpers.SetIMUMode("limelight-front", 4);
-        LimelightHelpers.SetIMUMode("limelight-right", 4);
+        LimelightHelpers.SetIMUMode(FRONT_LL, 4);
+        LimelightHelpers.SetIMUMode(RIGHT_LL, 4);
     }
 
     @Override
