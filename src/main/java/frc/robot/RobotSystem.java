@@ -337,6 +337,8 @@ public class RobotSystem extends SubsystemBase {
     private void logStats() {
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLog.log("Driving Mode", currentDrivingMode.name());
+        
+        if (!LOG_LIMELIGHTS) return;
 
         //Log the megatag 1 poses of our limelights
         if (frontLLResults != null) {
