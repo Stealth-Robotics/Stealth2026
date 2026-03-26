@@ -38,7 +38,6 @@ public class RobotContainer {
     private boolean deployOverRetract = true;
     
     public RobotContainer() {
-        //TODO: Try to disable this and see if performance increases
         DogLog.setEnabled(true);
 
         DogLog.setOptions(new DogLogOptions()
@@ -73,7 +72,8 @@ public class RobotContainer {
         robot.setDriveDefaultCommand(
             () -> driverController.getLeftX(),
             () -> driverController.getLeftY(),
-            () -> driverController.getRightX()
+            () -> driverController.getRightX(),
+            () -> driverController.leftBumper().getAsBoolean()
         );
 
         if (driver.equals(Driver.MATT)) {
@@ -94,10 +94,7 @@ public class RobotContainer {
         }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
-        driverController.leftBumper().whileTrue(robot.lockRobotRotationWithTurret());
         
-        driverController.b().onTrue(robot.agitate());
-
         //Operator Controls
 
         operatorController.rightBumper().whileTrue(robot.shoot());
@@ -136,12 +133,10 @@ public class RobotContainer {
             (int) ShiftTracker.getTimeLeftInShift() % 60
         );
         DogLog.log("Shift Time Left", timeString);
-
-        DogLog.log("Hub Scorable", ShiftTracker.canScore());
     }
 
     // Sets default light state when disabled
-    public void disabledPeriodic() {
+    public void disabledLeds() {
         robot.setLEDMode(DisplayMode.DISABLED);
     }
 

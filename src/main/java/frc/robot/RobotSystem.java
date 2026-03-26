@@ -1,27 +1,16 @@
 package frc.robot;
 
-import static edu.wpi.first.units.Units.RadiansPerSecond;
-
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RepeatCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
@@ -49,11 +38,10 @@ public class RobotSystem extends SubsystemBase {
 
     private final String[] LIMELIGHTS = {
         "limelight-front",
-        "limelight-left"
+        "limelight-right"
     };
 
-    private final double MIN_TAG_REJECTION_METERS = 5;
-    private final AngularVelocity MAX_TAG_ANGULAR_VELO = RadiansPerSecond.of(1.0);
+    private final double MIN_TAG_REJECTION_METERS = 10;
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
 
@@ -62,8 +50,7 @@ public class RobotSystem extends SubsystemBase {
 
     public enum DrivingMode {
         NORMAL(1.0),
-        PRECISION(0.6),
-        ROBOT_CENTRIC(1.0);
+        PRECISION(0.75);
 
         /**
          * Allows us to slow down when performing certain actions like shooting or climbing
@@ -85,7 +72,7 @@ public class RobotSystem extends SubsystemBase {
 
     private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(2.0);
     private final SlewRateLimiter precisionYLimiter = new SlewRateLimiter(2.0);
-    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(3.0);
+    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(5.0);
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -97,12 +84,17 @@ public class RobotSystem extends SubsystemBase {
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
 
         //Rumble shift warning
-        ShiftTracker.shiftWarningTrigger().onTrue(
+        ShiftTracker.shiftWarningTrigger.onTrue(
             new StartEndCommand(
-                () -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0.75),
+                () -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1.0),
                 () -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0)
-            ).withTimeout(0.5)
+            ).withTimeout(1)
         );
+
+        // ShiftTracker.shiftWarningTrigger.onTrue(led.blink(() -> ShiftTracker.hubIsActiveNextShift()));
+
+        // ShiftTracker.hubIsActive.onTrue(new InstantCommand(() -> led.changeDisplayMode(DisplayMode.HUB_ACTIVE)));
+        // ShiftTracker.hubIsInactive.onTrue(new InstantCommand(() -> led.changeDisplayMode(DisplayMode.HUB_INACTIVE)));
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
@@ -135,8 +127,6 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public void resetAfterAuto() {
-        CommandScheduler.getInstance().requiring(intake).cancel();
-        CommandScheduler.getInstance().requiring(shooter).cancel();
         shooter.setState(ShooterState.IDLE);
     }
 
@@ -170,7 +160,7 @@ public class RobotSystem extends SubsystemBase {
      * <p>Makes the wheels brake if no gamepad input is provided. Using the isFieldCentric supplier
      * allows us to change modes mid match.</p>
      */
-    public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta) {
+    public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta, BooleanSupplier lock) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
                 double filteredX, filteredY, filteredTheta;
@@ -198,23 +188,12 @@ public class RobotSystem extends SubsystemBase {
 
                 double speed = currentDrivingMode.getSlowingFactor();
 
-                return (currentDrivingMode.equals(DrivingMode.ROBOT_CENTRIC)) ?
-                    drive.robotCentric
-                        .withVelocityX(filteredY * drive.MAX_SPEED * speed)
-                        .withVelocityY(filteredX * drive.MAX_SPEED * speed)
-                        .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed) :
-                    drive.fieldCentric
-                        .withVelocityX(-filteredY * drive.MAX_SPEED * speed)
-                        .withVelocityY(-filteredX * drive.MAX_SPEED * speed)
-                        .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed);
+                return drive.fieldCentric
+                    .withVelocityX(-filteredY * drive.MAX_SPEED * speed)
+                    .withVelocityY(-filteredX * drive.MAX_SPEED * speed)
+                    .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed);
             })
         );
-    }
-
-    public void toggleDrivingMode() {
-        if (currentDrivingMode.equals(DrivingMode.ROBOT_CENTRIC))
-            currentDrivingMode = DrivingMode.NORMAL;
-        else currentDrivingMode = DrivingMode.ROBOT_CENTRIC;
     }
 
     public Command driveToPose(FieldPose targetPose) {
@@ -232,25 +211,6 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
-    /*
-     * Lock the robot's rotation with the turret. If the turret is out of range then this command rotates the robot
-     * such that the turret is back into its range. If the turret is within range then we make sure the robot doesn't 
-     * rotate beyond its limits.
-     */
-    public Command lockRobotRotationWithTurret() {
-        return run(() -> {
-            //Don't bother if we are within half a degree of our goal
-            if (Math.abs(shooter.turretLockError) < 0.5)
-                return;
-
-            double turretError = shooter.turretLockError + (5 * Math.signum(shooter.turretLockError));
-
-            drive.setRotationTarget(
-                drive.getPose().getRotation().plus(Rotation2d.fromDegrees(turretError))
-            );
-        });
-    }
-
     public Command seedFieldCentric() {
         return runOnce(() -> drive.seedFieldCentric());
     }
@@ -266,25 +226,30 @@ public class RobotSystem extends SubsystemBase {
     private void updateOdometry() {
         double imuAngle = drive.getPose().getRotation().getDegrees();
 
-        for (String limelight : LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(limelight, imuAngle, 0, 0, 0, 0, 0);
-        }
+        // for (String limelight : LIMELIGHTS) {
+        //     LimelightHelpers.SetRobotOrientation(limelight, imuAngle, 0, 0, 0, 0, 0);
+        // }
+        LimelightHelpers.SetRobotOrientation(LIMELIGHTS[0], imuAngle, 0, 0, 0, 0, 0);
 
         double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
-        if (Math.abs(robotAngularVelocity) < MAX_TAG_ANGULAR_VELO.magnitude()) {
-            PoseEstimate bestEstimate = null;
+        if (Math.abs(robotAngularVelocity) < Math.PI) {
+            // for (String limelight : LIMELIGHTS) {
+            //     PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
-            for (String limelight : LIMELIGHTS) {
-                PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-                if (bestEstimate == null || poseEstimate.avgTagDist < bestEstimate.avgTagDist) {
-                    bestEstimate = poseEstimate;
-                }
-            }
+            //     if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
+            //         drive.addVisionMeasurement(
+            //             poseEstimate.pose,
+            //             poseEstimate.timestampSeconds,
+            //             VecBuilder.fill(0.25, 0.25, Units.degreesToRadians(5))
+            //         );
+            //     }
+            // }
+            PoseEstimate poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(LIMELIGHTS[0]);
 
-            if (bestEstimate != null && bestEstimate.tagCount > 0 && bestEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
+            if (poseEstimate != null && poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS) {
                 drive.addVisionMeasurement(
-                    bestEstimate.pose,
-                    bestEstimate.timestampSeconds,
+                    poseEstimate.pose,
+                    poseEstimate.timestampSeconds,
                     VecBuilder.fill(.7, .7, 99999)
                 );
             }
@@ -325,7 +290,7 @@ public class RobotSystem extends SubsystemBase {
                     DogLog.log(limelight + "/wpiBlue_Pose3d", m1Pose);
                 }
             }
-        }
+        }        
     }
 
     private void logDriveStats() {

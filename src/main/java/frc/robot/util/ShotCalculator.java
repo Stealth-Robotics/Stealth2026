@@ -1,5 +1,6 @@
 package frc.robot.util;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -18,22 +19,21 @@ public class ShotCalculator {
     private static final double mechanismLatency = Units.millisecondsToSeconds(0);
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(1.71, 2400.0);
-        put(2.04, 2600.0);
-        put(2.5, 2900.0);
-        put(2.75, 2900.0);
+        put(1.96, 2500.0);
+        put(2.35, 2600.0);
+        put(2.5, 2700.0);
+        put(2.75, 2700.0);
         put(3.0, 2900.0);
-        put(3.28, 3000.0);
         put(3.5, 3000.0);
-        put(4.0, 3100.0);
-        put(4.5, 3200.0);
-        put(5.0, 3400.0);
+        put(4.0, 3000.0);
+        put(4.9, 3100.0);
+        put(5.32, 3200.0);
     }};
 
     private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(3.0, 3200.0);
-        put(5.0, 3600.0);
-        put(8.0, 4000.0);
+        put(3.0, 3000.0);
+        put(5.0, 3200.0);
+        put(8.0, 3800.0);
         put(11.0, 4200.0);
         put(14.0, 6000.0);
     }};
@@ -119,6 +119,7 @@ public class ShotCalculator {
         );
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
+        // DogLog.log("metersToGoal", metersToGoal);
 
         double baseRPM = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToRPM.get(metersToGoal);
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();

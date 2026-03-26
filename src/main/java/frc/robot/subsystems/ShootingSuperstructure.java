@@ -24,6 +24,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -34,6 +35,8 @@ import frc.robot.util.ShotCalculator;
 public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private boolean applyIdle = true;
+
+    private double turretTargetDegrees = 0;
 
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
@@ -216,8 +219,9 @@ public class ShootingSuperstructure extends SubsystemBase {
         Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
 
         turret.setTargetDegrees(turretTargetRot.getDegrees());
+        turretTargetDegrees = turretTargetRot.getDegrees();
 
-        calculateTurretLockError(turretTargetRot.getDegrees());
+        turretLockError = calculateTurretLockError(0);
 
         aimingTarget = params.target();
     }
@@ -263,16 +267,18 @@ public class ShootingSuperstructure extends SubsystemBase {
         Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
 
         turret.setTargetDegrees(turretTargetRot.getDegrees());
+        turretTargetDegrees = turretTargetRot.getDegrees();
 
-        calculateTurretLockError(turretTargetRot.getDegrees());
+        turretLockError = calculateTurretLockError(0);
 
         aimingTarget = params.target();
     }
 
-    private void calculateTurretLockError(double turretTarget) {
-        turretLockError = (turretTarget > turret.MAX_TURRET_DEGREES) ?
-            turret.MAX_TURRET_DEGREES - turretTarget :
-            (turretTarget < turret.MIN_TURRET_DEGREES) ? turret.MIN_TURRET_DEGREES - turretTarget : 0;
+    public double calculateTurretLockError(double offset) {
+        double target = turretTargetDegrees + offset;
+        return (target > turret.MAX_TURRET_DEGREES) ?
+            turret.MAX_TURRET_DEGREES - target :
+            (target < turret.MIN_TURRET_DEGREES) ? turret.MIN_TURRET_DEGREES - target : 0;
     }
 
     /**

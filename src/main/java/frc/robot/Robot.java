@@ -46,12 +46,11 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledInit() {
-    
+        m_robotContainer.disabledLeds();
     }
 
     @Override
     public void disabledPeriodic() {
-        m_robotContainer.disabledPeriodic();
     }
 
     @Override

@@ -15,15 +15,18 @@ public class ShiftTracker {
     private static Alliance ourAlliance = null;
     private static Alliance allianceThatWonAuto = null;
 
-    /* This constant stands for the amount of time that you can shoot before it's legal
-     * And still have the fuel count in the hub
-    */
-    private static final double SCORING_DELAY_SECONDS = 0.2;
-
     //Just in case we start teleop without auto and we need to correctly offset the time
     private static double timeOffset = 0;
 
-    private static Trigger shiftWarningTrigger = new Trigger(() -> {
+    public static Trigger hubIsActive = new Trigger(() -> {
+        return hubIsActive();
+    });
+
+    public static Trigger hubIsInactive = new Trigger(() -> {
+        return !hubIsActive();
+    });
+
+    public static Trigger shiftWarningTrigger = new Trigger(() -> {
         return
             phase != MatchPhase.AUTO &&
             phase != MatchPhase.AUTO_TELE_TRANSITION &&
@@ -89,49 +92,39 @@ public class ShiftTracker {
     /**
      * @return Whether or not we can score into our alliance's hub
      */
-    public static boolean canScore() {
-        if (!matchTimer.isRunning())
-            return true;
-        else if (ourAlliance == null)
-            return false;
-
+    public static boolean hubIsActive() {
         switch (phase) {
             case AUTO -> { return true; }
 
-            case AUTO_TELE_TRANSITION -> {
-                if (!weWonAuto() && getTimeLeftInShift() <= SCORING_DELAY_SECONDS) return true;
-                else return false;
-            }
-
-            case TRANSITION_SHIFT -> {
-                if (weWonAuto()) return getTimeLeftInShift() >= SCORING_DELAY_SECONDS;
-                else return true;
-            }
+            case TRANSITION_SHIFT -> { return true; }
 
             case SHIFT1, SHIFT3 -> {
-                if (weWonAuto()) return getTimeLeftInShift() <= SCORING_DELAY_SECONDS;
-                else return getTimeLeftInShift() >= SCORING_DELAY_SECONDS;
+                return !weWonAuto();
             }
 
             case SHIFT2, SHIFT4 -> {
-                if (weWonAuto()) return getTimeLeftInShift() >= SCORING_DELAY_SECONDS;
-                else return getTimeLeftInShift() <= SCORING_DELAY_SECONDS;
+                return weWonAuto();
             }
 
             case ENDGAME, UNKNOWN -> { return true; }
+
             default -> { return false; }
         }
     }
 
-    public static Trigger shiftWarningTrigger() {
-        return shiftWarningTrigger;
+    public static boolean hubIsActiveNextShift() {
+        if (phase.equals(MatchPhase.TRANSITION_SHIFT))
+            return !weWonAuto();
+        else return !hubIsActive();
     }
 
     public static boolean isRunning() {
         return matchTimer.isRunning();
     }
 
-    private static boolean weWonAuto() {
+    public static boolean weWonAuto() {
+        if (allianceThatWonAuto == null)
+            return true;
         return ourAlliance == allianceThatWonAuto;
     }
 

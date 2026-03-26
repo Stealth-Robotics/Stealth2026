@@ -44,7 +44,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double INTAKE_ROLLER_VOLTAGE = 12;
     private final double MAX_ROLLER_SPEED = 0.75;
 
-    private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.4013671875;
+    private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.401123046875;
 
     private final double DEPLOY_ENCODER_TO_MECHANISM_RATIO = 1.0;
     private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 52.0;
@@ -53,8 +53,8 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final double ARM_POSITION_TOLERANCE = 0.01;
 
-    private final double DEPLOYED_ROTATIONS = 0;
-    private final double RETRACTED_ROTATIONS = 0.315;
+    private final double DEPLOYED_ROTATIONS = 0.0;
+    private final double RETRACTED_ROTATIONS = 0.3;
 
     private final double DEPLOY_kP = 28;
     private final double RETRACT_kP = 38;
