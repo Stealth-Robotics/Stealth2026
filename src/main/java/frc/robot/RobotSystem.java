@@ -14,6 +14,8 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Notifier;
+import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -52,6 +54,7 @@ public class RobotSystem extends SubsystemBase {
     private final boolean LOG_LIMELIGHTS = true;
     private final boolean LOG_SWERVE_DRIVE = true;
     private final boolean LOG_APRIL_TAG_POSE = true;
+    private final boolean LOG_PDH = true;
 
     private final String FRONT_LL = "limelight-front";
     private final String RIGHT_LL = "limelight-right";
@@ -101,9 +104,11 @@ public class RobotSystem extends SubsystemBase {
     private volatile LimelightHelpers.PoseEstimate rightPoseEstimate;
     private volatile LimelightHelpers.LimelightResults frontLLResults;
     private volatile LimelightHelpers.LimelightResults rightLLResults;
+    private final PowerDistribution pdh = new PowerDistribution(63, ModuleType.kRev);
     private volatile double lastImuAngleDegrees = 0.0;
     private final Notifier limelightNotifier;
     private final Notifier tagLoggingNotifier;
+    private final Notifier slowNotifier;
 
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
@@ -136,6 +141,7 @@ public class RobotSystem extends SubsystemBase {
             frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
             rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
         });
+
         limelightNotifier.startPeriodic(0.02);
 
         if (LOG_APRIL_TAG_POSE) {
@@ -147,6 +153,13 @@ public class RobotSystem extends SubsystemBase {
         } else {
             tagLoggingNotifier = null;
         }
+
+        slowNotifier = new Notifier(() -> {
+                logPdhStats();
+            }
+        );
+        slowNotifier.startPeriodic(0.5);
+
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
@@ -351,6 +364,17 @@ public class RobotSystem extends SubsystemBase {
             lastStatusRefreshMs = nowMs;
         }
     }
+
+    private void logPdhStats() {
+        if (!LOG_PDH) return;
+
+        DogLog.log("PDH/TotalCurrent", pdh.getTotalCurrent());
+        DogLog.log("PDH/Voltage", pdh.getVoltage());
+        DogLog.log("PDH/Temperature", pdh.getTemperature());
+        DogLog.log("PDH/Brownout", pdh.getFaults().Brownout);
+        DogLog.log("PDH/HardwareFault", pdh.getFaults().HardwareFault);
+
+    }
     
     private void logVisibleTags(String limelightName, LimelightHelpers.LimelightResults llResults) {
         if (llResults == null) return;
@@ -371,10 +395,10 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLog.log("Driving Mode", currentDrivingMode.name());
         
-        // var canStatus = RobotController.getCANStatus();
-        // DogLog.log("CAN/Utilization", canStatus.percentBusUtilization * 100);
-        // DogLog.log("CAN/TxError", canStatus.txFullCount);
-        // DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
+        var canStatus = RobotController.getCANStatus();
+        DogLog.log("CAN/Utilization", canStatus.percentBusUtilization * 100);
+        DogLog.log("CAN/TxError", canStatus.txFullCount);
+        DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
 
         if (!LOG_LIMELIGHTS) return;
 

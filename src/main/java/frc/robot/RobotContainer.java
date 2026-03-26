@@ -47,7 +47,7 @@ public class RobotContainer {
             .withLogEntryQueueCapacity(1500) //Raise the maximum number of logs that can be queued
         );
 
-        DogLog.setPdh(new PowerDistribution(63, ModuleType.kRev));
+        //DogLog.setPdh(new PowerDistribution(63, ModuleType.kRev));
 
         robot = new RobotSystem(driverController, operatorController);
 
