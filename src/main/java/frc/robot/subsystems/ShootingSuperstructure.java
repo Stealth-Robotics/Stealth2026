@@ -115,8 +115,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         shotSensor.getConfigurator().apply(shotSensorConfig);
 
-        // Probable should lower this a bit
-        shotSensor.getIsDetected().setUpdateFrequency(200, 0.001); 
+        shotSensor.getIsDetected().setUpdateFrequency(100, 0.005); 
 
         //Reset the ShotCalculator's velocity filters 
         ShotCalculator.resetFilters();
