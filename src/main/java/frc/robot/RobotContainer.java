@@ -125,14 +125,6 @@ public class RobotContainer {
         ShiftTracker.update();
 
         DogLog.log("Alliance", AllianceUtility.getAlliance().name());
-        DogLog.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
-
-        String timeString = String.format(
-            "%d:%02d",
-            (int) ShiftTracker.getTimeLeftInShift() / 60,
-            (int) ShiftTracker.getTimeLeftInShift() % 60
-        );
-        DogLog.log("Shift Time Left", timeString);
     }
 
     // Sets default light state when disabled

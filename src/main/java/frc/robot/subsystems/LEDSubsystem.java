@@ -1,8 +1,6 @@
 package frc.robot.subsystems;
 
-import java.util.function.BooleanSupplier;
 import com.ctre.phoenix6.configs.CANdleConfiguration;
-import com.ctre.phoenix6.controls.ColorFlowAnimation;
 import com.ctre.phoenix6.controls.RainbowAnimation;
 import com.ctre.phoenix6.controls.SolidColor;
 import com.ctre.phoenix6.controls.StrobeAnimation;
@@ -62,19 +60,14 @@ public class LEDSubsystem extends SubsystemBase {
         currentDisplayMode = mode;
     }
 
-    public Command blink(BooleanSupplier hubGoingActive) {
+    public Command blink() {
         return new SequentialCommandGroup(
             new InstantCommand(() -> {
                 candle.setControl(blinkAnimation.withColor(
-                    (hubGoingActive.getAsBoolean() ? redColor : greenColor)
+                    (currentDisplayMode.equals(DisplayMode.HUB_ACTIVE) ? greenColor : redColor)
                 ));
             }),
-            new WaitCommand(5),
-            new InstantCommand(() -> {
-                candle.setControl(
-                    hubGoingActive.getAsBoolean() ? hubActiveAnimation : hubInactiveAnimation
-                );
-            })
+            new WaitCommand(5) //Blink for this many seconds
         )
         .beforeStarting(() -> blinking = true)
         .finallyDo(() -> blinking = false);
@@ -82,15 +75,15 @@ public class LEDSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // if (!blinking) {
-        //     candle.setControl(
-        //         switch(currentDisplayMode) {
-        //             case HUB_ACTIVE -> hubActiveAnimation;
-        //             case HUB_INACTIVE -> hubInactiveAnimation;
-        //             default -> disabledAnimation;
-        //         }
-        //     );
-        // }
+        if (!blinking) {
+            candle.setControl(
+                switch(currentDisplayMode) {
+                    case HUB_ACTIVE -> hubActiveAnimation;
+                    case HUB_INACTIVE -> hubInactiveAnimation;
+                    default -> disabledAnimation;
+                }
+            );
+        }
 
         DogLog.log("LEDS/display_mode", currentDisplayMode.name());
     }

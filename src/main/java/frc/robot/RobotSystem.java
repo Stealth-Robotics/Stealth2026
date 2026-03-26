@@ -91,10 +91,7 @@ public class RobotSystem extends SubsystemBase {
             ).withTimeout(1)
         );
 
-        // ShiftTracker.shiftWarningTrigger.onTrue(led.blink(() -> ShiftTracker.hubIsActiveNextShift()));
-
-        // ShiftTracker.hubIsActive.onTrue(new InstantCommand(() -> led.changeDisplayMode(DisplayMode.HUB_ACTIVE)));
-        // ShiftTracker.hubIsInactive.onTrue(new InstantCommand(() -> led.changeDisplayMode(DisplayMode.HUB_INACTIVE)));
+        ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
@@ -275,6 +272,12 @@ public class RobotSystem extends SubsystemBase {
 
         //Update the field telemetry's robot pose
         fieldTelemetry.setRobotPose(drive.getPose());
+
+        //Update LED state
+        if (ShiftTracker.hubIsActive())
+            led.changeDisplayMode(DisplayMode.HUB_ACTIVE);
+        else 
+            led.changeDisplayMode(DisplayMode.HUB_INACTIVE);
 
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLog.log("Driving Mode", currentDrivingMode.name());

@@ -1,15 +1,16 @@
 package frc.robot.util;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj.Timer;
 
 /**
- * Ultility class that keeps track of who can score when and for how long (dependent on who won auto)
+ * Utility class that keeps track of who can score when and for how long (dependent on who won auto)
  */
 public class ShiftTracker {
-    private static MatchPhase phase = MatchPhase.UNKNOWN;
+    private static MatchPhase matchPhase = MatchPhase.UNKNOWN;
     private static final Timer matchTimer = new Timer();
 
     private static Alliance ourAlliance = null;
@@ -18,19 +19,11 @@ public class ShiftTracker {
     //Just in case we start teleop without auto and we need to correctly offset the time
     private static double timeOffset = 0;
 
-    public static Trigger hubIsActive = new Trigger(() -> {
-        return hubIsActive();
-    });
-
-    public static Trigger hubIsInactive = new Trigger(() -> {
-        return !hubIsActive();
-    });
-
     public static Trigger shiftWarningTrigger = new Trigger(() -> {
         return
-            phase != MatchPhase.AUTO &&
-            phase != MatchPhase.AUTO_TELE_TRANSITION &&
-            phase != MatchPhase.ENDGAME &&
+            matchPhase != MatchPhase.AUTO &&
+            matchPhase != MatchPhase.AUTO_TELE_TRANSITION &&
+            matchPhase != MatchPhase.ENDGAME &&
             getTimeLeftInShift() <= 5;
     });
 
@@ -38,9 +31,9 @@ public class ShiftTracker {
         reset();
 
         if (DriverStation.isAutonomous())
-            phase = MatchPhase.AUTO;
+            matchPhase = MatchPhase.AUTO;
         else {
-            phase = MatchPhase.TRANSITION_SHIFT;
+            matchPhase = MatchPhase.TRANSITION_SHIFT;
 
             double autoDuration = (MatchPhase.AUTO.getEndTime() - MatchPhase.AUTO.getStartTime());
             double autoToTeleopDuration = (MatchPhase.AUTO_TELE_TRANSITION.getEndTime() - MatchPhase.AUTO_TELE_TRANSITION.getStartTime());
@@ -57,8 +50,8 @@ public class ShiftTracker {
         timeOffset = 0;
     }
 
-    public static MatchPhase getCurrentMatchPhase() {
-        return phase;
+    private static MatchPhase getCurrentMatchPhase() {
+        return matchPhase;
     }
 
     /**
@@ -75,25 +68,35 @@ public class ShiftTracker {
             ourAlliance = DriverStation.getAlliance().orElse(null);
 
         if (isRunning()) {
-            if (phase != MatchPhase.UNKNOWN && phase != null) {
-                if (getTime() > phase.getEndTime())
-                    phase = phase.getNext();
+            if (matchPhase != null && matchPhase != MatchPhase.UNKNOWN) {
+                if (getTime() > matchPhase.getEndTime())
+                    matchPhase = matchPhase.getNext();
             }
             else {
                 /* Phase becomes null when we are in auto or teleop DS modes and have exceeded the standard
                 * match duration. We stop tracking shifts and any calls to canScore() will return true for testing purposes
                 */
                 reset();
-                phase = MatchPhase.UNKNOWN;
+                matchPhase = MatchPhase.UNKNOWN;
             }
         }
+
+        //Logging ShiftTracker's calculations
+        DogLog.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
+
+        String timeString = String.format(
+            "%d:%02d",
+            (int) ShiftTracker.getTimeLeftInShift() / 60,
+            (int) ShiftTracker.getTimeLeftInShift() % 60
+        );
+        DogLog.log("Shift Time Left", timeString);
     }
 
     /**
      * @return Whether or not we can score into our alliance's hub
      */
     public static boolean hubIsActive() {
-        switch (phase) {
+        switch (matchPhase) {
             case AUTO -> { return true; }
 
             case TRANSITION_SHIFT -> { return true; }
@@ -112,24 +115,18 @@ public class ShiftTracker {
         }
     }
 
-    public static boolean hubIsActiveNextShift() {
-        if (phase.equals(MatchPhase.TRANSITION_SHIFT))
-            return !weWonAuto();
-        else return !hubIsActive();
-    }
-
     public static boolean isRunning() {
         return matchTimer.isRunning();
     }
 
-    public static boolean weWonAuto() {
+    private static boolean weWonAuto() {
         if (allianceThatWonAuto == null)
             return true;
         return ourAlliance == allianceThatWonAuto;
     }
 
-    public static double getTimeLeftInShift() {
-        return Math.max(0, phase.getEndTime() - getTime());
+    private static double getTimeLeftInShift() {
+        return Math.max(0, matchPhase.getEndTime() - getTime());
     }
 
     private static double getTime() {
