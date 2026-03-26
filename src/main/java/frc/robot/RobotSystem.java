@@ -4,7 +4,9 @@ import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -36,14 +38,21 @@ public class RobotSystem extends SubsystemBase {
     
     private final Field2d fieldTelemetry = new Field2d();
 
+    private final boolean LOG_LIMELIGHTS = true;
+    private final boolean LOG_SWERVE_DRIVE = true;
+
     private final String FRONT_LL = "limelight-front";
     private final String RIGHT_LL = "limelight-right";
+
+    private final Vector<N3> VISION_STDDEVS = VecBuilder.fill(0.2, 0.2, 99999);
+
+    private final double MAX_VISION_ANGULAR_VELOCITY = Math.PI; //Rad/s
 
     private final double MIN_TAG_REJECTION_METERS = 10;
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
 
-    // Throttle status refreshes to reduce CAN bus usage
+    //Throttle status refreshes to reduce CAN bus usage
     private long lastStatusRefreshMs = 0;
 
     public enum DrivingMode {
@@ -228,16 +237,22 @@ public class RobotSystem extends SubsystemBase {
         LimelightHelpers.SetRobotOrientation(FRONT_LL, imuAngle, 0, 0, 0, 0, 0);
         LimelightHelpers.SetRobotOrientation(RIGHT_LL, imuAngle, 0, 0, 0, 0, 0);
 
-        double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
-
-        if (Math.abs(robotAngularVelocity) < Math.PI) {
+        if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < MAX_VISION_ANGULAR_VELOCITY) {
             var frontPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(FRONT_LL);
             var rightPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(RIGHT_LL);
 
             if (isGoodPoseEstimate(frontPoseEstimate))
-                drive.addVisionMeasurement(frontPoseEstimate.pose, frontPoseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
+                drive.addVisionMeasurement(
+                    frontPoseEstimate.pose, 
+                    frontPoseEstimate.timestampSeconds, 
+                    VISION_STDDEVS
+                );
             else if (isGoodPoseEstimate(rightPoseEstimate))
-                drive.addVisionMeasurement(rightPoseEstimate.pose, rightPoseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
+                drive.addVisionMeasurement(
+                    rightPoseEstimate.pose, 
+                    rightPoseEstimate.timestampSeconds, 
+                    VISION_STDDEVS
+                );
         }
     }
 
@@ -274,23 +289,25 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLog.log("Driving Mode", currentDrivingMode.name());
 
-        logDriveStats();
+        if (LOG_SWERVE_DRIVE) logDriveStats();
 
-        //Log the megatag 1 poses of our limelights
-        LimelightHelpers.LimelightResults frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
-        LimelightHelpers.LimelightResults rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
+        if (LOG_LIMELIGHTS) {
+             //Log the megatag 1 poses of our limelights
+            LimelightHelpers.LimelightResults frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
+            LimelightHelpers.LimelightResults rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
 
-        if (frontLLResults != null) {
-            var m1Pose = frontLLResults.getBotPose3d_wpiBlue();
-            if (m1Pose != null) {
-                DogLog.log(FRONT_LL + "/wpiBlue_Pose3d", m1Pose);
+            if (frontLLResults != null) {
+                var m1Pose = frontLLResults.getBotPose3d_wpiBlue();
+                if (m1Pose != null) {
+                    DogLog.log(FRONT_LL + "/wpiBlue_Pose3d", m1Pose);
+                }
             }
-        }
 
-        if (rightLLResults != null) {
-            var m1Pose = rightLLResults.getBotPose3d_wpiBlue();
-            if (m1Pose != null) {
-                DogLog.log(RIGHT_LL + "/wpiBlue_Pose3d", m1Pose);
+            if (rightLLResults != null) {
+                var m1Pose = rightLLResults.getBotPose3d_wpiBlue();
+                if (m1Pose != null) {
+                    DogLog.log(RIGHT_LL + "/wpiBlue_Pose3d", m1Pose);
+                }
             }
         }
     }
