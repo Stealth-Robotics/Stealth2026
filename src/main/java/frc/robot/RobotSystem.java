@@ -1,12 +1,17 @@
 package frc.robot;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
@@ -45,6 +50,7 @@ public class RobotSystem extends SubsystemBase {
 
     private final boolean LOG_LIMELIGHTS = true;
     private final boolean LOG_SWERVE_DRIVE = true;
+    private final boolean LOG_APRIL_TAG_POSE = true;
 
     private final String FRONT_LL = "limelight-front";
     private final String RIGHT_LL = "limelight-right";
@@ -88,6 +94,7 @@ public class RobotSystem extends SubsystemBase {
     private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(2.0);
     private final SlewRateLimiter precisionYLimiter = new SlewRateLimiter(2.0);
     private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(5.0);
+    private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
     private volatile LimelightHelpers.PoseEstimate frontPoseEstimate;
     private volatile LimelightHelpers.PoseEstimate rightPoseEstimate;
@@ -95,6 +102,7 @@ public class RobotSystem extends SubsystemBase {
     private volatile LimelightHelpers.LimelightResults rightLLResults;
     private volatile double lastImuAngleDegrees = 0.0;
     private final Notifier limelightNotifier;
+    private final Notifier tagLoggingNotifier;
 
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
@@ -127,8 +135,17 @@ public class RobotSystem extends SubsystemBase {
             frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
             rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
         });
-
         limelightNotifier.startPeriodic(0.02);
+
+        if (LOG_APRIL_TAG_POSE) {
+            tagLoggingNotifier = new Notifier(() -> {
+                    logVisibleTags(FRONT_LL, frontLLResults);
+                    logVisibleTags(RIGHT_LL, rightLLResults);
+            });
+            tagLoggingNotifier.startPeriodic(DogLogUtil.LIMELIGHT_LOGGING_INTERVAL);
+        } else {
+            tagLoggingNotifier = null;
+        }
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
@@ -332,6 +349,21 @@ public class RobotSystem extends SubsystemBase {
             logStats();
             lastStatusRefreshMs = nowMs;
         }
+    }
+    
+    private void logVisibleTags(String limelightName, LimelightHelpers.LimelightResults llResults) {
+        if (llResults == null) return;
+
+        var currentTags = llResults.targets_Fiducials;
+        if (currentTags == null || currentTags.length == 0) return;
+
+        List<Pose3d> visibleTags = new ArrayList<>();
+        for (var tag : currentTags) {
+            tagFieldLayout.getTagPose((int) tag.fiducialID).ifPresent(visibleTags::add);
+        }
+
+        if (!visibleTags.isEmpty())
+            DogLog.log(limelightName + "/VisibleTagPoses", visibleTags.toArray(new Pose3d[0]));
     }
 
     private void logStats() {
