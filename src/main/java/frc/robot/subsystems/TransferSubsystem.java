@@ -31,7 +31,7 @@ public class TransferSubsystem extends SubsystemBase {
     private final int FEEDER_MOTOR_ID = 6;
 
     private final int SPINDEXER_STATOR_LIMIT = 60;
-    private final int FEEDER_STATOR_LIMIT = 50;
+    private final int FEEDER_STATOR_LIMIT = 60;
     
     private long lastStatusRefreshMs = 0;
 

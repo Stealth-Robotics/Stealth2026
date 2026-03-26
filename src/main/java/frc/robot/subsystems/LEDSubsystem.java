@@ -50,14 +50,14 @@ public class LEDSubsystem extends SubsystemBase {
         candleConfig = new CANdleConfiguration();
         
         candleConfig.LED.BrightnessScalar = 0.5;
-        candleConfig.LED.StripType = StripTypeValue.RGB;
+        candleConfig.LED.StripType = StripTypeValue.BRG;
         candleConfig.LED.LossOfSignalBehavior = LossOfSignalBehaviorValue.DisableLEDs;
 
         candle.getConfigurator().apply(candleConfig);
     }
 
     public void changeDisplayMode(DisplayMode mode) {
-        currentDisplayMode = mode;
+        // currentDisplayMode = mode;
     }
 
     public boolean isBlinking() {
