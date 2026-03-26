@@ -101,6 +101,9 @@ public class RobotContainer {
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
         
         operatorController.b().onTrue(robot.agitate());
+
+        operatorController.povUp().onTrue(new InstantCommand(() -> robot.changeRPMOffset(50)));
+        operatorController.povDown().onTrue(new InstantCommand(() -> robot.changeRPMOffset(-50)));
     }
 
     /*
