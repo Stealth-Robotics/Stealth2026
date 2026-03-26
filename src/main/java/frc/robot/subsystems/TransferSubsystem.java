@@ -7,8 +7,6 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
-import dev.doglog.DogLog;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.DogLogUtil;
 
@@ -26,13 +24,13 @@ public class TransferSubsystem extends SubsystemBase {
 
     private final CoastOut coast = new CoastOut();
 
-    private final double SPINNING_VOLTAGE = 12;
+    private final double SPINNING_VOLTAGE = 12; //TODO: Possibly slow down to improve feed rate
     private final double FEEDING_VOLTAGE = 12;
 
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
-    private final int SPINDEXER_STATOR_LIMIT = 50;
+    private final int SPINDEXER_STATOR_LIMIT = 60;
     private final int FEEDER_STATOR_LIMIT = 50;
     
     private long lastStatusRefreshMs = 0;
@@ -58,9 +56,6 @@ public class TransferSubsystem extends SubsystemBase {
 
         spindexerMotor.setControl(coast);
         feederMotor.setControl(coast);
-
-        DogLog.log("Transfer/spindexer_max_current", SPINDEXER_STATOR_LIMIT);
-        DogLog.log("Transfer/feeder_max_current", FEEDER_STATOR_LIMIT);
     }
 
     public void spin() {
@@ -85,7 +80,6 @@ public class TransferSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Advantagescope logging
         logMotorData();
     }
 

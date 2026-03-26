@@ -340,12 +340,8 @@ public class ShootingSuperstructure extends SubsystemBase {
         DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
         DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
         DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
-        DogLog.log("ShootingSuperstructure/Shot_Sensor_Detected", shotDetected);
 
-        DogLog.log("ShootingSuperstructure/RPMOffset", manualRPMOffset);
-                
         DogLog.log("ShootingSuperstructure/state", state.name());
-        DogLog.log("ShootingSuperstructure/passing_target", passingTarget.name());
-        DogLog.log("ShootingSuperstructure/aiming_target", aimingTarget);
+        DogLog.log("ShootingSuperstructure/RPM_Offset", manualRPMOffset);
     }
 }

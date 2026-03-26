@@ -125,9 +125,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command shoot() {
-        return shooter.shoot()
-            .beforeStarting(() -> currentDrivingMode = DrivingMode.PRECISION)
-            .finallyDo(() -> currentDrivingMode = DrivingMode.NORMAL);
+        return shooter.shoot();
     }
 
     public void resetAfterAuto() {

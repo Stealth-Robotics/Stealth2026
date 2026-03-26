@@ -11,7 +11,6 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
-import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -83,9 +82,7 @@ public class TurretSubsystem extends SubsystemBase {
         turretEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = TURRET_ENCODER_DISCONTINUTY_POINT;
 
         turretMotor.getConfigurator().apply(turretConfig);
-        turretEncoder.getConfigurator().apply(turretEncoderConfig);
-        
-        DogLog.log("Turret/turret_stator_current_limit", TURRET_STATOR_LIMIT);
+        turretEncoder.getConfigurator().apply(turretEncoderConfig);        
     }
 
     public void homeTurret() {
@@ -122,9 +119,10 @@ public class TurretSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         var turretAngle = getTurretAngleDegrees();
+        
         DogLogUtil.logDouble("Turret/turret_degrees", turretAngle);
-        DogLogUtil.logDouble("Turret/turret_target_degrees", getTargetAngleDegrees());
         DogLogUtil.logDouble("Turret/turret_error_degrees", turretAngle - getTargetAngleDegrees());
+
         logMotorData();
     }
 
