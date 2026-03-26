@@ -5,6 +5,7 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -72,6 +73,14 @@ public class RobotSystem extends SubsystemBase {
     private final SlewRateLimiter precisionYLimiter = new SlewRateLimiter(2.0);
     private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(5.0);
 
+    private volatile LimelightHelpers.PoseEstimate frontPoseEstimate;
+    private volatile LimelightHelpers.PoseEstimate rightPoseEstimate;
+    private volatile LimelightHelpers.LimelightResults frontLLResults;
+    private volatile LimelightHelpers.LimelightResults rightLLResults;
+    private volatile double lastImuAngleDegrees = 0.0;
+    private final Notifier limelightNotifier;
+
+
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
@@ -90,6 +99,19 @@ public class RobotSystem extends SubsystemBase {
         );
 
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
+
+        // Move the network calls off from periodic
+        limelightNotifier = new Notifier(() -> {
+            // don't make drive.* calls in non periodic thread as it can cause issues.
+            LimelightHelpers.SetRobotOrientation(FRONT_LL, lastImuAngleDegrees, 0, 0, 0, 0, 0);
+            LimelightHelpers.SetRobotOrientation(RIGHT_LL, lastImuAngleDegrees, 0, 0, 0, 0, 0);
+            frontPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(FRONT_LL);
+            rightPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(RIGHT_LL);
+            frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
+            rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
+        });
+
+        limelightNotifier.startPeriodic(0.02);
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
@@ -223,17 +245,10 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateOdometry() {
-        double imuAngle = drive.getPose().getRotation().getDegrees();
-
-        LimelightHelpers.SetRobotOrientation(FRONT_LL, imuAngle, 0, 0, 0, 0, 0);
-        LimelightHelpers.SetRobotOrientation(RIGHT_LL, imuAngle, 0, 0, 0, 0, 0);
 
         double robotAngularVelocity = drive.getFieldRelativeVelocity().omegaRadiansPerSecond;
 
         if (Math.abs(robotAngularVelocity) < Math.PI) {
-            var frontPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(FRONT_LL);
-            var rightPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(RIGHT_LL);
-
             if (isGoodPoseEstimate(frontPoseEstimate))
                 drive.addVisionMeasurement(frontPoseEstimate.pose, frontPoseEstimate.timestampSeconds, VecBuilder.fill(.7, .7, 99999));
             else if (isGoodPoseEstimate(rightPoseEstimate))
@@ -255,7 +270,9 @@ public class RobotSystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        ZoneManager.updateRobotPose(drive.getPose());
+        var drivePose = drive.getPose();
+        lastImuAngleDegrees = drivePose.getRotation().getDegrees();
+        ZoneManager.updateRobotPose(drivePose);
 
         updateShootingState();
 
@@ -263,7 +280,7 @@ public class RobotSystem extends SubsystemBase {
         updateOdometry();
 
         //Update the field telemetry's robot pose
-        fieldTelemetry.setRobotPose(drive.getPose());
+        fieldTelemetry.setRobotPose(drivePose);
 
         //Update LED state
         if (ShiftTracker.hubIsActive())
@@ -271,15 +288,20 @@ public class RobotSystem extends SubsystemBase {
         else 
             led.changeDisplayMode(DisplayMode.HUB_INACTIVE);
 
+        // Throttle logging of this data. Note that swerve updates these values to calling refresh false is correct.
+        long nowMs = System.currentTimeMillis();
+        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+            logDriveStats();
+            logStats();
+            lastStatusRefreshMs = nowMs;
+        }
+    }
+
+    private void logStats() {
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLog.log("Driving Mode", currentDrivingMode.name());
 
-        logDriveStats();
-
         //Log the megatag 1 poses of our limelights
-        LimelightHelpers.LimelightResults frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
-        LimelightHelpers.LimelightResults rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
-
         if (frontLLResults != null) {
             var m1Pose = frontLLResults.getBotPose3d_wpiBlue();
             if (m1Pose != null) {
@@ -293,28 +315,23 @@ public class RobotSystem extends SubsystemBase {
                 DogLog.log(RIGHT_LL + "/wpiBlue_Pose3d", m1Pose);
             }
         }
+
     }
 
     private void logDriveStats() {
-        // Throttle logging of this data. Note that swerve updates these values to calling refresh false is correct.
-        long nowMs = System.currentTimeMillis();
-        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
-            DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
-            DogLog.log("Drive/ModuleStates", drive.getModuleStates());
-            DogLog.log("Drive/Rotation", drive.getPose().getRotation());
+        DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
+        DogLog.log("Drive/ModuleStates", drive.getModuleStates());
+        DogLog.log("Drive/Rotation", drive.getPose().getRotation());
 
-            for (var module : drive.getModules()) {
-                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
-                    module.getDriveMotor().getSupplyCurrent(false).getValueAsDouble());
-                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
-                    module.getSteerMotor().getSupplyCurrent(false).getValueAsDouble());
-                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
-                    module.getDriveMotor().getDeviceTemp(false).getValueAsDouble());
-                DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
-                    module.getSteerMotor().getDeviceTemp(false).getValueAsDouble());
-            }
-
-            lastStatusRefreshMs = nowMs;
-        }        
+        for (var module : drive.getModules()) {
+            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
+                module.getDriveMotor().getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
+                module.getSteerMotor().getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
+                module.getDriveMotor().getDeviceTemp(false).getValueAsDouble());
+            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
+                module.getSteerMotor().getDeviceTemp(false).getValueAsDouble());
+        }     
     }
 }
