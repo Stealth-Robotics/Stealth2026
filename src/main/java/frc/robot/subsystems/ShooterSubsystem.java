@@ -48,7 +48,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 100;
     private final double MAX_POSSIBLE_RPM = 5000;
 
-    private final double MAX_HOOD_DEGREES = 34.35;
+    private final double MAX_HOOD_DEGREES = 34.25;
     private final double MIN_HOOD_DEGREES = 12.5;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 0.9736842105;
@@ -61,7 +61,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTING_kS = 0.25233;
 
     private final double HOOD_kP = 120.0;
-    private final double HOOD_kI = 10.0;
+    private final double HOOD_kI = 150.0;
     private final double HOOD_kD = 0.0;
 
     private final int SHOOTER_MOTOR_1_ID = 2;
@@ -71,7 +71,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final int HOOD_ENCODER_ID = 9;
 
     private final int SHOOTER_STATOR_LIMIT = 60;
-    private final int HOOD_STATOR_LIMIT = 20;
+    private final int HOOD_STATOR_LIMIT = 30;
 
     private boolean disableHood = false;
     private double requestedHoodDegrees = 0;

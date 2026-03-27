@@ -149,7 +149,7 @@ public class RobotSystem extends SubsystemBase {
                     logVisibleTags(FRONT_LL, frontLLResults);
                     logVisibleTags(RIGHT_LL, rightLLResults);
             });
-            tagLoggingNotifier.startPeriodic(DogLogUtil.LIMELIGHT_LOGGING_INTERVAL);
+            tagLoggingNotifier.startPeriodic(0.05);
         } else {
             tagLoggingNotifier = null;
         }
@@ -387,8 +387,9 @@ public class RobotSystem extends SubsystemBase {
             tagFieldLayout.getTagPose((int) tag.fiducialID).ifPresent(visibleTags::add);
         }
 
-        if (!visibleTags.isEmpty())
+        if (!visibleTags.isEmpty()) {
             DogLog.log(limelightName + "/VisibleTagPoses", visibleTags.toArray(new Pose3d[0]));
+        }
     }
 
     private void logStats() {
