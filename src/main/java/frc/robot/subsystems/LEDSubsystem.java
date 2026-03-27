@@ -1,5 +1,8 @@
 package frc.robot.subsystems;
 
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.configs.CANdleConfiguration;
 import com.ctre.phoenix6.controls.RainbowAnimation;
 import com.ctre.phoenix6.controls.SolidColor;
@@ -8,6 +11,8 @@ import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.LossOfSignalBehaviorValue;
 import com.ctre.phoenix6.signals.RGBWColor;
 import com.ctre.phoenix6.signals.StripTypeValue;
+
+import dev.doglog.DogLog;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
@@ -15,7 +20,11 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 public class LEDSubsystem extends SubsystemBase {
+    private final BooleanSupplier hubActive;
+
     private DisplayMode currentDisplayMode = DisplayMode.DISABLED;
+
+    private boolean isDisabled = false;
 
     private final CANdle candle;
     private final CANdleConfiguration candleConfig;
@@ -29,7 +38,8 @@ public class LEDSubsystem extends SubsystemBase {
     private final SolidColor hubInactiveAnimation = new SolidColor(8, 18)
         .withColor(redColor);
 
-    private final StrobeAnimation blinkAnimation = new StrobeAnimation(8, 18);
+    private final StrobeAnimation blinkAnimation = new StrobeAnimation(8, 18)
+        .withFrameRate(10);
 
     private final RainbowAnimation disabledAnimation = new RainbowAnimation(8, 18);
 
@@ -43,7 +53,9 @@ public class LEDSubsystem extends SubsystemBase {
 
     private final int CANDLE_ID = 34;
 
-    public LEDSubsystem() {
+    public LEDSubsystem(BooleanSupplier hubActive) {
+        this.hubActive = hubActive;
+
         candle = new CANdle(CANDLE_ID);
         candleConfig = new CANdleConfiguration();
         
@@ -54,8 +66,9 @@ public class LEDSubsystem extends SubsystemBase {
         candle.getConfigurator().apply(candleConfig);
     }
 
-    public void changeDisplayMode(DisplayMode mode) {
-        currentDisplayMode = mode;
+    public void setIsDisabled(boolean value) {
+        isDisabled = value;
+        candle.clearAllAnimations();
     }
 
     public boolean isBlinking() {
@@ -65,8 +78,9 @@ public class LEDSubsystem extends SubsystemBase {
     public Command blink() {
         Command blinkCommand = new SequentialCommandGroup(
             new InstantCommand(() -> {
+                candle.clearAllAnimations();
                 candle.setControl(blinkAnimation.withColor(
-                    (currentDisplayMode.equals(DisplayMode.HUB_ACTIVE) ? greenColor : redColor)
+                    hubActive.getAsBoolean() ? greenColor : redColor
                 ));
             }, this),
             new WaitCommand(5) //Blink for this many seconds
@@ -80,14 +94,19 @@ public class LEDSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (!blinking) {
-            candle.setControl(
-                switch(currentDisplayMode) {
-                    case HUB_ACTIVE -> hubActiveAnimation;
-                    case HUB_INACTIVE -> hubInactiveAnimation;
-                    default -> disabledAnimation;
-                }
-            );
+        if (isDisabled)
+            candle.setControl(disabledAnimation);
+        else if (!blinking) {
+            boolean isHubActive = hubActive.getAsBoolean();
+
+            candle.clearAllAnimations();
+
+            if (isHubActive)
+                candle.setControl(hubActiveAnimation);
+            else candle.setControl(hubInactiveAnimation);
         }
+
+        DogLog.log("disabled", isDisabled);
+        DogLog.log("ledstate", currentDisplayMode.name());
     }
 }

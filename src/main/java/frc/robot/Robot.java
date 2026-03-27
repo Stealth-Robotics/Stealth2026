@@ -43,13 +43,13 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledInit() {
-        m_robotContainer.disabledLeds();
+        m_robotContainer.toggleDisabledLeds(true);
 
         LimelightHelpers.SetThrottle(FRONT_LL, LIMELIGHT_DISABLED_THROTTLE);
         LimelightHelpers.SetThrottle(RIGHT_LL, LIMELIGHT_DISABLED_THROTTLE);
 
-        LimelightHelpers.SetIMUMode(FRONT_LL, 1);
-        LimelightHelpers.SetIMUMode(RIGHT_LL, 1);
+        LimelightHelpers.SetIMUMode(FRONT_LL, 0);
+        LimelightHelpers.SetIMUMode(RIGHT_LL, 0);
     }
 
     @Override
@@ -58,13 +58,14 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledExit() {
+        m_robotContainer.toggleDisabledLeds(false);
         m_robotContainer.resetFuelCounter();
 
         LimelightHelpers.SetThrottle(FRONT_LL, 0);
         LimelightHelpers.SetThrottle(RIGHT_LL, 0);
 
-        LimelightHelpers.SetIMUMode(FRONT_LL, 4);
-        LimelightHelpers.SetIMUMode(RIGHT_LL, 4);
+        // LimelightHelpers.SetIMUMode(FRONT_LL, 4);
+        // LimelightHelpers.SetIMUMode(RIGHT_LL, 4);
 
         //Reset the ShotCalculator's velocity filters 
         ShotCalculator.resetFilters();

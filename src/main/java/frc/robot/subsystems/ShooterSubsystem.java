@@ -53,12 +53,12 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 0.9736842105;
 
-    private final double SHOOTING_kP = 1.0;
-    private final double SHOOTING_kI = 1.0;
+    private final double SHOOTING_kP = 0.18915;
+    private final double SHOOTING_kI = 0.0; //1.0
     private final double SHOOTING_kD = 0.0;
-    private final double SHOOTING_kA = 0.0072909;
-    private final double SHOOTING_kV = 0.18437;
-    private final double SHOOTING_kS = 0.25233;
+    private final double SHOOTING_kA = 0.0092771;
+    private final double SHOOTING_kV = 0.12465;
+    private final double SHOOTING_kS = 0.32917;
 
     private final double HOOD_kP = 100.0;
     private final double HOOD_kI = 100.0;

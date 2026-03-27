@@ -22,16 +22,14 @@ public class TransferSubsystem extends SubsystemBase {
     private final VoltageOut feederController = new VoltageOut(0)
         .withEnableFOC(true);
 
-    private final CoastOut coast = new CoastOut();
-
-    private final double SPINNING_VOLTAGE = 8; //TODO: Possibly slow down to improve feed rate
-    private final double FEEDING_VOLTAGE = 12;
+    private final double SPINNING_VOLTAGE = 8;
+    private final double FEEDING_VOLTAGE = 10;
 
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
-    private final int SPINDEXER_STATOR_LIMIT = 60;
-    private final int FEEDER_STATOR_LIMIT = 60;
+    private final int SPINDEXER_STATOR_LIMIT = 65;
+    private final int FEEDER_STATOR_LIMIT = 65;
     
     private long lastMs = 0;
 

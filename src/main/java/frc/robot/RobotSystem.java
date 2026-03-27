@@ -13,6 +13,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
@@ -52,7 +53,7 @@ public class RobotSystem extends SubsystemBase {
     
     private final Field2d fieldTelemetry = new Field2d();
 
-    private final boolean LOG_LIMELIGHTS = false;
+    private final boolean LOG_LIMELIGHTS = true;
     private final boolean LOG_SWERVE_DRIVE = true;
     private final boolean LOG_PDH = true;
 
@@ -70,7 +71,7 @@ public class RobotSystem extends SubsystemBase {
 
     public enum DrivingMode {
         NORMAL(1.0),
-        PRECISION(0.75);
+        PRECISION(0.4);
 
         /**
          * Allows us to slow down when performing certain actions like shooting or climbing
@@ -114,7 +115,7 @@ public class RobotSystem extends SubsystemBase {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
         shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
-        led = new LEDSubsystem();
+        led = new LEDSubsystem(() -> ShiftTracker.hubIsActive());
 
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
@@ -137,7 +138,7 @@ public class RobotSystem extends SubsystemBase {
             frontPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(FRONT_LL);
             rightPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(RIGHT_LL);
         });
-        limelightNotifier.startPeriodic(0.02);
+        limelightNotifier.startPeriodic(0.01);
 
         if (LOG_LIMELIGHTS) {
             tagLoggingNotifier = new Notifier(() -> {
@@ -318,8 +319,8 @@ public class RobotSystem extends SubsystemBase {
             poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS;
     }
 
-    public void setLEDMode(DisplayMode ledDisplayMode) {
-        led.changeDisplayMode(ledDisplayMode);
+    public void toggleDisabledLeds(boolean disable) {
+        led.setIsDisabled(disable);
     }
 
     public void resetFuelShotCount() {
@@ -329,7 +330,9 @@ public class RobotSystem extends SubsystemBase {
     @Override
     public void periodic() {
         var drivePose = drive.getPose();
+
         lastImuAngleDegrees = drivePose.getRotation().getDegrees();
+        
         ZoneManager.updateRobotPose(drivePose);
 
         updateShootingState();
@@ -339,12 +342,6 @@ public class RobotSystem extends SubsystemBase {
 
         //Update the field telemetry's robot pose
         fieldTelemetry.setRobotPose(drivePose);
-
-        //Update LED state
-        if (!led.isBlinking()) {
-            if (ShiftTracker.hubIsActive()) led.changeDisplayMode(DisplayMode.HUB_ACTIVE);
-            else led.changeDisplayMode(DisplayMode.HUB_INACTIVE);
-        }
 
         DogLog.log("Current Zone", ZoneManager.getZone().name());
         DogLog.log("Driving Mode", currentDrivingMode.name());

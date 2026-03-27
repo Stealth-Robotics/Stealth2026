@@ -97,8 +97,10 @@ public class RobotContainer {
         
         operatorController.b().onTrue(robot.agitate());
 
-        operatorController.povUp().whileTrue(new RepeatCommand(new InstantCommand(() -> robot.changeRPMOffset(2))));
-        operatorController.povDown().whileTrue(new RepeatCommand(new InstantCommand(() -> robot.changeRPMOffset(-2))));
+        operatorController.povUp()
+            .whileTrue(new RepeatCommand(new InstantCommand(() -> robot.changeRPMOffset(2))));
+        operatorController.povDown()
+            .whileTrue(new RepeatCommand(new InstantCommand(() -> robot.changeRPMOffset(-2))));
     }
 
     /*
@@ -128,9 +130,8 @@ public class RobotContainer {
         DogLog.log("Alliance", AllianceUtility.getAlliance().name());
     }
 
-    // Sets default light state when disabled
-    public void disabledLeds() {
-        robot.setLEDMode(DisplayMode.DISABLED);
+    public void toggleDisabledLeds(boolean disable) {
+        robot.toggleDisabledLeds(disable);
     }
 
     public void resetFuelCounter() {
