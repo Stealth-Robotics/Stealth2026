@@ -7,12 +7,12 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
@@ -39,6 +39,7 @@ import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 import frc.robot.util.DogLogUtil;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
+import frc.robot.util.LimelightHelpers.LimelightResults;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
 import frc.robot.util.ZoneManager;
@@ -51,9 +52,8 @@ public class RobotSystem extends SubsystemBase {
     
     private final Field2d fieldTelemetry = new Field2d();
 
-    private final boolean LOG_LIMELIGHTS = true;
+    private final boolean LOG_LIMELIGHTS = false;
     private final boolean LOG_SWERVE_DRIVE = true;
-    private final boolean LOG_APRIL_TAG_POSE = true;
     private final boolean LOG_PDH = true;
 
     private final String FRONT_LL = "limelight-front";
@@ -67,9 +67,6 @@ public class RobotSystem extends SubsystemBase {
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
     private DrivingMode lastDrivingMode = DrivingMode.NORMAL;
-
-    //Throttle status refreshes to reduce CAN bus usage
-    private long lastStatusRefreshMs = 0;
 
     public enum DrivingMode {
         NORMAL(1.0),
@@ -91,25 +88,27 @@ public class RobotSystem extends SubsystemBase {
 
     private double filteredX, filteredY, filteredTheta, lastFilteredX, lastFilteredY, lastFilteredTheta;
 
-    private final SlewRateLimiter normalXLimiter = new SlewRateLimiter(5.0);
-    private final SlewRateLimiter normalYLimiter = new SlewRateLimiter(5.0);
+    private final SlewRateLimiter normalXLimiter = new SlewRateLimiter(5.0), normalYLimiter = new SlewRateLimiter(5.0);
     private final SlewRateLimiter normalThetaLimiter = new SlewRateLimiter(10.0);
 
-    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(2.0);
-    private final SlewRateLimiter precisionYLimiter = new SlewRateLimiter(2.0);
+    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(2.0), precisionYLimiter = new SlewRateLimiter(2.0);
     private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(5.0);
+
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
-    private volatile LimelightHelpers.PoseEstimate frontPoseEstimate;
-    private volatile LimelightHelpers.PoseEstimate rightPoseEstimate;
-    private volatile LimelightHelpers.LimelightResults frontLLResults;
-    private volatile LimelightHelpers.LimelightResults rightLLResults;
+    private volatile PoseEstimate frontPoseEstimate;
+    private volatile PoseEstimate rightPoseEstimate;
+    private volatile LimelightResults frontLLResults;
+    private volatile LimelightResults rightLLResults;
+
     private final PowerDistribution pdh = new PowerDistribution(63, ModuleType.kRev);
+
     private volatile double lastImuAngleDegrees = 0.0;
     private final Notifier limelightNotifier;
     private final Notifier tagLoggingNotifier;
-    private final Notifier slowNotifier;
+    private final Notifier pdhNotifier;
 
+    private long lastMs = 0;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -131,35 +130,32 @@ public class RobotSystem extends SubsystemBase {
 
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
 
-        // Move the network calls off from periodic
         limelightNotifier = new Notifier(() -> {
-            // don't make drive.* calls in non periodic thread as it can cause issues.
             LimelightHelpers.SetRobotOrientation(FRONT_LL, lastImuAngleDegrees, 0, 0, 0, 0, 0);
             LimelightHelpers.SetRobotOrientation(RIGHT_LL, lastImuAngleDegrees, 0, 0, 0, 0, 0);
+
             frontPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(FRONT_LL);
             rightPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(RIGHT_LL);
-            frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
-            rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
         });
-
         limelightNotifier.startPeriodic(0.02);
 
-        if (LOG_APRIL_TAG_POSE) {
+        if (LOG_LIMELIGHTS) {
             tagLoggingNotifier = new Notifier(() -> {
-                    logVisibleTags(FRONT_LL, frontLLResults);
-                    logVisibleTags(RIGHT_LL, rightLLResults);
-            });
-            tagLoggingNotifier.startPeriodic(0.05);
-        } else {
-            tagLoggingNotifier = null;
-        }
+                frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
+                rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
 
-        slowNotifier = new Notifier(() -> {
+                logVisibleTags(FRONT_LL, frontLLResults);
+                logVisibleTags(RIGHT_LL, rightLLResults);
+            });
+            tagLoggingNotifier.startPeriodic(Units.millisecondsToSeconds(DogLogUtil.LIMELIGHT_LOGGING_INTERVAL));
+        }
+        else tagLoggingNotifier = null;
+
+        pdhNotifier = new Notifier(() -> {
                 logPdhStats();
             }
         );
-        slowNotifier.startPeriodic(0.5);
-
+        pdhNotifier.startPeriodic(0.5);
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
@@ -227,11 +223,6 @@ public class RobotSystem extends SubsystemBase {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
                 double xInput = x.getAsDouble(), yInput = y.getAsDouble(), thetaInput = theta.getAsDouble();
-
-                //Apply deadbands to reduce jitter around zero
-                xInput = MathUtil.applyDeadband(xInput, 0.05);
-                yInput = MathUtil.applyDeadband(yInput, 0.05);
-                thetaInput = MathUtil.applyDeadband(thetaInput, 0.05);
                 
                 //Square inputs for finer control around zero
                 xInput = Math.copySign(xInput * xInput, xInput);
@@ -303,7 +294,6 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateOdometry() {
-
         if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < MAX_VISION_ANGULAR_VELOCITY) {
             if (isGoodPoseEstimate(frontPoseEstimate)) {
                 drive.addVisionMeasurement(
@@ -356,24 +346,26 @@ public class RobotSystem extends SubsystemBase {
             else led.changeDisplayMode(DisplayMode.HUB_INACTIVE);
         }
 
-        // Throttle logging of this data. Note that swerve updates these values to calling refresh false is correct.
-        long nowMs = System.currentTimeMillis();
-        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
-            if (LOG_SWERVE_DRIVE) logDriveStats();
+        DogLog.log("Current Zone", ZoneManager.getZone().name());
+        DogLog.log("Driving Mode", currentDrivingMode.name());
+
+        long currentMs = System.currentTimeMillis();
+        if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+            if (LOG_SWERVE_DRIVE)
+                logDriveStats();
             logStats();
-            lastStatusRefreshMs = nowMs;
+            lastMs = currentMs;
         }
     }
 
     private void logPdhStats() {
-        if (!LOG_PDH) return;
-
-        DogLog.log("PDH/TotalCurrent", pdh.getTotalCurrent());
-        DogLog.log("PDH/Voltage", pdh.getVoltage());
-        DogLog.log("PDH/Temperature", pdh.getTemperature());
-        DogLog.log("PDH/Brownout", pdh.getFaults().Brownout);
-        DogLog.log("PDH/HardwareFault", pdh.getFaults().HardwareFault);
-
+        if (LOG_PDH) {
+            DogLog.log("PDH/TotalCurrent", pdh.getTotalCurrent());
+            DogLog.log("PDH/Voltage", pdh.getVoltage());
+            DogLog.log("PDH/Temperature", pdh.getTemperature());
+            DogLog.log("PDH/Brownout", pdh.getFaults().Brownout);
+            DogLog.log("PDH/HardwareFault", pdh.getFaults().HardwareFault);
+        }
     }
     
     private void logVisibleTags(String limelightName, LimelightHelpers.LimelightResults llResults) {
@@ -393,31 +385,27 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void logStats() {
-        DogLog.log("Current Zone", ZoneManager.getZone().name());
-        DogLog.log("Driving Mode", currentDrivingMode.name());
-        
         var canStatus = RobotController.getCANStatus();
         DogLog.log("CAN/Utilization", canStatus.percentBusUtilization * 100);
         DogLog.log("CAN/TxError", canStatus.txFullCount);
         DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
 
-        if (!LOG_LIMELIGHTS) return;
+        if (LOG_LIMELIGHTS) {
+            //Log the megatag 1 poses of our limelights
+            if (frontLLResults != null) {
+                var m1Pose = frontLLResults.getBotPose3d_wpiBlue();
+                if (m1Pose != null) {
+                    DogLog.log(FRONT_LL + "/wpiBlue_Pose3d", m1Pose);
+                }
+            }
 
-        //Log the megatag 1 poses of our limelights
-        if (frontLLResults != null) {
-            var m1Pose = frontLLResults.getBotPose3d_wpiBlue();
-            if (m1Pose != null) {
-                DogLog.log(FRONT_LL + "/wpiBlue_Pose3d", m1Pose);
+            if (rightLLResults != null) {
+                var m1Pose = rightLLResults.getBotPose3d_wpiBlue();
+                if (m1Pose != null) {
+                    DogLog.log(RIGHT_LL + "/wpiBlue_Pose3d", m1Pose);
+                }
             }
         }
-
-        if (rightLLResults != null) {
-            var m1Pose = rightLLResults.getBotPose3d_wpiBlue();
-            if (m1Pose != null) {
-                DogLog.log(RIGHT_LL + "/wpiBlue_Pose3d", m1Pose);
-            }
-        }
-
     }
 
     private void logDriveStats() {

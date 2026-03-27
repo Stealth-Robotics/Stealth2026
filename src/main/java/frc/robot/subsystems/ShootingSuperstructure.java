@@ -29,9 +29,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private boolean applyIdle = true;
 
-    private int manualRPMOffset = 0;
-
-    private double turretTargetDegrees = 0;
+    private int RPMOffset = 0;
 
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
@@ -65,9 +63,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
     private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 6;
-
-    //The target pose that we are currently aiming at
-    private Translation3d aimingTarget = Translation3d.kZero;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
 
@@ -115,14 +110,11 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         shotSensor.getConfigurator().apply(shotSensorConfig);
 
-        shotSensor.getIsDetected().setUpdateFrequency(100, 0.005); 
-
-        //Reset the ShotCalculator's velocity filters 
-        ShotCalculator.resetFilters();
+        shotSensor.getIsDetected().setUpdateFrequency(100, 0.005);
     }
 
     public void changeRPMOffset(int delta) {
-        manualRPMOffset += delta;
+        RPMOffset += delta;
     }
 
     public void setState(ShooterState state) {
@@ -141,7 +133,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public Command shoot() {
         return run(() -> {
-            shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM() + manualRPMOffset);
+            shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM() + RPMOffset);
 
             if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity()) {
                 alreadySpinningAtTarget = true;
@@ -217,11 +209,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
 
         turret.setTargetDegrees(turretTargetRot.getDegrees());
-        turretTargetDegrees = turretTargetRot.getDegrees();
-
-        turretLockError = calculateTurretLockError(0);
-
-        aimingTarget = params.target();
     }
 
     /**
@@ -265,18 +252,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
 
         turret.setTargetDegrees(turretTargetRot.getDegrees());
-        turretTargetDegrees = turretTargetRot.getDegrees();
-
-        turretLockError = calculateTurretLockError(0);
-
-        aimingTarget = params.target();
-    }
-
-    public double calculateTurretLockError(double offset) {
-        double target = turretTargetDegrees + offset;
-        return (target > turret.MAX_TURRET_DEGREES) ?
-            turret.MAX_TURRET_DEGREES - target :
-            (target < turret.MIN_TURRET_DEGREES) ? turret.MIN_TURRET_DEGREES - target : 0;
     }
 
     /**
@@ -341,6 +316,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
 
         DogLog.log("ShootingSuperstructure/state", state.name());
-        DogLog.log("ShootingSuperstructure/RPM_Offset", manualRPMOffset);
+        DogLog.log("ShootingSuperstructure/RPM_Offset", RPMOffset);
     }
 }

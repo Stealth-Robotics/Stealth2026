@@ -7,8 +7,6 @@ import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.PowerDistribution;
-import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -39,16 +37,12 @@ public class RobotContainer {
     private boolean deployOverRetract = true;
     
     public RobotContainer() {
-        DogLog.setEnabled(true);
-
         DogLog.setOptions(new DogLogOptions()
             .withCaptureDs(true)
             .withLogExtras(false)
             .withCaptureConsole(true)
-            .withLogEntryQueueCapacity(1500) //Raise the maximum number of logs that can be queued
+            .withLogEntryQueueCapacity(1000) //Raise the maximum number of logs that can be queued
         );
-
-        //DogLog.setPdh(new PowerDistribution(63, ModuleType.kRev));
 
         robot = new RobotSystem(driverController, operatorController);
 

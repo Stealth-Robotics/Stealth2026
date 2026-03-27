@@ -8,8 +8,6 @@ import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.LossOfSignalBehaviorValue;
 import com.ctre.phoenix6.signals.RGBWColor;
 import com.ctre.phoenix6.signals.StripTypeValue;
-
-import dev.doglog.DogLog;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
@@ -57,7 +55,7 @@ public class LEDSubsystem extends SubsystemBase {
     }
 
     public void changeDisplayMode(DisplayMode mode) {
-        // currentDisplayMode = mode;
+        currentDisplayMode = mode;
     }
 
     public boolean isBlinking() {
@@ -91,7 +89,5 @@ public class LEDSubsystem extends SubsystemBase {
                 }
             );
         }
-
-        DogLog.log("LEDS/display_mode", currentDisplayMode.name());
     }
 }

@@ -52,7 +52,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final int TURRET_STATOR_LIMIT = 40;
     
-    private long lastStatusRefreshMs = 0;
+    private long lastMs = 0;
 
     public TurretSubsystem() {
         turretMotor = new TalonFX(TURRET_MOTOR_ID);
@@ -127,9 +127,8 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     private void logMotorData() {
-        // Throttle status refreshes and only log currents/temps when we've refreshed the cached values.
-        long nowMs = System.currentTimeMillis();
-        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+        long currentMs = System.currentTimeMillis();
+        if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
             BaseStatusSignal.refreshAll(
                 turretMotor.getSupplyCurrent(), turretMotor.getStatorCurrent(), turretMotor.getDeviceTemp()
             );
@@ -137,7 +136,7 @@ public class TurretSubsystem extends SubsystemBase {
             DogLogUtil.logDouble("Turret/turret_supply_current", turretMotor.getSupplyCurrent().getValueAsDouble());
             DogLogUtil.logDouble("Turret/turret_stator_current", turretMotor.getStatorCurrent().getValueAsDouble());
             DogLogUtil.logDouble("Turret/turret_device_temp", turretMotor.getDeviceTemp().getValueAsDouble());
-            lastStatusRefreshMs = nowMs;
+            lastMs = currentMs;
         }
     }
 }

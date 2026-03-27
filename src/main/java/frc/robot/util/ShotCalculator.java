@@ -1,6 +1,5 @@
 package frc.robot.util;
 
-import dev.doglog.DogLog;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -101,14 +100,20 @@ public class ShotCalculator {
          *  and return to goal height, under vacuum conditions
         */
         double t = 
-            Math.sqrt(2.0 * (targetHeight - fuelExitPose.getZ()) / GRAVITATIONAL_CONSTANT) + 
+            Math.sqrt(2.0 * (targetHeight - fuelExitPose.getZ()) / GRAVITATIONAL_CONSTANT) +
             Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
 
         double fuelZVelo = (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0;
 
+        // Translation3d movingShotVelocity = new Translation3d(
+        //     (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond,
+        //     (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond,
+        //     fuelZVelo
+        // );
+
         Translation3d movingShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t - robotVelocity.vxMetersPerSecond,
-            (targetPose.getY() - fuelExitPose.getY()) / t - robotVelocity.vyMetersPerSecond,
+            (targetPose.getX() - fuelExitPose.getX()) / t - filteredVx,
+            (targetPose.getY() - fuelExitPose.getY()) / t - filteredVy,
             fuelZVelo
         );
 
@@ -119,7 +124,6 @@ public class ShotCalculator {
         );
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
-        // DogLog.log("metersToGoal", metersToGoal);
 
         double baseRPM = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToRPM.get(metersToGoal);
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();

@@ -24,7 +24,7 @@ public class TransferSubsystem extends SubsystemBase {
 
     private final CoastOut coast = new CoastOut();
 
-    private final double SPINNING_VOLTAGE = 12; //TODO: Possibly slow down to improve feed rate
+    private final double SPINNING_VOLTAGE = 8; //TODO: Possibly slow down to improve feed rate
     private final double FEEDING_VOLTAGE = 12;
 
     private final int SPINDEXER_MOTOR_ID = 5;
@@ -33,7 +33,7 @@ public class TransferSubsystem extends SubsystemBase {
     private final int SPINDEXER_STATOR_LIMIT = 60;
     private final int FEEDER_STATOR_LIMIT = 60;
     
-    private long lastStatusRefreshMs = 0;
+    private long lastMs = 0;
 
     public TransferSubsystem() {
         spindexerMotor = new TalonFX(SPINDEXER_MOTOR_ID);
@@ -53,9 +53,6 @@ public class TransferSubsystem extends SubsystemBase {
 
         spindexerMotor.getConfigurator().apply(spindexerConfig);
         feederMotor.getConfigurator().apply(feederConfig);
-
-        spindexerMotor.setControl(coast);
-        feederMotor.setControl(coast);
     }
 
     public void spin() {
@@ -84,15 +81,14 @@ public class TransferSubsystem extends SubsystemBase {
     }
 
     private void logMotorData() {
-        // Throttle status refreshes and only log currents/temps when we've refreshed the cached values.
-        long nowMs = System.currentTimeMillis();
-        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+        long currentMs = System.currentTimeMillis();
+        if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
             BaseStatusSignal.refreshAll(
                 spindexerMotor.getSupplyCurrent(), spindexerMotor.getStatorCurrent(), spindexerMotor.getDeviceTemp(),
                 feederMotor.getSupplyCurrent(), feederMotor.getStatorCurrent(), feederMotor.getDeviceTemp()
             );
 
-            lastStatusRefreshMs = nowMs;
+            lastMs = currentMs;
 
             DogLogUtil.logDouble("Transfer/spindexer_current", spindexerMotor.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Transfer/spindexer_stator_current", spindexerMotor.getStatorCurrent(false).getValueAsDouble());

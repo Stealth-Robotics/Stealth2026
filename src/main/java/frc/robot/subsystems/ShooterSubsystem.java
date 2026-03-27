@@ -60,8 +60,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTING_kV = 0.18437;
     private final double SHOOTING_kS = 0.25233;
 
-    private final double HOOD_kP = 120.0;
-    private final double HOOD_kI = 150.0;
+    private final double HOOD_kP = 100.0;
+    private final double HOOD_kI = 100.0;
     private final double HOOD_kD = 0.0;
 
     private final int SHOOTER_MOTOR_1_ID = 2;
@@ -79,8 +79,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final Notification hoodLimitExceededError = 
         new Notification(Elastic.NotificationLevel.ERROR, "Robot Error", "Hood has exceeded its limits. Switching to neutral mode.");
     
-    // Logging signals for throttled logging
-    private long lastStatusRefreshMs = 0;
+    private long lastMs = 0;
 
     public ShooterSubsystem() {
         shooterMotor1 = new TalonFX(SHOOTER_MOTOR_1_ID);
@@ -213,16 +212,17 @@ public class ShooterSubsystem extends SubsystemBase {
         DogLog.log("Shooter/shooter_rpm", (int) getRPM(false));
         DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
         DogLog.log("Shooter/shooter_error_rpm", (int) (getRPM(false) - getTargetRPM()));
+        
         DogLogUtil.logDouble("Shooter/hood_angle", hoodDegrees);
         DogLogUtil.logDouble("Shooter/hood_target_angle", requestedHoodDegrees);
         DogLogUtil.logDouble("Shooter/hood_error_angle", hoodDegrees - requestedHoodDegrees);
+
         logMotorData();
     }
 
     private void logMotorData() {
-        // Throttle status refreshes and only log chaced values
-        var nowMs = System.currentTimeMillis();
-        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+        var currentMs = System.currentTimeMillis();
+        if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
             BaseStatusSignal.refreshAll(
                 shooterMotor1.getSupplyCurrent(), shooterMotor1.getStatorCurrent(), shooterMotor1.getDeviceTemp(),
                 shooterMotor2.getSupplyCurrent(), shooterMotor2.getStatorCurrent(), shooterMotor2.getDeviceTemp(),
@@ -231,16 +231,17 @@ public class ShooterSubsystem extends SubsystemBase {
 
             DogLogUtil.logDouble("Shooter/shooter1_current", shooterMotor1.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/shooter1_stator_current", shooterMotor1.getStatorCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Shooter/shooter1_temperature_C", shooterMotor1.getDeviceTemp(false).getValueAsDouble());
+
             DogLogUtil.logDouble("Shooter/shooter2_current", shooterMotor2.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/shooter2_stator_current", shooterMotor2.getStatorCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Shooter/shooter1_temperature_C", shooterMotor1.getDeviceTemp(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/shooter2_temperature_C", shooterMotor2.getDeviceTemp(false).getValueAsDouble());
 
             DogLogUtil.logDouble("Shooter/hood_current", hoodMotor.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/hood_stator_current", hoodMotor.getStatorCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Shooter/hood_temperature_C", hoodMotor.getDeviceTemp(false).getValueAsDouble());
             
-            lastStatusRefreshMs = nowMs;
+            lastMs = currentMs;
         }
     }
 }

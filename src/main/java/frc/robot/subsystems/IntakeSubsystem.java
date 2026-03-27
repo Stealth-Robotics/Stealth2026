@@ -36,7 +36,6 @@ public class IntakeSubsystem extends SubsystemBase {
     private final TalonFXConfiguration rollerConfig = new TalonFXConfiguration();
     private final TalonFXConfiguration deployConfig = new TalonFXConfiguration();
 
-
     private final MotionMagicVoltage deployController = new MotionMagicVoltage(0);
     private final VoltageOut rollerController = new VoltageOut(0);
 
@@ -79,8 +78,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private boolean isIntaking = false;
 
-    // Throttle refreshes to 10 Hz
-    private long lastStatusRefreshMs = 0;
+    private long lastMs = 0;
  
     public IntakeSubsystem() {
         rollerMotorLeft = new TalonFX(ROLLER_MOTOR_LEFT_ID);
@@ -211,27 +209,25 @@ public class IntakeSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.log("Intake/roller_speed", rollerMotorLeft.get());
         DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
 
         logMotorData();
     }
 
     private void logMotorData() {
-        // Throttle status refreshes and only log currents/temps when we've refreshed the cached values.
-        long nowMs = System.currentTimeMillis();
-        if (nowMs - lastStatusRefreshMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+        long currentMs = System.currentTimeMillis();
+
+        if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
             BaseStatusSignal.refreshAll(
                 rollerMotorLeft.getSupplyCurrent(), rollerMotorLeft.getStatorCurrent(), rollerMotorLeft.getDeviceTemp(),
                 deployMotor.getSupplyCurrent(), deployMotor.getStatorCurrent(), deployMotor.getDeviceTemp()
             );
 
-            lastStatusRefreshMs = nowMs;
+            lastMs = currentMs;
 
             DogLogUtil.logDouble("Intake/roller_current", rollerMotorLeft.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/roller_stator_current", rollerMotorLeft.getStatorCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/roller_temperature_C", rollerMotorLeft.getDeviceTemp(false).getValueAsDouble());
-            DogLogUtil.logDouble("Intake/roller_rpm", rollerMotorLeft.getVelocity().getValueAsDouble() * 60.0);
             DogLogUtil.logDouble("Intake/roller_supply_current", rollerMotorLeft.getSupplyCurrent(false).getValueAsDouble());
 
             DogLogUtil.logDouble("Intake/intake_current", deployMotor.getSupplyCurrent(false).getValueAsDouble());

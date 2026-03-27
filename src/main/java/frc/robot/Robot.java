@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
+import frc.robot.util.ShotCalculator;
 
 public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
@@ -64,6 +65,9 @@ public class Robot extends TimedRobot {
 
         LimelightHelpers.SetIMUMode(FRONT_LL, 4);
         LimelightHelpers.SetIMUMode(RIGHT_LL, 4);
+
+        //Reset the ShotCalculator's velocity filters 
+        ShotCalculator.resetFilters();
     }
 
     @Override
