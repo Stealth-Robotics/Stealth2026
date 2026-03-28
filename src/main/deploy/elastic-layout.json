@@ -9,9 +9,9 @@
         "containers": [
           {
             "title": "Match Phase",
-            "x": 256.0,
+            "x": 128.0,
             "y": 128.0,
-            "width": 256.0,
+            "width": 384.0,
             "height": 128.0,
             "type": "Large Text Display",
             "properties": {
@@ -23,7 +23,7 @@
           {
             "title": "turret_degrees",
             "x": 0.0,
-            "y": 256.0,
+            "y": 128.0,
             "width": 128.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -60,25 +60,8 @@
             }
           },
           {
-            "title": "Hub Scorable",
-            "x": 128.0,
-            "y": 0.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Boolean Box",
-            "properties": {
-              "topic": "/Robot/Hub Scorable",
-              "period": 0.06,
-              "data_type": "boolean",
-              "true_color": 4283215696,
-              "false_color": 4294198070,
-              "true_icon": "None",
-              "false_icon": "None"
-            }
-          },
-          {
             "title": "hood_degrees",
-            "x": 128.0,
+            "x": 0.0,
             "y": 256.0,
             "width": 128.0,
             "height": 128.0,
@@ -91,8 +74,8 @@
           },
           {
             "title": "shooter_rpm",
-            "x": 0.0,
-            "y": 128.0,
+            "x": 128.0,
+            "y": 0.0,
             "width": 128.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -105,7 +88,7 @@
           {
             "title": "ShootingState",
             "x": 256.0,
-            "y": 256.0,
+            "y": 512.0,
             "width": 256.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -138,8 +121,8 @@
           },
           {
             "title": "intake_rotations",
-            "x": 128.0,
-            "y": 128.0,
+            "x": 0.0,
+            "y": 384.0,
             "width": 128.0,
             "height": 128.0,
             "type": "Large Text Display",
@@ -150,36 +133,10 @@
             }
           },
           {
-            "title": "Zone",
-            "x": 0.0,
-            "y": 512.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/Robot/Current Zone",
-              "period": 0.06,
-              "data_type": "string"
-            }
-          },
-          {
-            "title": "Shoot Override",
-            "x": 0.0,
-            "y": 384.0,
-            "width": 256.0,
-            "height": 128.0,
-            "type": "Toggle Button",
-            "properties": {
-              "topic": "/SmartDashboard/Override ShiftTracker",
-              "period": 0.06,
-              "data_type": "boolean"
-            }
-          },
-          {
             "title": "Shift Time Left",
-            "x": 256.0,
-            "y": 384.0,
-            "width": 256.0,
+            "x": 128.0,
+            "y": 256.0,
+            "width": 384.0,
             "height": 256.0,
             "type": "Large Text Display",
             "properties": {
@@ -189,16 +146,85 @@
             }
           },
           {
-            "title": "passing_target",
-            "x": 512.0,
+            "title": "Auto Chooser",
+            "x": 0.0,
+            "y": 512.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "ComboBox Chooser",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Chooser",
+              "period": 0.06,
+              "sort_options": false
+            }
+          },
+          {
+            "title": "Shot_Total",
+            "x": 1024.0,
             "y": 384.0,
             "width": 256.0,
             "height": 256.0,
             "type": "Large Text Display",
             "properties": {
-              "topic": "/Robot/ShootingSuperstructure/passing_target",
+              "topic": "/Robot/ShootingSuperstructure/Shot_Total",
               "period": 0.06,
-              "data_type": "string"
+              "data_type": "int"
+            }
+          },
+          {
+            "title": "turret_error_degrees",
+            "x": 896.0,
+            "y": 384.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/Robot/Turret/turret_error_degrees",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "RPM_Offset",
+            "x": 512.0,
+            "y": 512.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/Robot/ShootingSuperstructure/RPM_Offset",
+              "period": 0.06,
+              "data_type": "int",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "shooter_target_rpm",
+            "x": 640.0,
+            "y": 512.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/Robot/Shooter/shooter_target_rpm",
+              "period": 0.06,
+              "data_type": "int",
+              "show_submit_button": true
+            }
+          },
+          {
+            "title": "roller_temperature_C",
+            "x": 512.0,
+            "y": 384.0,
+            "width": 128.0,
+            "height": 128.0,
+            "type": "Text Display",
+            "properties": {
+              "topic": "/Robot/Intake/roller_temperature_C",
+              "period": 0.06,
+              "data_type": "double",
+              "show_submit_button": true
             }
           }
         ]
