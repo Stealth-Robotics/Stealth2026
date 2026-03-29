@@ -3,6 +3,8 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import com.ctre.phoenix6.hardware.CANdle;
+
 import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
@@ -97,10 +99,15 @@ public class RobotContainer {
         
         operatorController.b().onTrue(robot.agitate());
 
+        //Force hood to go down
+        operatorController.a()
+            .onTrue(new InstantCommand(() -> robot.changeShootingState = false))
+            .onFalse(new InstantCommand(() -> robot.changeShootingState = true));
+
         operatorController.povUp()
-            .whileTrue(new RepeatCommand(new InstantCommand(() -> robot.changeRPMOffset(2))));
+            .whileTrue(new InstantCommand(() -> robot.changeRPMOffset(25)));
         operatorController.povDown()
-            .whileTrue(new RepeatCommand(new InstantCommand(() -> robot.changeRPMOffset(-2))));
+            .whileTrue(new InstantCommand(() -> robot.changeRPMOffset(-25)));
     }
 
     /*
@@ -116,6 +123,9 @@ public class RobotContainer {
 
         autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
         autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
+
+        autoChooser.addRoutine("LeftSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.RIGHT));
         
         //OG autos
         autoChooser.addRoutine("Right1CyclePlusOutpost", () -> autos.right1CyclePlusOutpost());
@@ -127,7 +137,7 @@ public class RobotContainer {
         AllianceUtility.update();
         ShiftTracker.update();
 
-        DogLog.log("Alliance", AllianceUtility.getAlliance().name());
+        DogLog.forceNt.log("Alliance", AllianceUtility.getAlliance().name());
     }
 
     public void toggleDisabledLeds(boolean disable) {

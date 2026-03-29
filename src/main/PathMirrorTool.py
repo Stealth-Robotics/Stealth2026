@@ -79,5 +79,7 @@ def main():
         with open(choreoDirectory + "/" + "mirrored_" + file[9:], 'w') as f:
             json.dump(traj, f, indent=4)
 
+        print("sucessfully mirrored " + file)
+
 if __name__ == '__main__':
     main()

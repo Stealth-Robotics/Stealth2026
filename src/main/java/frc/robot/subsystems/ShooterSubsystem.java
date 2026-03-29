@@ -39,7 +39,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.045;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.241;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1.0;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
@@ -48,8 +48,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 100;
     private final double MAX_POSSIBLE_RPM = 5000;
 
-    private final double MAX_HOOD_DEGREES = 34.25;
-    private final double MIN_HOOD_DEGREES = 12.5;
+    private final double MAX_HOOD_DEGREES = 33.5;
+    private final double MIN_HOOD_DEGREES = 12.6;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 0.9736842105;
 
@@ -60,8 +60,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTING_kV = 0.12465;
     private final double SHOOTING_kS = 0.32917;
 
-    private final double HOOD_kP = 100.0;
-    private final double HOOD_kI = 100.0;
+    private final double HOOD_kP = 150.0;
+    private final double HOOD_kI = 15.0;
     private final double HOOD_kD = 0.0;
 
     private final int SHOOTER_MOTOR_1_ID = 2;
@@ -209,11 +209,11 @@ public class ShooterSubsystem extends SubsystemBase {
             }
         }
 
-        DogLog.log("Shooter/shooter_rpm", (int) getRPM(false));
+        DogLog.forceNt.log("Shooter/shooter_rpm", (int) getRPM(false));
         DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
         DogLog.log("Shooter/shooter_error_rpm", (int) (getRPM(false) - getTargetRPM()));
         
-        DogLogUtil.logDouble("Shooter/hood_angle", hoodDegrees);
+        DogLogUtil.logDoubleForceNT("Shooter/hood_angle", hoodDegrees);
         DogLogUtil.logDouble("Shooter/hood_target_angle", requestedHoodDegrees);
         DogLogUtil.logDouble("Shooter/hood_error_angle", hoodDegrees - requestedHoodDegrees);
 

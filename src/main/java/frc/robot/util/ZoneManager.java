@@ -13,8 +13,8 @@ public class ZoneManager {
 
     private static final RectZone passing = new RectZone(5.2, 0, 16.5, 8.07);
 
-    private static final RectZone leftTrench = new RectZone(3.8, 6.87, 5.3, 8.07);
-    private static final RectZone rightTrench = new RectZone(3.8, 0, 5.3, 1.25);
+    private static final RectZone leftTrench = new RectZone(3.6, 6.87, 5.9, 8.07);
+    private static final RectZone rightTrench = new RectZone(3.6, 0, 5.9, 1.25);
 
     public enum FieldZone {
         HUB,

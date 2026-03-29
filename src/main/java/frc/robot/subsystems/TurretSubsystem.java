@@ -25,10 +25,10 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
 
-    private final double kACCELERATION = 200.0;
+    private final double kACCELERATION = 100.0;
     private final double kCRUISE_VELOCITY = 400.0;
-    private final double kP = 100.0;
-    private final double kI = 60.0;
+    private final double kP = 80.0;
+    private final double kI = 15.0;
     private final double kD = 0.0;
 
     //The unclamped value that the turret is commanded to go to (used to see if it is at the target)
@@ -50,7 +50,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final int TURRET_MOTOR_ID = 7;
     private final int TURRET_ENCODER_ID = 8;
 
-    private final int TURRET_STATOR_LIMIT = 40;
+    private final int TURRET_STATOR_LIMIT = 35;
     
     private long lastMs = 0;
 
@@ -120,7 +120,7 @@ public class TurretSubsystem extends SubsystemBase {
     public void periodic() {
         var turretAngle = getTurretAngleDegrees();
         
-        DogLogUtil.logDouble("Turret/turret_degrees", turretAngle);
+        DogLogUtil.logDoubleForceNT("Turret/turret_degrees", turretAngle);
         DogLogUtil.logDouble("Turret/turret_error_degrees", turretAngle - getTargetAngleDegrees());
 
         logMotorData();

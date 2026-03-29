@@ -259,7 +259,7 @@ public class ShootingSuperstructure extends SubsystemBase {
      */
     private boolean safeToShoot() {
         boolean rotatingSlowEnough = robotVelocitySupplier.get().omegaRadiansPerSecond < Math.PI;
-        return rotatingSlowEnough && turret.isReady();
+        return (rotatingSlowEnough && turret.isReady());
     }
 
     public boolean isShooting() {
@@ -315,7 +315,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
         DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
 
-        DogLog.log("ShootingSuperstructure/state", state.name());
-        DogLog.log("ShootingSuperstructure/RPM_Offset", RPMOffset);
+        DogLog.forceNt.log("ShootingSuperstructure/state", state.name());
+        DogLog.forceNt.log("ShootingSuperstructure/RPM_Offset", RPMOffset);
     }
 }

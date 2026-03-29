@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+
+import com.ctre.phoenix6.BaseStatusSignal;
+
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -53,7 +56,9 @@ public class RobotSystem extends SubsystemBase {
     
     private final Field2d fieldTelemetry = new Field2d();
 
-    private final boolean LOG_LIMELIGHTS = true;
+    public boolean changeShootingState = true;
+
+    private final boolean LOG_LIMELIGHTS = false;
     private final boolean LOG_SWERVE_DRIVE = true;
     private final boolean LOG_PDH = true;
 
@@ -129,7 +134,7 @@ public class RobotSystem extends SubsystemBase {
             )
         );
 
-        ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
+        // ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
 
         limelightNotifier = new Notifier(() -> {
             LimelightHelpers.SetRobotOrientation(FRONT_LL, lastImuAngleDegrees, 0, 0, 0, 0, 0);
@@ -205,14 +210,17 @@ public class RobotSystem extends SubsystemBase {
     private void updateShootingState() {
         FieldZone zone = ZoneManager.getZone();
 
-        if (zone.equals(FieldZone.HUB))
-            shooter.setState(ShooterState.HUB_TRACKING);
-        else if (zone.equals(FieldZone.PASS))
-            shooter.setState(ShooterState.PASSING);
-        else if (zone.equals(FieldZone.TRENCH))
-            shooter.setState(ShooterState.TRENCH);
-        else
-            shooter.setState(ShooterState.IDLE);
+        if (changeShootingState) {
+            if (zone.equals(FieldZone.HUB))
+                shooter.setState(ShooterState.HUB_TRACKING);
+            else if (zone.equals(FieldZone.PASS))
+                shooter.setState(ShooterState.PASSING);
+            else if (zone.equals(FieldZone.TRENCH))
+                shooter.setState(ShooterState.TRENCH);
+            else
+                shooter.setState(ShooterState.IDLE);
+        }
+        else shooter.setState(ShooterState.TRENCH);
     }
 
     /**
@@ -320,7 +328,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public void toggleDisabledLeds(boolean disable) {
-        led.setIsDisabled(disable);
+        // led.setIsDisabled(disable);
     }
 
     public void resetFuelShotCount() {
@@ -343,8 +351,8 @@ public class RobotSystem extends SubsystemBase {
         //Update the field telemetry's robot pose
         fieldTelemetry.setRobotPose(drivePose);
 
-        DogLog.log("Current Zone", ZoneManager.getZone().name());
-        DogLog.log("Driving Mode", currentDrivingMode.name());
+        DogLog.forceNt.log("Current Zone", ZoneManager.getZone().name());
+        DogLog.forceNt.log("Driving Mode", currentDrivingMode.name());
 
         long currentMs = System.currentTimeMillis();
         if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
@@ -358,6 +366,7 @@ public class RobotSystem extends SubsystemBase {
     private void logPdhStats() {
         if (LOG_PDH) {
             DogLog.log("PDH/TotalCurrent", pdh.getTotalCurrent());
+            DogLog.log("PDH/AllCurrents", pdh.getAllCurrents());
             DogLog.log("PDH/Voltage", pdh.getVoltage());
             DogLog.log("PDH/Temperature", pdh.getTemperature());
             DogLog.log("PDH/Brownout", pdh.getFaults().Brownout);
@@ -412,13 +421,13 @@ public class RobotSystem extends SubsystemBase {
 
         for (var module : drive.getModules()) {
             DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
-                module.getDriveMotor().getSupplyCurrent(false).getValueAsDouble());
+                module.getDriveMotor().getSupplyCurrent(true).getValueAsDouble());
             DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
-                module.getSteerMotor().getSupplyCurrent(false).getValueAsDouble());
+                module.getSteerMotor().getSupplyCurrent(true).getValueAsDouble());
             DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
-                module.getDriveMotor().getDeviceTemp(false).getValueAsDouble());
+                module.getDriveMotor().getDeviceTemp(true).getValueAsDouble());
             DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
-                module.getSteerMotor().getDeviceTemp(false).getValueAsDouble());
+                module.getSteerMotor().getDeviceTemp(true).getValueAsDouble());
         }     
     }
 }
