@@ -17,6 +17,8 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.DogLogUtil;
 import frc.robot.util.Elastic;
@@ -74,6 +76,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final int HOOD_STATOR_LIMIT = 30;
 
     private boolean disableHood = false;
+    private boolean isResetting = false;
+
     private double requestedHoodDegrees = 0;
 
     private final Notification hoodLimitExceededError = 
@@ -134,6 +138,22 @@ public class ShooterSubsystem extends SubsystemBase {
 
         //Explictly set the hood motor position on startup
         hoodEncoder.setPosition(hoodEncoder.getAbsolutePosition().getValue());
+    }
+
+    public Command awesomeForceReset() {
+        final double RESETTING_POWER = 0.1;
+
+        return new StartEndCommand(
+            () -> {
+                hoodMotor.set(RESETTING_POWER);
+            },
+            () -> {
+                hoodMotor.set(0);
+
+                hoodEncoder.setPosition(Units.degreesToRotations(MIN_HOOD_DEGREES));
+            }
+        ).beforeStarting(() -> isResetting = true)
+        .finallyDo(() -> isResetting = false);
     }
 
     public double getMaxHoodDegrees() {
@@ -200,7 +220,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public void periodic() {
         double hoodDegrees = getHoodDegrees();
 
-        if (!disableHood) {
+        if (!disableHood && !isResetting) {
             if (hoodDegrees < 0 || hoodDegrees < MIN_HOOD_DEGREES - 8 || hoodDegrees > MAX_HOOD_DEGREES + 8) {
                 hoodMotor.setControl(coast);
 
