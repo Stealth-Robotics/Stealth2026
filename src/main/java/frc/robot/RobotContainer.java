@@ -3,8 +3,6 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
-import com.ctre.phoenix6.hardware.CANdle;
-
 import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
@@ -57,6 +55,8 @@ public class RobotContainer {
         //Hahaha stopped the annoying warnings
         DriverStation.silenceJoystickConnectionWarning(true);
 
+        SmartDashboard.putData("Hood Reset", robot.dashboardHoodReset().ignoringDisable(true));
+
         configureBindings();
         addAutosToChooser();
     }
@@ -89,7 +89,7 @@ public class RobotContainer {
             );
         }
 
-        driverController.rightStick().onTrue(robot.seedFieldCentric());
+        driverController.y().onTrue(robot.seedFieldCentric());
         driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
         
         //Operator Controls
@@ -98,6 +98,7 @@ public class RobotContainer {
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
         
         operatorController.b().onTrue(robot.agitate());
+        // operatorController.back().whileTrue(robot.awesomeHoodReset());
 
         //Force hood to go down
         operatorController.a()
@@ -115,6 +116,9 @@ public class RobotContainer {
      */
     private void addAutosToChooser() {
         //Newgen autos
+        autoChooser.addRoutine("Left360", () -> autos.Threesixty(AutoPosition.LEFT));
+        autoChooser.addRoutine("Right360", () -> autos.Threesixty(AutoPosition.RIGHT));
+
         autoChooser.addRoutine("LeftTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.LEFT));
         autoChooser.addRoutine("RightTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.RIGHT));
 

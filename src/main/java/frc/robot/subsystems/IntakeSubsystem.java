@@ -55,7 +55,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double RETRACTED_ROTATIONS = 0.3;
 
     private final double DEPLOY_kP = 28;
-    private final double RETRACT_kP = 38;
+    private final double RETRACT_kP = 28;
     private final double FAST_kP = 50;
 
     private final double DEPLOY_kI = 0;
@@ -69,7 +69,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_MOTOR_ID = 17;
     private final int DEPLOY_ENCODER_ID = 18;
 
-    private final int DEPLOY_STATOR_LIMIT = 55;
+    private final int DEPLOY_STATOR_LIMIT = 50;
     private final int ROLLER_STATOR_LIMIT = 80;
 
     private final int ROLLER_SUPPLY_CURRENT_LIMIT = 0;

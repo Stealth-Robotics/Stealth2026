@@ -1,6 +1,8 @@
 package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Inches;
+
+import java.lang.Thread.State;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
@@ -131,9 +133,20 @@ public class ShootingSuperstructure extends SubsystemBase {
         return new InstantCommand(() -> shooter.spinToRPM(rpm));
     }
 
+    public Command awesomeHoodReset() {
+        return shooter.awesomeHoodForceReset();
+    }
+
+    public Command dashboardHoodReset() {
+        return shooter.dashboardHoodReset();
+    }
+
     public Command shoot() {
         return run(() -> {
             shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM() + RPMOffset);
+            shooter.setHoodDegrees(
+                (state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : ShotCalculator.getHoodAngle()
+            );
 
             if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity()) {
                 alreadySpinningAtTarget = true;
@@ -201,7 +214,8 @@ public class ShootingSuperstructure extends SubsystemBase {
             false
         );
 
-        shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
+        if (!isShooting)
+            shooter.setHoodDegrees(0);
 
         Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
         Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
@@ -235,6 +249,9 @@ public class ShootingSuperstructure extends SubsystemBase {
             (passingTarget.equals(PassingTarget.LEFT) ? leftPass : rightPass)
         );
 
+        if (!isShooting)
+            shooter.setHoodDegrees(0);
+
         ShotCalculator.update(
             turretPose3d,
             robotVelocitySupplier.get(),
@@ -242,9 +259,6 @@ public class ShootingSuperstructure extends SubsystemBase {
             params.maxTrajectoryHeight(),
             true
         );
-
-        //Use the full hood angle to shoot as horizontally as possible
-        shooter.setHoodDegrees(shooter.getMaxHoodDegrees());
 
         Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
         Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());

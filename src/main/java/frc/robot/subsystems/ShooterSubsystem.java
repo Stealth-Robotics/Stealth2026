@@ -18,6 +18,7 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.DogLogUtil;
@@ -41,7 +42,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.241;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.395;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1.0;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
@@ -140,20 +141,29 @@ public class ShooterSubsystem extends SubsystemBase {
         hoodEncoder.setPosition(hoodEncoder.getAbsolutePosition().getValue());
     }
 
-    public Command awesomeForceReset() {
-        final double RESETTING_POWER = 0.1;
+    public Command dashboardHoodReset() {
+        return new InstantCommand(
+            () -> hoodEncoder.setPosition(Units.degreesToRotations(MIN_HOOD_DEGREES) * 8.0)
+        );
+    }
 
+    public Command awesomeHoodForceReset() {
         return new StartEndCommand(
             () -> {
-                hoodMotor.set(RESETTING_POWER);
+                disableHood = true;
+                isResetting = true;
+
+                hoodMotor.set(-0.25);
             },
             () -> {
                 hoodMotor.set(0);
 
-                hoodEncoder.setPosition(Units.degreesToRotations(MIN_HOOD_DEGREES));
+                hoodEncoder.setPosition(Units.degreesToRotations(MIN_HOOD_DEGREES) * 8.0);
+
+                isResetting = false;
+                disableHood = false;
             }
-        ).beforeStarting(() -> isResetting = true)
-        .finallyDo(() -> isResetting = false);
+        );
     }
 
     public double getMaxHoodDegrees() {

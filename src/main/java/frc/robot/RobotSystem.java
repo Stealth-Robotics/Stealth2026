@@ -187,6 +187,14 @@ public class RobotSystem extends SubsystemBase {
         intake.setDefaultCommand(intakeDefaultCommand);
     }
 
+    public Command awesomeHoodReset() {
+        return shooter.awesomeHoodReset();
+    }
+
+    public Command dashboardHoodReset() {
+        return shooter.dashboardHoodReset();
+    }
+
     public Command shoot() {
         return shooter.shoot();
     }
