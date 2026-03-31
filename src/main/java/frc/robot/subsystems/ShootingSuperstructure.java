@@ -37,8 +37,11 @@ public class ShootingSuperstructure extends SubsystemBase {
     private int RPMOffset = 0;
 
     //Prevents us from shooting if we are tiled enough to miss our target
-    private static final double MAX_PITCH_DEGREES = 5;
-    private static final double MAX_ROLL_DEGREES = 8;
+    private final double MAX_PITCH_DEGREES = 5;
+    private final double MAX_ROLL_DEGREES = 8;
+
+    //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
+    private final double[] MAX_ROBOT_SHOOTING_VELOCITIES = {2.0, 2.0, Math.PI};
 
     //Used by the CANRange to determine whether a fuel is detected
     private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(0.5);
@@ -265,12 +268,16 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Makes sure we aren't shooting off the field or that we are going to definitely miss
      */
     private boolean safeToShoot() {
-        boolean rotatingSlowEnough = robotVelocitySupplier.get().omegaRadiansPerSecond < Math.PI;
+        boolean isRobotMovingSlowEnough = 
+            Math.abs(robotVelocitySupplier.get().vxMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITIES[0] &&
+            Math.abs(robotVelocitySupplier.get().vyMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITIES[1] &&
+            Math.abs(robotVelocitySupplier.get().omegaRadiansPerSecond) < MAX_ROBOT_SHOOTING_VELOCITIES[2];
+
         boolean isRobotLevelEnough = 
             Math.abs(robotRotationSupplier.get().getX()) < MAX_ROLL_DEGREES &&
             Math.abs(robotRotationSupplier.get().getY()) < MAX_PITCH_DEGREES;
 
-        return rotatingSlowEnough && isRobotLevelEnough && turret.isReady();
+        return isRobotMovingSlowEnough && isRobotLevelEnough && turret.isReady();
     }
 
     public boolean isShooting() {

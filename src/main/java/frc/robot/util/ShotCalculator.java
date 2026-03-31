@@ -71,7 +71,7 @@ public class ShotCalculator {
                 filteredVx * totalLatencySeconds,
                 filteredVy * totalLatencySeconds,
                 0,
-                new Rotation3d(0, 0, filteredVOmega * totalLatencySeconds)
+                Rotation3d.kZero
             )
         );
 
@@ -108,7 +108,9 @@ public class ShotCalculator {
         //Scale up the measured RPM by the scale needed to compensate for robot velocity
         targetFlywheelRPM = baseRPM * veloScale;
 
-        targetTurretAngle = Units.radiansToDegrees(Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()));
+        targetTurretAngle = Units.radiansToDegrees(
+            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds)
+        );
 
         double horizontalSpeed = Math.sqrt(Math.pow(movingShotVelocity.getX(), 2) + Math.pow(movingShotVelocity.getY(), 2));
         targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
