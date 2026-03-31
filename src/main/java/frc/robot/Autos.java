@@ -4,6 +4,7 @@ import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -31,6 +32,13 @@ public class Autos {
         LEFT,
         MIDDLE,
         RIGHT
+    }
+
+    /**
+     * Scheduales the call to preload trajectory for the selected auto routine to prevent lag.
+     **/
+    public void preloadAuto(String autoName) {
+        CommandScheduler.getInstance().schedule(autoFactory.trajectoryCmd(autoName));
     }
 
     private Command stopShooting() {
