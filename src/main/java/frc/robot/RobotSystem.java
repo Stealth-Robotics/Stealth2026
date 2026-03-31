@@ -112,7 +112,11 @@ public class RobotSystem extends SubsystemBase {
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
-        shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
+        shooter = new ShootingSuperstructure(
+            () -> drive.getPose(), 
+            () -> drive.getFieldRelativeVelocity(),
+            () -> drive.getRotation3d()
+        );
         led = new LEDSubsystem(() -> ShiftTracker.hubIsActive());
 
         //Log the field + robot pose to Elastic
@@ -186,8 +190,6 @@ public class RobotSystem extends SubsystemBase {
             shooter.setState(ShooterState.HUB_TRACKING);
         else if (zone.equals(FieldZone.PASS))
             shooter.setState(ShooterState.PASSING);
-        else if (zone.equals(FieldZone.TRENCH))
-            shooter.setState(ShooterState.TRENCH);
         else
             shooter.setState(ShooterState.IDLE);
     }

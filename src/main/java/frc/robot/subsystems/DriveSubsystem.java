@@ -301,12 +301,6 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         return getState().Pose;
     }
 
-    public boolean isDriving() {
-        return MathUtil.isNear(getRobotRelativeVelocity().vxMetersPerSecond, 0, 0.1) &&
-               MathUtil.isNear(getRobotRelativeVelocity().vyMetersPerSecond, 0, 0.1) &&
-               MathUtil.isNear(getRobotRelativeVelocity().omegaRadiansPerSecond, 0, 0.1);
-    }
-
     public SwerveModuleState[] getModuleStates() {
         return getState().ModuleStates;
     }

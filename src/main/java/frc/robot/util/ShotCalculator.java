@@ -12,9 +12,6 @@ import edu.wpi.first.math.util.Units;
 public class ShotCalculator {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
 
-    private static final double MAX_PITCH_DEGREES = 0.0;
-    private static final double MAX_ROLL_DEGREES = 0.0;
-
     private static final double systemPeriod = Units.millisecondsToSeconds(20);
 
     //Time needed for ball to travel through feeder towards the flywheel
