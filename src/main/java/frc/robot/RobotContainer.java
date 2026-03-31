@@ -6,16 +6,16 @@ package frc.robot;
 import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
+import edu.wpi.first.hal.simulation.RoboRioDataJNI;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.Autos.AutoPosition;
-import frc.robot.subsystems.LEDSubsystem.DisplayMode;
+//import frc.robot.subsystems.LEDSubsystem.DisplayMode;
 
 
 public class RobotContainer {
@@ -34,7 +34,7 @@ public class RobotContainer {
     private final AutoChooser autoChooser = new AutoChooser();
 
     private boolean deployOverRetract = true;
-    
+    private String lastAutoName = "";
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
             .withCaptureDs(false)
@@ -43,6 +43,7 @@ public class RobotContainer {
         );
 
         robot = new RobotSystem(driverController, operatorController);
+        RoboRioDataJNI.setBrownoutVoltage(6.3);
 
         //Add the auto chooser to our dashboard
         autos = robot.getAutos();
@@ -120,6 +121,18 @@ public class RobotContainer {
         autoChooser.addRoutine("Right1CyclePlusOutpost", () -> autos.right1CyclePlusOutpost());
         autoChooser.addRoutine("Left1CyclePlusDepot", () -> autos.left1CyclePlusDepot());
     } 
+
+    /*
+     * Called repeatedly while the robot is disabled. 
+     * Used to preload the selected auto routine's trajectory file to prevent lag at the start of the match.
+     */
+    public void disabledPeriodic() {
+        String selectedName = autoChooser.selectedCommand().getName();
+        if (selectedName != null && !selectedName.equals(lastAutoName)) {
+            lastAutoName = selectedName;
+            autos.preloadAuto(selectedName);
+        }
+    }
 
     //Used mostly for telemetry and logging general match info
     public void periodic() {
