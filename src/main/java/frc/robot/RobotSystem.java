@@ -36,6 +36,8 @@ import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 import frc.robot.util.DogLogUtil;
+import frc.robot.util.DrivingMode;
+import frc.robot.util.LimelightConstants;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.LimelightHelpers.LimelightResults;
@@ -51,48 +53,13 @@ public class RobotSystem extends SubsystemBase {
     
     private final Field2d fieldTelemetry = new Field2d();
 
+    //Allows us to disable certain logging for performance reasons
     private final boolean LOG_LIMELIGHTS = true;
     private final boolean LOG_SWERVE_DRIVE = true;
     private final boolean LOG_PDH = true;
 
-    private final String[] LIMELIGHTS = {
-        "limelight-front",
-        "limelight-right"
-    };
-
-    private final double[] POSE_ESTIMATE_WEIGHTS = {
-        4.0, // tagCount
-        2.0, // avgTagDistance
-        3.0  // tagSpan
-    };
-
-    private final Vector<N3> VISION_STDDEVS = VecBuilder.fill(0.1, 0.1, Double.MAX_VALUE);
-
-    private final double MAX_VISION_ANGULAR_VELOCITY = 2 * Math.PI; //Rad/s
-
-    private final double MIN_TAG_REJECTION_METERS = 3.5;
-    private final int MIN_TAG_COUNT_REJECTION = 1; //TODO: Either 0 or 1
-
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
     private DrivingMode lastDrivingMode = DrivingMode.NORMAL;
-
-    public enum DrivingMode {
-        NORMAL(1.0),
-        PRECISION(0.4);
-
-        /**
-         * Allows us to slow down when performing certain actions like shooting or climbing
-         */
-        final double slowingFactor;
-
-        DrivingMode(double slowingFactor) {
-            this.slowingFactor = slowingFactor;
-        }
-
-        double getSlowingFactor() {
-            return slowingFactor;
-        }
-    }
 
     private double filteredX, filteredY, filteredTheta, lastFilteredX, lastFilteredY, lastFilteredTheta;
 
@@ -274,11 +241,11 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateOdometry() {
-        if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < MAX_VISION_ANGULAR_VELOCITY) {
+        if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < LimelightConstants.MAX_VISION_ANGULAR_VELOCITY) {
             double imuAngle = drive.getPose().getRotation().getDegrees();
             PoseEstimate bestPoseEstimate = null;
 
-            for (String limelight : LIMELIGHTS) {
+            for (String limelight : LimelightConstants.LIMELIGHTS) {
                 LimelightHelpers.SetRobotOrientation(limelight, imuAngle, 0, 0, 0, 0, 0);
 
                 var poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
@@ -293,15 +260,17 @@ public class RobotSystem extends SubsystemBase {
                 drive.addVisionMeasurement(
                     bestPoseEstimate.pose,
                     bestPoseEstimate.timestampSeconds,
-                    VISION_STDDEVS
+                    LimelightConstants.VISION_STDDEVS
                 );
             }
         }
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
-        return poseEstimate != null && poseEstimate.pose != null &&
-            poseEstimate.tagCount > MIN_TAG_COUNT_REJECTION && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS;
+        return
+            poseEstimate != null && poseEstimate.pose != null &&
+            poseEstimate.tagCount > LimelightConstants.MIN_TAG_COUNT_REJECTION && 
+            poseEstimate.avgTagDist < LimelightConstants.MIN_TAG_REJECTION_METERS;
     }
 
     /**
@@ -317,9 +286,9 @@ public class RobotSystem extends SubsystemBase {
      */
     private double poseEstimateScore(PoseEstimate p) {
         return
-            p.tagCount * POSE_ESTIMATE_WEIGHTS[0] +
-            Math.min((1.0 / p.avgTagDist), 5) * POSE_ESTIMATE_WEIGHTS[2] +
-            p.tagSpan * POSE_ESTIMATE_WEIGHTS[2];
+            p.tagCount * LimelightConstants.POSE_ESTIMATE_WEIGHTS[0] +
+            Math.min((1.0 / p.avgTagDist), 5) * LimelightConstants.POSE_ESTIMATE_WEIGHTS[2] +
+            p.tagSpan * LimelightConstants.POSE_ESTIMATE_WEIGHTS[2];
     }
 
     public void toggleDisabledLeds(boolean disable) {
@@ -374,7 +343,7 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
 
         if (LOG_LIMELIGHTS) {
-            for (String ll : LIMELIGHTS) {
+            for (String ll : LimelightConstants.LIMELIGHTS) {
                 PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
                 if (m1Pose != null)
                     DogLog.log(ll + "/M1Pose", m1Pose.pose);
