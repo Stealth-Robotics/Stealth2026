@@ -15,8 +15,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.Autos.AutoPosition;
-//import frc.robot.subsystems.LEDSubsystem.DisplayMode;
-
 
 public class RobotContainer {
     private final Driver driver = Driver.MO;
@@ -35,6 +33,7 @@ public class RobotContainer {
 
     private boolean deployOverRetract = true;
     private String lastAutoName = "";
+
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
             .withCaptureDs(false)
@@ -43,6 +42,8 @@ public class RobotContainer {
         );
 
         robot = new RobotSystem(driverController, operatorController);
+
+        //Lower the RoboRio's brownout voltage threshold
         RoboRioDataJNI.setBrownoutVoltage(6.3);
 
         //Add the auto chooser to our dashboard

@@ -35,7 +35,7 @@ public class Autos {
     }
 
     /**
-     * Scheduales the call to preload trajectory for the selected auto routine to prevent lag.
+     * Schedules the call to preload trajectory for the selected auto routine to prevent lag
      **/
     public void preloadAuto(String autoName) {
         CommandScheduler.getInstance().schedule(autoFactory.resetOdometry(autoName));

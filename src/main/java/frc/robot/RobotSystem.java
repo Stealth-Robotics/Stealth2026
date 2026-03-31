@@ -55,14 +55,23 @@ public class RobotSystem extends SubsystemBase {
     private final boolean LOG_SWERVE_DRIVE = true;
     private final boolean LOG_PDH = true;
 
-    private final String FRONT_LL = "limelight-front";
-    private final String RIGHT_LL = "limelight-right";
+    private final String[] LIMELIGHTS = {
+        "limelight-front",
+        "limelight-right"
+    };
 
-    private final Vector<N3> VISION_STDDEVS = VecBuilder.fill(0.2, 0.2, 99999);
+    private final double[] POSE_ESTIMATE_WEIGHTS = {
+        4.0, // tagCount
+        2.0, // avgTagDistance
+        3.0  // tagSpan
+    };
 
-    private final double MAX_VISION_ANGULAR_VELOCITY = Math.PI; //Rad/s
+    private final Vector<N3> VISION_STDDEVS = VecBuilder.fill(0.1, 0.1, Double.MAX_VALUE);
 
-    private final double MIN_TAG_REJECTION_METERS = 5;
+    private final double MAX_VISION_ANGULAR_VELOCITY = 2 * Math.PI; //Rad/s
+
+    private final double MIN_TAG_REJECTION_METERS = 3.5;
+    private final int MIN_TAG_COUNT_REJECTION = 1; //TODO: Either 0 or 1
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
     private DrivingMode lastDrivingMode = DrivingMode.NORMAL;
@@ -95,16 +104,7 @@ public class RobotSystem extends SubsystemBase {
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
-    private volatile PoseEstimate frontPoseEstimate;
-    private volatile PoseEstimate rightPoseEstimate;
-    private volatile LimelightResults frontLLResults;
-    private volatile LimelightResults rightLLResults;
-
     private final PowerDistribution pdh = new PowerDistribution(63, ModuleType.kRev);
-
-    private volatile double lastImuAngleDegrees = 0.0;
-    private final Notifier limelightNotifier;
-    private final Notifier tagLoggingNotifier;
     private final Notifier pdhNotifier;
 
     private long lastMs = 0;
@@ -129,31 +129,9 @@ public class RobotSystem extends SubsystemBase {
 
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
 
-        limelightNotifier = new Notifier(() -> {
-            LimelightHelpers.SetRobotOrientation(FRONT_LL, lastImuAngleDegrees, 0, 0, 0, 0, 0);
-            LimelightHelpers.SetRobotOrientation(RIGHT_LL, lastImuAngleDegrees, 0, 0, 0, 0, 0);
-
-            frontPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(FRONT_LL);
-            rightPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(RIGHT_LL);
-        });
-        limelightNotifier.startPeriodic(0.01);
-
-        if (LOG_LIMELIGHTS) {
-            tagLoggingNotifier = new Notifier(() -> {
-                frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
-                rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
-
-                logVisibleTags(FRONT_LL, frontLLResults);
-                logVisibleTags(RIGHT_LL, rightLLResults);
-            });
-            tagLoggingNotifier.startPeriodic(Units.millisecondsToSeconds(DogLogUtil.LIMELIGHT_LOGGING_INTERVAL));
-        }
-        else tagLoggingNotifier = null;
-
         pdhNotifier = new Notifier(() -> {
                 logPdhStats();
-            }
-        );
+        });
         pdhNotifier.startPeriodic(0.5);
     }
 
@@ -295,18 +273,24 @@ public class RobotSystem extends SubsystemBase {
 
     private void updateOdometry() {
         if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < MAX_VISION_ANGULAR_VELOCITY) {
-            if (isGoodPoseEstimate(frontPoseEstimate)) {
-                drive.addVisionMeasurement(
-                    frontPoseEstimate.pose, 
-                    frontPoseEstimate.timestampSeconds, 
-                    VISION_STDDEVS
-                );
+            double imuAngle = drive.getPose().getRotation().getDegrees();
+            PoseEstimate bestPoseEstimate = null;
+
+            for (String limelight : LIMELIGHTS) {
+                LimelightHelpers.SetRobotOrientation(limelight, imuAngle, 0, 0, 0, 0, 0);
+
+                var poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+
+                boolean betterEstimate = (bestPoseEstimate == null || isBetterPoseEstimate(poseEstimate, bestPoseEstimate));
+                if (isGoodPoseEstimate(poseEstimate) && betterEstimate) {
+                    bestPoseEstimate = poseEstimate;
+                }
             }
 
-            if (isGoodPoseEstimate(rightPoseEstimate)) {
+            if (bestPoseEstimate != null) {
                 drive.addVisionMeasurement(
-                    rightPoseEstimate.pose, 
-                    rightPoseEstimate.timestampSeconds, 
+                    bestPoseEstimate.pose,
+                    bestPoseEstimate.timestampSeconds,
                     VISION_STDDEVS
                 );
             }
@@ -315,7 +299,25 @@ public class RobotSystem extends SubsystemBase {
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
         return poseEstimate != null && poseEstimate.pose != null &&
-            poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS;
+            poseEstimate.tagCount > MIN_TAG_COUNT_REJECTION && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS;
+    }
+
+    /**
+     * @return Whether the first estimate is better than the second
+     */
+    private boolean isBetterPoseEstimate(PoseEstimate first, PoseEstimate second) {
+        return poseEstimateScore(first) > poseEstimateScore(second);
+    }
+
+    /*
+     * Weights the different aspects of a pose estimate to give it a comparable score. Tunable to achieve
+     * the best pose estimates for our specific purpose.
+     */
+    private double poseEstimateScore(PoseEstimate p) {
+        return
+            p.tagCount * POSE_ESTIMATE_WEIGHTS[0] +
+            Math.min((1.0 / p.avgTagDist), 5) * POSE_ESTIMATE_WEIGHTS[2] +
+            p.tagSpan * POSE_ESTIMATE_WEIGHTS[2];
     }
 
     public void toggleDisabledLeds(boolean disable) {
@@ -329,8 +331,6 @@ public class RobotSystem extends SubsystemBase {
     @Override
     public void periodic() {
         var drivePose = drive.getPose();
-
-        lastImuAngleDegrees = drivePose.getRotation().getDegrees();
         
         ZoneManager.updateRobotPose(drivePose);
 
@@ -364,22 +364,6 @@ public class RobotSystem extends SubsystemBase {
             DogLog.log("PDH/HardwareFault", pdh.getFaults().HardwareFault);
         }
     }
-    
-    private void logVisibleTags(String limelightName, LimelightHelpers.LimelightResults llResults) {
-        if (llResults == null) return;
-
-        var currentTags = llResults.targets_Fiducials;
-        if (currentTags == null || currentTags.length == 0) return;
-
-        List<Pose3d> visibleTags = new ArrayList<>();
-        for (var tag : currentTags) {
-            tagFieldLayout.getTagPose((int) tag.fiducialID).ifPresent(visibleTags::add);
-        }
-
-        if (!visibleTags.isEmpty()) {
-            DogLog.log(limelightName + "/VisibleTagPoses", visibleTags.toArray(new Pose3d[0]));
-        }
-    }
 
     private void logStats() {
         var canStatus = RobotController.getCANStatus();
@@ -388,19 +372,18 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
 
         if (LOG_LIMELIGHTS) {
-            //Log the megatag 1 poses of our limelights
-            if (frontLLResults != null) {
-                var m1Pose = frontLLResults.getBotPose3d_wpiBlue();
-                if (m1Pose != null) {
-                    DogLog.log(FRONT_LL + "/wpiBlue_Pose3d", m1Pose);
-                }
-            }
+            for (String ll : LIMELIGHTS) {
+                PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
+                if (m1Pose != null)
+                    DogLog.log(ll + "/M1Pose", m1Pose.pose);
 
-            if (rightLLResults != null) {
-                var m1Pose = rightLLResults.getBotPose3d_wpiBlue();
-                if (m1Pose != null) {
-                    DogLog.log(RIGHT_LL + "/wpiBlue_Pose3d", m1Pose);
+                List<Pose3d> visibleTags = new ArrayList<>();
+                for (var tag : m1Pose.rawFiducials) {
+                    tagFieldLayout.getTagPose(tag.id).ifPresent(visibleTags::add);
                 }
+
+                if (!visibleTags.isEmpty())
+                    DogLog.log(ll + "/VisibleTags", visibleTags.toArray(new Pose3d[0]));
             }
         }
     }
