@@ -58,11 +58,10 @@ def mirror_param_point(point):
     return point
 
 def main():
-
     choreoFiles = os.listdir(choreoDirectory)
 
     #Find only .traj files that do not contain the word "mirrored"
-    trajFiles = [file for file in choreoFiles if file.endswith(".traj") and file.startswith("mirrorme")]
+    trajFiles = [file for file in choreoFiles if file.endswith(".traj") and file.startswith("m_")]
 
     for file in trajFiles:
         traj = load_traj(choreoDirectory + "/" + file)
@@ -75,9 +74,27 @@ def main():
         for i, point in enumerate(param_waypoints):
             param_waypoints[i] = mirror_param_point(point)
 
-        #save the mirrored traj
-        with open(choreoDirectory + "/" + "mirrored_" + file[9:], 'w') as f:
+        # Determine new filename (flip Left/Right)
+        base_name = file[2:]  # remove "m_"
+
+        if base_name.startswith("Left"):
+            new_name = "Right" + base_name[len("Left"):]
+        elif base_name.startswith("Right"):
+            new_name = "Left" + base_name[len("Right"):]
+        else:
+            # fallback if neither left nor right is in the name
+            new_name = base_name
+
+        # save the mirrored traj
+        with open(os.path.join(choreoDirectory, new_name), 'w') as f:
             json.dump(traj, f, indent=4)
+
+        original_path = os.path.join(choreoDirectory, file)
+        renamed_path = os.path.join(choreoDirectory, base_name)
+
+        os.rename(original_path, renamed_path)
+
+        print("successfully mirrored " + file + " -> " + new_name)
 
 if __name__ == '__main__':
     main()

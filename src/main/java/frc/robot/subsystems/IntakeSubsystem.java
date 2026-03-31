@@ -26,8 +26,9 @@ import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.util.DogLogUtil;
 
 public class IntakeSubsystem extends SubsystemBase {
-    private final TalonFX rollerMotorLeft;
-    private final TalonFX rollerMotorRight;
+    private final TalonFX leftRollerMotor;
+    private final TalonFX rightRollerMotor;
+
     private final TalonFX deployMotor;
 
     private final CANcoder deployEncoder;
@@ -47,9 +48,8 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_ENCODER_TO_MECHANISM_RATIO = 1.0;
     private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 52.0;
 
-    private final double TURRET_ENCODER_DISCONTINUTY_POINT = 0.651;
-
-    private final double ARM_POSITION_TOLERANCE = 0.01;
+    private final double DEPLOY_ENCODER_DISCONTINUTY_POINT = 0.651;
+    private final double DEPLOY_POSITION_TOLERANCE = 0.01;
 
     private final double DEPLOYED_ROTATIONS = 0.0;
     private final double RETRACTED_ROTATIONS = 0.3;
@@ -76,13 +76,11 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.35;
 
-    private boolean isIntaking = false;
-
     private long lastMs = 0;
  
     public IntakeSubsystem() {
-        rollerMotorLeft = new TalonFX(ROLLER_MOTOR_LEFT_ID);
-        rollerMotorRight = new TalonFX(ROLLER_MOTOR_RIGHT_ID);
+        leftRollerMotor = new TalonFX(ROLLER_MOTOR_LEFT_ID);
+        rightRollerMotor = new TalonFX(ROLLER_MOTOR_RIGHT_ID);
         deployMotor = new TalonFX(DEPLOY_MOTOR_ID);
         deployEncoder = new CANcoder(DEPLOY_ENCODER_ID);
 
@@ -96,14 +94,14 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerConfig.CurrentLimits.SupplyCurrentLimit = ROLLER_SUPPLY_CURRENT_LIMIT;
         rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
-        rollerMotorLeft.getConfigurator().apply(rollerConfig);
-        rollerMotorRight.getConfigurator().apply(rollerConfig);
-        rollerMotorRight.setControl(new Follower(ROLLER_MOTOR_LEFT_ID, MotorAlignmentValue.Opposed));
+        leftRollerMotor.getConfigurator().apply(rollerConfig);
+        rightRollerMotor.getConfigurator().apply(rollerConfig);
+        rightRollerMotor.setControl(new Follower(ROLLER_MOTOR_LEFT_ID, MotorAlignmentValue.Opposed));
 
         //CANCoder config
         deployEncoderConfig.MagnetSensor.MagnetOffset = DEPLOY_ENCODER_ZERO_OFFSET;
         deployEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
-        deployEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = TURRET_ENCODER_DISCONTINUTY_POINT;
+        deployEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = DEPLOY_ENCODER_DISCONTINUTY_POINT;
 
         deployEncoder.getConfigurator().apply(deployEncoderConfig);
         
@@ -111,7 +109,7 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
-        deployConfig.MotorOutput.DutyCycleNeutralDeadband = ARM_POSITION_TOLERANCE / 2;
+        deployConfig.MotorOutput.DutyCycleNeutralDeadband = DEPLOY_POSITION_TOLERANCE / 2.0;
 
         deployConfig.Feedback.FeedbackRemoteSensorID = deployEncoder.getDeviceID();
         deployConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
@@ -138,10 +136,6 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
     }
 
-    public void isIntaking(boolean stateUpdate) {
-        this.isIntaking = stateUpdate;
-    }
-
     /**
      * Moves the intake up to the desired percentage of the fully up position and
      * then back down to toss the fuel into the spindexer.
@@ -160,10 +154,10 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void setRollerSpeed(double speed) {
-        rollerMotorLeft.setControl(
+        leftRollerMotor.setControl(
             rollerController.withOutput(
                 INTAKE_ROLLER_VOLTAGE * MathUtil.clamp(speed, -MAX_ROLLER_SPEED, MAX_ROLLER_SPEED))
-                .withEnableFOC(true));
+            );
     }
 
     private void moveFastTo(double rotations) {
@@ -174,7 +168,7 @@ public class IntakeSubsystem extends SubsystemBase {
         double curPos = deployMotor.getPosition().getValueAsDouble();
         double error = Math.abs(curPos - rotations);
         
-        return error <= ARM_POSITION_TOLERANCE;
+        return error <= DEPLOY_POSITION_TOLERANCE;
     }
 
     public void deploy() {
@@ -205,7 +199,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLogUtil.logDouble("Intake/intake_rotations", deployMotor.getPosition().getValueAsDouble());
+        DogLogUtil.logDoubleForceNT("Intake/deploy_rotations", deployMotor.getPosition().getValueAsDouble());
 
         logMotorData();
     }
@@ -215,18 +209,21 @@ public class IntakeSubsystem extends SubsystemBase {
 
         if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
             BaseStatusSignal.refreshAll(
-                rollerMotorLeft.getSupplyCurrent(), rollerMotorLeft.getStatorCurrent(), rollerMotorLeft.getDeviceTemp(),
+                leftRollerMotor.getSupplyCurrent(), leftRollerMotor.getStatorCurrent(), leftRollerMotor.getDeviceTemp(),
                 deployMotor.getSupplyCurrent(), deployMotor.getStatorCurrent(), deployMotor.getDeviceTemp()
             );
 
             lastMs = currentMs;
 
-            DogLogUtil.logDouble("Intake/roller_current", rollerMotorLeft.getSupplyCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Intake/roller_stator_current", rollerMotorLeft.getStatorCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Intake/roller_temperature_C", rollerMotorLeft.getDeviceTemp(false).getValueAsDouble());
-            DogLogUtil.logDouble("Intake/roller_supply_current", rollerMotorLeft.getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_supply_current", leftRollerMotor.getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_stator_current", leftRollerMotor.getStatorCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_temperature_C", leftRollerMotor.getDeviceTemp(false).getValueAsDouble());
 
-            DogLogUtil.logDouble("Intake/intake_current", deployMotor.getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_supply_current_right", rightRollerMotor.getSupplyCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_stator_current_right", rightRollerMotor.getStatorCurrent(false).getValueAsDouble());
+            DogLogUtil.logDouble("Intake/roller_temperature_C_right", rightRollerMotor.getDeviceTemp(false).getValueAsDouble());
+
+            DogLogUtil.logDouble("Intake/intake_supply_current", deployMotor.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/intake_stator_current", deployMotor.getStatorCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/intake_temperature_C", deployMotor.getDeviceTemp(false).getValueAsDouble());
         }

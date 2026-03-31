@@ -164,9 +164,6 @@ public class RobotSystem extends SubsystemBase {
             () -> {
                 double targetRollerSpeed = rollerSpeed.getAsDouble();
                 intake.setRollerSpeed(targetRollerSpeed);
-
-                if (Math.abs(targetRollerSpeed) > 0.1) intake.isIntaking(true);
-                else intake.isIntaking(false);
             }
         ).beforeStarting(
             () -> {
