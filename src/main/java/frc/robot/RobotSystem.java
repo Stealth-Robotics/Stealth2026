@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
@@ -139,7 +140,7 @@ public class RobotSystem extends SubsystemBase {
         pdhNotifier.startPeriodic(0.5);
     }
 
-    public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
+    public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract, BooleanSupplier agitate) {
         Command intakeDefaultCommand = run(
             () -> {
                 double targetRollerSpeed = rollerSpeed.getAsDouble();
@@ -151,7 +152,10 @@ public class RobotSystem extends SubsystemBase {
                 deployTrigger.onTrue(intake.deployCommand());
 
                 Trigger retractTrigger = new Trigger(retract);
-                retractTrigger.onTrue(intake.retractCommand());
+                retractTrigger.onTrue(new ConditionalCommand(intake.retractCommand(), intake.agitate(), agitate));
+
+                Trigger agitateTrigger = new Trigger(agitate);
+                agitateTrigger.onTrue(intake.agitate());
             }
         );
 
