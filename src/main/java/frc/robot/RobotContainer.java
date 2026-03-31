@@ -3,22 +3,19 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
-import choreo.Choreo;
 import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
 import edu.wpi.first.hal.simulation.RoboRioDataJNI;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.Autos.AutoPosition;
-import frc.robot.subsystems.LEDSubsystem.DisplayMode;
+//import frc.robot.subsystems.LEDSubsystem.DisplayMode;
 
 
 public class RobotContainer {
