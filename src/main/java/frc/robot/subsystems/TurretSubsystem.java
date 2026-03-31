@@ -50,7 +50,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final int TURRET_MOTOR_ID = 7;
     private final int TURRET_ENCODER_ID = 8;
 
-    private final int TURRET_STATOR_LIMIT = 40;
+    private final int TURRET_STATOR_LIMIT = 35;
     
     private long lastMs = 0;
 
@@ -120,7 +120,7 @@ public class TurretSubsystem extends SubsystemBase {
     public void periodic() {
         var turretAngle = getTurretAngleDegrees();
         
-        DogLogUtil.logDouble("Turret/turret_degrees", turretAngle);
+        DogLogUtil.logDoubleForceNT("Turret/turret_degrees", turretAngle);
         DogLogUtil.logDouble("Turret/turret_error_degrees", turretAngle - getTargetAngleDegrees());
 
         logMotorData();

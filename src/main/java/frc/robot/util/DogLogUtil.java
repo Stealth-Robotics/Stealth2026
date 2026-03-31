@@ -11,4 +11,8 @@ public class DogLogUtil {
     public static void logDouble(String key, double value) {
         DogLog.log(key, Math.round(value * 100.0) / 100.0);
     }
+
+    public static void logDoubleForceNT(String key, double value) {
+        DogLog.forceNt.log(key, Math.round(value * 100.0) / 100.0);
+    }
 }

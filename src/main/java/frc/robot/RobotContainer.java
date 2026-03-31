@@ -22,8 +22,7 @@ public class RobotContainer {
     private final Driver driver = Driver.MO;
 
     private enum Driver {
-        MATT,
-        MO
+        MATT, MO, BOGDANANOV
     }
 
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -32,25 +31,25 @@ public class RobotContainer {
     private final RobotSystem robot;
 
     private final Autos autos;
-    private final AutoChooser autoChooser;
+    private final AutoChooser autoChooser = new AutoChooser();
 
     private boolean deployOverRetract = true;
     
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
-            .withCaptureDs(true)
+            .withCaptureDs(false)
             .withLogExtras(false)
             .withCaptureConsole(true)
-            .withLogEntryQueueCapacity(1000) //Raise the maximum number of logs that can be queued
         );
 
         robot = new RobotSystem(driverController, operatorController);
 
         //Add the auto chooser to our dashboard
         autos = robot.getAutos();
-
-        autoChooser = new AutoChooser();
         SmartDashboard.putData("Auto Chooser", autoChooser);
+
+        //Hood encoder resetting
+        SmartDashboard.putData("Hood Reset", robot.dashboardHoodReset().ignoringDisable(true));
 
         //Hahaha stopped the annoying warnings
         DriverStation.silenceJoystickConnectionWarning(true);
@@ -98,9 +97,9 @@ public class RobotContainer {
         operatorController.b().onTrue(robot.agitate());
 
         operatorController.povUp()
-            .whileTrue(new RepeatCommand(new InstantCommand(() -> robot.changeRPMOffset(2))));
+            .whileTrue(new InstantCommand(() -> robot.changeRPMOffset(25)));
         operatorController.povDown()
-            .whileTrue(new RepeatCommand(new InstantCommand(() -> robot.changeRPMOffset(-2))));
+            .whileTrue(new InstantCommand(() -> robot.changeRPMOffset(-25)));
     }
 
     /*
@@ -126,8 +125,6 @@ public class RobotContainer {
     public void periodic() {
         AllianceUtility.update();
         ShiftTracker.update();
-
-        DogLog.log("Alliance", AllianceUtility.getAlliance().name());
     }
 
     public void toggleDisabledLeds(boolean disable) {

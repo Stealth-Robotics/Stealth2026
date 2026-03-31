@@ -13,7 +13,6 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
@@ -32,7 +31,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.DriveSubsystem.FieldPose;
-import frc.robot.subsystems.LEDSubsystem.DisplayMode;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
@@ -177,6 +175,10 @@ public class RobotSystem extends SubsystemBase {
 
         intakeDefaultCommand.addRequirements(intake);
         intake.setDefaultCommand(intakeDefaultCommand);
+    }
+
+    public Command dashboardHoodReset() {
+        return shooter.dashboardHoodReset();
     }
 
     public Command shoot() {
@@ -340,8 +342,8 @@ public class RobotSystem extends SubsystemBase {
         //Update the field telemetry's robot pose
         fieldTelemetry.setRobotPose(drivePose);
 
-        DogLog.log("Current Zone", ZoneManager.getZone().name());
-        DogLog.log("Driving Mode", currentDrivingMode.name());
+        DogLog.forceNt.log("Current Zone", ZoneManager.getZone().name());
+        DogLog.forceNt.log("Driving Mode", currentDrivingMode.name());
 
         long currentMs = System.currentTimeMillis();
         if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
@@ -354,6 +356,7 @@ public class RobotSystem extends SubsystemBase {
 
     private void logPdhStats() {
         if (LOG_PDH) {
+            DogLog.log("PDH/AllCurrents", pdh.getAllCurrents());
             DogLog.log("PDH/TotalCurrent", pdh.getTotalCurrent());
             DogLog.log("PDH/Voltage", pdh.getVoltage());
             DogLog.log("PDH/Temperature", pdh.getTemperature());
@@ -409,13 +412,17 @@ public class RobotSystem extends SubsystemBase {
 
         for (var module : drive.getModules()) {
             DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
-                module.getDriveMotor().getSupplyCurrent(false).getValueAsDouble());
+                module.getDriveMotor().getSupplyCurrent(true).getValueAsDouble());
             DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
-                module.getSteerMotor().getSupplyCurrent(false).getValueAsDouble());
+                module.getSteerMotor().getSupplyCurrent(true).getValueAsDouble());
+            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Stator_Current",
+                module.getDriveMotor().getStatorCurrent(true).getValueAsDouble());
+            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Stator_Current",
+                module.getSteerMotor().getStatorCurrent(true).getValueAsDouble());
             DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
-                module.getDriveMotor().getDeviceTemp(false).getValueAsDouble());
+                module.getDriveMotor().getDeviceTemp(true).getValueAsDouble());
             DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
-                module.getSteerMotor().getDeviceTemp(false).getValueAsDouble());
+                module.getSteerMotor().getDeviceTemp(true).getValueAsDouble());
         }     
     }
 }

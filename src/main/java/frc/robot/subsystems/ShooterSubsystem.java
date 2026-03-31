@@ -17,6 +17,8 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.DogLogUtil;
 import frc.robot.util.Elastic;
@@ -39,7 +41,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.045;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.395;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1.0;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
@@ -48,8 +50,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 100;
     private final double MAX_POSSIBLE_RPM = 5000;
 
-    private final double MAX_HOOD_DEGREES = 34.25;
-    private final double MIN_HOOD_DEGREES = 12.5;
+    private final double MAX_HOOD_DEGREES = 33.5;
+    private final double MIN_HOOD_DEGREES = 12.57;
 
     private final double SHOOTER_MOTOR_TO_FLYWHEEL_RATIO = 0.9736842105;
 
@@ -61,7 +63,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double SHOOTING_kS = 0.32917;
 
     private final double HOOD_kP = 100.0;
-    private final double HOOD_kI = 100.0;
+    private final double HOOD_kI = 15.0;
     private final double HOOD_kD = 0.0;
 
     private final int SHOOTER_MOTOR_1_ID = 2;
@@ -147,6 +149,12 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterMotor1.setControl(coast);
     }
 
+    public Command dashboardHoodReset() {
+        return new InstantCommand(
+            () -> hoodEncoder.setPosition(Units.degreesToRotations(MIN_HOOD_DEGREES) * HOOD_SENSOR_TO_MECHANISM_RATIO)
+        );
+    }
+
     /**
      * Sets the hood to the specified angle in degrees
      */
@@ -209,13 +217,11 @@ public class ShooterSubsystem extends SubsystemBase {
             }
         }
 
-        DogLog.log("Shooter/shooter_rpm", (int) getRPM(false));
-        DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
-        DogLog.log("Shooter/shooter_error_rpm", (int) (getRPM(false) - getTargetRPM()));
+        DogLog.forceNt.log("Shooter/shooter_rpm", (int) getRPM(false));
+        DogLog.forceNt.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
         
-        DogLogUtil.logDouble("Shooter/hood_angle", hoodDegrees);
-        DogLogUtil.logDouble("Shooter/hood_target_angle", requestedHoodDegrees);
-        DogLogUtil.logDouble("Shooter/hood_error_angle", hoodDegrees - requestedHoodDegrees);
+        DogLogUtil.logDoubleForceNT("Shooter/hood_angle", hoodDegrees);
+        DogLogUtil.logDoubleForceNT("Shooter/hood_target_angle", requestedHoodDegrees);
 
         logMotorData();
     }

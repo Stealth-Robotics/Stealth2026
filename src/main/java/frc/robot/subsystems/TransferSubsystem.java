@@ -17,19 +17,17 @@ public class TransferSubsystem extends SubsystemBase {
     private final TalonFXConfiguration spindexerConfig = new TalonFXConfiguration();
     private final TalonFXConfiguration feederConfig = new TalonFXConfiguration();
 
-    private final VoltageOut spindexerController = new VoltageOut(0)
-        .withEnableFOC(true);
-    private final VoltageOut feederController = new VoltageOut(0)
-        .withEnableFOC(true);
+    private final VoltageOut spindexerController = new VoltageOut(0);
+    private final VoltageOut feederController = new VoltageOut(0);
 
-    private final double SPINNING_VOLTAGE = 8;
+    private final double SPINNING_VOLTAGE = 12;
     private final double FEEDING_VOLTAGE = 10;
 
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
-    private final int SPINDEXER_STATOR_LIMIT = 65;
-    private final int FEEDER_STATOR_LIMIT = 65;
+    private final int SPINDEXER_STATOR_LIMIT = 50;
+    private final int FEEDER_STATOR_LIMIT = 50;
     
     private long lastMs = 0;
 

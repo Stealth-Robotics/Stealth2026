@@ -131,9 +131,17 @@ public class ShootingSuperstructure extends SubsystemBase {
         return new InstantCommand(() -> shooter.spinToRPM(rpm));
     }
 
+    public Command dashboardHoodReset() {
+        return shooter.dashboardHoodReset();
+    }
+
     public Command shoot() {
         return run(() -> {
             shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM() + RPMOffset);
+
+            shooter.setHoodDegrees(
+                (state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : ShotCalculator.getHoodAngle()
+            );
 
             if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity()) {
                 alreadySpinningAtTarget = true;
@@ -201,8 +209,6 @@ public class ShootingSuperstructure extends SubsystemBase {
             false
         );
 
-        shooter.setHoodDegrees(ShotCalculator.getHoodAngle());
-
         Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
         Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
 
@@ -243,9 +249,6 @@ public class ShootingSuperstructure extends SubsystemBase {
             true
         );
 
-        //Use the full hood angle to shoot as horizontally as possible
-        shooter.setHoodDegrees(shooter.getMaxHoodDegrees());
-
         Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
         Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
 
@@ -268,6 +271,9 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
+        //Keep the hood down unless we are shooting
+        if (!isShooting()) shooter.setHoodDegrees(0);
+
         switch (state) {
             case IDLE -> {
                 if (applyIdle) {
@@ -275,12 +281,7 @@ public class ShootingSuperstructure extends SubsystemBase {
                 }
             }
 
-            case TRENCH -> {
-                shooter.setHoodDegrees(0);
-                applyIdle = true;
-            }
-
-            case HUB_TRACKING -> {
+            case HUB_TRACKING, TRENCH -> {
                 trackHub();
                 applyIdle = true;
             }
@@ -315,7 +316,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
         DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
 
-        DogLog.log("ShootingSuperstructure/state", state.name());
-        DogLog.log("ShootingSuperstructure/RPM_Offset", RPMOffset);
+        DogLog.forceNt.log("ShootingSuperstructure/state", state.name());
+        DogLog.forceNt.log("ShootingSuperstructure/RPM_Offset", RPMOffset);
     }
 }
