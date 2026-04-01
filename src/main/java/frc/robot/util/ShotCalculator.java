@@ -37,14 +37,11 @@ public class ShotCalculator {
     }};
 
     //Velocity smoothing filters
-    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
-    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
-    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
+    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.2, systemPeriod);
+    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.2, systemPeriod);
+    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.2, systemPeriod);
 
-    //Variables that store the latest calculated values needed to perform a shot
-    private static double targetFlywheelRPM = 0.0;
-    private static double targetTurretAngle = 0.0;
-    private static double targetHoodAngle = 0.0;
+    public record SOTMResult(double rpm, double turretAngle, double hoodAngle) {}
 
     public static void resetFilters() {
         vxFilter.reset();
@@ -58,7 +55,7 @@ public class ShotCalculator {
      * @param targetPose The position of the target we are shooting at
      * @param targetHeight The max height the fuel will ever reach during flight
      */
-    public static void update(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight, boolean isPassShot) {
+    public static SOTMResult calculate(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight, boolean isPassShot) {
         double totalLatencySeconds = systemPeriod + mechanismLatency;
 
         double filteredVx = vxFilter.calculate(robotVelocity.vxMetersPerSecond);
@@ -71,7 +68,7 @@ public class ShotCalculator {
                 filteredVx * totalLatencySeconds,
                 filteredVy * totalLatencySeconds,
                 0,
-                Rotation3d.kZero
+                new Rotation3d(0, 0, filteredVOmega * totalLatencySeconds)
             )
         );
 
@@ -106,25 +103,15 @@ public class ShotCalculator {
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();
 
         //Scale up the measured RPM by the scale needed to compensate for robot velocity
-        targetFlywheelRPM = baseRPM * veloScale;
+        double targetFlywheelRPM = baseRPM * veloScale;
 
-        targetTurretAngle = Units.radiansToDegrees(
-            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds)
+        double targetTurretAngle = Units.radiansToDegrees(
+            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX())
         );
+        
+        double horizontalSpeed = Math.hypot(movingShotVelocity.getX(), movingShotVelocity.getY());
+        double targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
 
-        double horizontalSpeed = Math.sqrt(Math.pow(movingShotVelocity.getX(), 2) + Math.pow(movingShotVelocity.getY(), 2));
-        targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
-    }
-
-    public static double getTargetFlywheelRPM() {
-        return targetFlywheelRPM;
-    }
-
-    public static double getTurretAngle() {
-        return targetTurretAngle; 
-    }
-
-    public static double getHoodAngle() { 
-        return targetHoodAngle; 
+        return new SOTMResult(targetFlywheelRPM, targetTurretAngle, targetHoodAngle);
     }
 }

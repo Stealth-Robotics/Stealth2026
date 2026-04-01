@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
+import frc.robot.util.ShotCalculator.SOTMResult;
 import frc.robot.util.ShotCalculator;
 
 public class ShootingSuperstructure extends SubsystemBase {
@@ -34,11 +35,13 @@ public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
+    private SOTMResult lastSOTMResult = new SOTMResult(0, 0, 0);
+
     //Allows us to manually offset the set RPMs during a match
     private int RPMOffset = 0;
 
     //Prevents us from shooting if we are tiled enough to miss our target
-    private final double MAX_PITCH_DEGREES = 5;
+    private final double MAX_PITCH_DEGREES = 8;
     private final double MAX_ROLL_DEGREES = 8;
 
     //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
@@ -152,10 +155,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public Command shoot() {
         return run(() -> {
-            shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM() + RPMOffset);
+            shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
 
             shooter.setHoodDegrees(
-                (state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : ShotCalculator.getHoodAngle()
+                (state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle()
             );
 
             if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity()) {
@@ -216,7 +219,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         ShotParams params = AllianceUtility.flipPose(hub);
         Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
 
-        ShotCalculator.update(
+        SOTMResult sotmResult = ShotCalculator.calculate(
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
@@ -224,12 +227,14 @@ public class ShootingSuperstructure extends SubsystemBase {
             false
         );
 
-        Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
-        Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
+        Rotation2d robotYaw = robotPoseSupplier.get().getRotation();
+        Rotation2d turretAngle = Rotation2d.fromDegrees(sotmResult.turretAngle());
 
-        Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
+        Rotation2d turretTargetRot = turretAngle.minus(robotYaw);
 
         turret.setTargetDegrees(turretTargetRot.getDegrees());
+
+        lastSOTMResult = sotmResult;
     }
 
     /**
@@ -256,7 +261,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             (passingTarget.equals(PassingTarget.LEFT) ? leftPass : rightPass)
         );
 
-        ShotCalculator.update(
+        SOTMResult sotmResult = ShotCalculator.calculate(
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
@@ -264,12 +269,14 @@ public class ShootingSuperstructure extends SubsystemBase {
             true
         );
 
-        Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
-        Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
+        Rotation2d robotYaw = robotPoseSupplier.get().getRotation();
+        Rotation2d turretAngle = Rotation2d.fromDegrees(sotmResult.turretAngle());
 
-        Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
+        Rotation2d turretTargetRot = turretAngle.minus(robotYaw);
 
         turret.setTargetDegrees(turretTargetRot.getDegrees());
+
+        lastSOTMResult = sotmResult;
     }
 
     /**
