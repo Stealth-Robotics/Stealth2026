@@ -164,7 +164,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             if (alreadySpinningAtTarget) {
                 if (safeToShoot()) {
                     transfer.spin();
-                    transfer.feed();
+                    transfer.feedAtPower(ShotCalculator.getFeederVolts());
                 }
                 else {
                     transfer.stopSpinning();

@@ -2,11 +2,12 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.DogLogUtil;
 
@@ -26,8 +27,8 @@ public class TransferSubsystem extends SubsystemBase {
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
-    private final int SPINDEXER_STATOR_LIMIT = 50;
-    private final int FEEDER_STATOR_LIMIT = 50;
+    private final int SPINDEXER_POWER_LIMIT = 50;
+    private final int FEEDER_POWER_LIMIT = 50;
     
     private long lastMs = 0;
 
@@ -41,14 +42,24 @@ public class TransferSubsystem extends SubsystemBase {
         feederConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
-        spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        spindexerConfig.CurrentLimits.StatorCurrentLimit = SPINDEXER_STATOR_LIMIT;
+        spindexerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        spindexerConfig.CurrentLimits.SupplyCurrentLimit = SPINDEXER_POWER_LIMIT;
+        
+        feederConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        feederConfig.CurrentLimits.SupplyCurrentLimit = FEEDER_POWER_LIMIT;
 
-        feederConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        feederConfig.CurrentLimits.StatorCurrentLimit = FEEDER_STATOR_LIMIT;
+        spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = false;
+        spindexerConfig.CurrentLimits.StatorCurrentLimit = 0;
+
+        feederConfig.CurrentLimits.StatorCurrentLimitEnable = false;
+        feederConfig.CurrentLimits.StatorCurrentLimit = 0;
 
         spindexerMotor.getConfigurator().apply(spindexerConfig);
         feederMotor.getConfigurator().apply(feederConfig);
+    }
+
+    public void spinAtPower(double power) {
+        spindexerMotor.setControl(spindexerController.withOutput(MathUtil.clamp(power, 0, 12)));
     }
 
     public void spin() {
@@ -62,6 +73,10 @@ public class TransferSubsystem extends SubsystemBase {
     public void reverseFeed() {
         feederMotor.setControl(feederController.withOutput(-FEEDING_VOLTAGE));
     }
+
+    public void feedAtPower(double power) {
+        feederMotor.setControl(feederController.withOutput(MathUtil.clamp(power, 0, 12)));
+    }   
 
     public void feed() {
         feederMotor.setControl(feederController.withOutput(FEEDING_VOLTAGE));

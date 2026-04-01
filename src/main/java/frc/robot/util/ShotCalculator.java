@@ -5,9 +5,13 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.interpolation.Interpolatable;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.math.interpolation.InterpolatingTreeMap;
+import edu.wpi.first.math.interpolation.InverseInterpolator;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import frc.robot.util.ShotCalculator.ShooterState;
 
 public class ShotCalculator {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
@@ -17,23 +21,24 @@ public class ShotCalculator {
     //Time needed for ball to travel through feeder towards the flywheel
     private static final double mechanismLatency = Units.millisecondsToSeconds(15);
 
-    private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(1.96, 2600.0);
-        put(2.35, 2800.0);
-        put(2.5, 2800.0);
-        put(2.75, 2900.0);
-        put(3.0, 2925.0);
-        put(3.5, 3000.0);
-        put(4.0, 3100.0);
-        put(4.9, 3200.0);
+private static final InterpolatingTreeMap<Double, ShooterState> hubDistanceToState = 
+    new InterpolatingTreeMap<Double, ShooterState>(InverseInterpolator.forDouble(), ShooterState::interpolate) {{
+        put(1.96, new ShooterState(2600.0, 8.0));
+        put(2.35, new ShooterState(2800.0, 10.0));
+        put(2.5,  new ShooterState(2800.0, 11.5));
+        put(2.75, new ShooterState(2900.0, 12.0));
+        put(3.0,  new ShooterState(2925.0, 12.0));
+        put(3.5,  new ShooterState(3000.0, 12.0));
+        put(4.0,  new ShooterState(3100.0, 12.0));
+        put(4.9,  new ShooterState(3200.0, 12.0));
     }};
 
-    private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(3.0, 3000.0);
-        put(5.0, 3200.0);
-        put(8.0, 3800.0);
-        put(11.0, 4200.0);
-        put(14.0, 6000.0);
+    private static final InterpolatingTreeMap<Double, ShooterState> passingDistanceToRPM = new InterpolatingTreeMap<Double, ShooterState>(InverseInterpolator.forDouble(), ShooterState::interpolate) {{
+        put(3.0, new ShooterState(3000.0, 12.0));
+        put(5.0, new ShooterState(3200.0, 12.0));
+        put(8.0, new ShooterState(3800.0, 12.0));
+        put(11.0, new ShooterState(4200.0, 12.0));
+        put(14.0, new ShooterState(6000.0, 12.0));
     }};
 
     //Velocity smoothing filters
@@ -45,7 +50,18 @@ public class ShotCalculator {
     private static double targetFlywheelRPM = 0.0;
     private static double targetTurretAngle = 0.0;
     private static double targetHoodAngle = 0.0;
+    private static double targetFeederVolts = 0.0;
 
+    record ShooterState(double shooterRpm, double feederVolts) implements Interpolatable<ShooterState> {
+        @Override
+        public ShooterState interpolate(ShooterState endValue, double t) {
+            return new ShooterState(
+                shooterRpm + (endValue.shooterRpm - shooterRpm) * t,
+                feederVolts + (endValue.feederVolts - feederVolts) * t
+            );
+        }
+    }
+    
     public static void resetFilters() {
         vxFilter.reset();
         vyFilter.reset();
@@ -101,12 +117,13 @@ public class ShotCalculator {
         );
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
-
-        double baseRPM = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToRPM.get(metersToGoal);
+        
+        ShooterState state = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToState.get(metersToGoal);
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();
 
         //Scale up the measured RPM by the scale needed to compensate for robot velocity
-        targetFlywheelRPM = baseRPM * veloScale;
+        targetFlywheelRPM = state.shooterRpm * veloScale;
+        targetFeederVolts = state.feederVolts;
 
         targetTurretAngle = Units.radiansToDegrees(
             Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds)
@@ -126,5 +143,9 @@ public class ShotCalculator {
 
     public static double getHoodAngle() { 
         return targetHoodAngle; 
+    }
+
+    public static double getFeederVolts() {
+        return targetFeederVolts;
     }
 }
