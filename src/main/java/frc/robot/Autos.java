@@ -1,5 +1,6 @@
 package frc.robot;
 
+import choreo.Choreo;
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
@@ -35,10 +36,10 @@ public class Autos {
     }
 
     /**
-     * Scheduales the call to preload trajectory for the selected auto routine to prevent lag.
+     * Schedules the call to preload trajectory for the selected auto routine to prevent lag
      **/
     public void preloadAuto(String autoName) {
-        CommandScheduler.getInstance().schedule(autoFactory.resetOdometry(autoName));
+        autoFactory.cache().loadTrajectory(autoName);
     }
 
     private Command stopShooting() {

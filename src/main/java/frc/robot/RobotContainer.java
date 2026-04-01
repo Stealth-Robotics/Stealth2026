@@ -15,8 +15,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.Autos.AutoPosition;
-//import frc.robot.subsystems.LEDSubsystem.DisplayMode;
-
 
 public class RobotContainer {
     private final Driver driver = Driver.MO;
@@ -35,6 +33,7 @@ public class RobotContainer {
 
     private boolean deployOverRetract = true;
     private String lastAutoName = "";
+
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
             .withCaptureDs(false)
@@ -43,6 +42,8 @@ public class RobotContainer {
         );
 
         robot = new RobotSystem(driverController, operatorController);
+
+        //Lower the RoboRio's brownout voltage threshold
         RoboRioDataJNI.setBrownoutVoltage(6.3);
 
         //Add the auto chooser to our dashboard
@@ -57,6 +58,9 @@ public class RobotContainer {
 
         configureBindings();
         addAutosToChooser();
+
+        //Preload already selected auto
+        autos.preloadAuto(autoChooser.selectedCommand().getName());
     }
 
     public Command getAutonomousCommand() {
@@ -74,7 +78,8 @@ public class RobotContainer {
             robot.setIntakeDefaultCommand(
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
                 () -> driverController.y().getAsBoolean() && deployOverRetract,
-                () -> driverController.y().getAsBoolean() && !deployOverRetract
+                () -> driverController.y().getAsBoolean() && !deployOverRetract,
+                () -> operatorController.b().getAsBoolean()
             );
 
             driverController.y().onTrue(new InstantCommand(() -> deployOverRetract = !deployOverRetract));
@@ -83,7 +88,8 @@ public class RobotContainer {
             robot.setIntakeDefaultCommand(
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
                 () -> driverController.getRightTriggerAxis() > 0.01,
-                () -> driverController.rightBumper().getAsBoolean()
+                () -> driverController.rightBumper().getAsBoolean(),
+                () -> operatorController.b().getAsBoolean()
             );
         }
 
@@ -95,8 +101,7 @@ public class RobotContainer {
 
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
-        
-        operatorController.b().onTrue(robot.agitate());
+    
 
         operatorController.povUp()
             .whileTrue(new InstantCommand(() -> robot.changeRPMOffset(25)));

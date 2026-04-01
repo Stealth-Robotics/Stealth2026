@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
@@ -36,6 +37,8 @@ import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 import frc.robot.util.DogLogUtil;
+import frc.robot.util.DrivingMode;
+import frc.robot.util.LimelightConstants;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.LimelightHelpers.LimelightResults;
@@ -51,39 +54,13 @@ public class RobotSystem extends SubsystemBase {
     
     private final Field2d fieldTelemetry = new Field2d();
 
+    //Allows us to disable certain logging for performance reasons
     private final boolean LOG_LIMELIGHTS = true;
     private final boolean LOG_SWERVE_DRIVE = true;
     private final boolean LOG_PDH = true;
 
-    private final String FRONT_LL = "limelight-front";
-    private final String RIGHT_LL = "limelight-right";
-
-    private final Vector<N3> VISION_STDDEVS = VecBuilder.fill(0.2, 0.2, 99999);
-
-    private final double MAX_VISION_ANGULAR_VELOCITY = Math.PI; //Rad/s
-
-    private final double MIN_TAG_REJECTION_METERS = 5;
-
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
     private DrivingMode lastDrivingMode = DrivingMode.NORMAL;
-
-    public enum DrivingMode {
-        NORMAL(1.0),
-        PRECISION(0.4);
-
-        /**
-         * Allows us to slow down when performing certain actions like shooting or climbing
-         */
-        final double slowingFactor;
-
-        DrivingMode(double slowingFactor) {
-            this.slowingFactor = slowingFactor;
-        }
-
-        double getSlowingFactor() {
-            return slowingFactor;
-        }
-    }
 
     private double filteredX, filteredY, filteredTheta, lastFilteredX, lastFilteredY, lastFilteredTheta;
 
@@ -95,16 +72,7 @@ public class RobotSystem extends SubsystemBase {
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
-    private volatile PoseEstimate frontPoseEstimate;
-    private volatile PoseEstimate rightPoseEstimate;
-    private volatile LimelightResults frontLLResults;
-    private volatile LimelightResults rightLLResults;
-
     private final PowerDistribution pdh = new PowerDistribution(63, ModuleType.kRev);
-
-    private volatile double lastImuAngleDegrees = 0.0;
-    private final Notifier limelightNotifier;
-    private final Notifier tagLoggingNotifier;
     private final Notifier pdhNotifier;
 
     private long lastMs = 0;
@@ -112,7 +80,11 @@ public class RobotSystem extends SubsystemBase {
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
-        shooter = new ShootingSuperstructure(() -> drive.getPose(), () -> drive.getFieldRelativeVelocity());
+        shooter = new ShootingSuperstructure(
+            () -> drive.getPose(), 
+            () -> drive.getFieldRelativeVelocity(),
+            () -> drive.getRotation3d()
+        );
         led = new LEDSubsystem(() -> ShiftTracker.hubIsActive());
 
         //Log the field + robot pose to Elastic
@@ -129,35 +101,13 @@ public class RobotSystem extends SubsystemBase {
 
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
 
-        limelightNotifier = new Notifier(() -> {
-            LimelightHelpers.SetRobotOrientation(FRONT_LL, lastImuAngleDegrees, 0, 0, 0, 0, 0);
-            LimelightHelpers.SetRobotOrientation(RIGHT_LL, lastImuAngleDegrees, 0, 0, 0, 0, 0);
-
-            frontPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(FRONT_LL);
-            rightPoseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(RIGHT_LL);
-        });
-        limelightNotifier.startPeriodic(0.01);
-
-        if (LOG_LIMELIGHTS) {
-            tagLoggingNotifier = new Notifier(() -> {
-                frontLLResults = LimelightHelpers.getLatestResults(FRONT_LL);
-                rightLLResults = LimelightHelpers.getLatestResults(RIGHT_LL);
-
-                logVisibleTags(FRONT_LL, frontLLResults);
-                logVisibleTags(RIGHT_LL, rightLLResults);
-            });
-            tagLoggingNotifier.startPeriodic(Units.millisecondsToSeconds(DogLogUtil.LIMELIGHT_LOGGING_INTERVAL));
-        }
-        else tagLoggingNotifier = null;
-
         pdhNotifier = new Notifier(() -> {
                 logPdhStats();
-            }
-        );
+        });
         pdhNotifier.startPeriodic(0.5);
     }
 
-    public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract) {
+    public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract, BooleanSupplier agitate) {
         Command intakeDefaultCommand = run(
             () -> {
                 double targetRollerSpeed = rollerSpeed.getAsDouble();
@@ -166,10 +116,15 @@ public class RobotSystem extends SubsystemBase {
         ).beforeStarting(
             () -> {
                 Trigger deployTrigger = new Trigger(deploy);
-                deployTrigger.onTrue(intake.deployCommand());
+                deployTrigger
+                    .onTrue(intake.deployCommand())
+                    .onFalse(intake.agitate().onlyIf(agitate));
 
                 Trigger retractTrigger = new Trigger(retract);
                 retractTrigger.onTrue(intake.retractCommand());
+
+                Trigger agitateTrigger = new Trigger(agitate);
+                agitateTrigger.whileTrue(intake.agitate().repeatedly().onlyIf(deployTrigger.negate()));
             }
         );
 
@@ -208,8 +163,6 @@ public class RobotSystem extends SubsystemBase {
             shooter.setState(ShooterState.HUB_TRACKING);
         else if (zone.equals(FieldZone.PASS))
             shooter.setState(ShooterState.PASSING);
-        else if (zone.equals(FieldZone.TRENCH))
-            shooter.setState(ShooterState.TRENCH);
         else
             shooter.setState(ShooterState.IDLE);
     }
@@ -294,28 +247,54 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateOdometry() {
-        if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < MAX_VISION_ANGULAR_VELOCITY) {
-            if (isGoodPoseEstimate(frontPoseEstimate)) {
-                drive.addVisionMeasurement(
-                    frontPoseEstimate.pose, 
-                    frontPoseEstimate.timestampSeconds, 
-                    VISION_STDDEVS
-                );
+        if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < LimelightConstants.MAX_VISION_ANGULAR_VELOCITY) {
+            double imuAngle = drive.getPose().getRotation().getDegrees();
+            PoseEstimate bestPoseEstimate = null;
+
+            for (String limelight : LimelightConstants.LIMELIGHTS) {
+                LimelightHelpers.SetRobotOrientation(limelight, imuAngle, 0, 0, 0, 0, 0);
+
+                var poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+
+                boolean betterEstimate = (bestPoseEstimate == null || isBetterPoseEstimate(poseEstimate, bestPoseEstimate));
+                if (isGoodPoseEstimate(poseEstimate) && betterEstimate) {
+                    bestPoseEstimate = poseEstimate;
+                }
             }
 
-            if (isGoodPoseEstimate(rightPoseEstimate)) {
+            if (bestPoseEstimate != null) {
                 drive.addVisionMeasurement(
-                    rightPoseEstimate.pose, 
-                    rightPoseEstimate.timestampSeconds, 
-                    VISION_STDDEVS
+                    bestPoseEstimate.pose,
+                    bestPoseEstimate.timestampSeconds,
+                    LimelightConstants.VISION_STDDEVS
                 );
             }
         }
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
-        return poseEstimate != null && poseEstimate.pose != null &&
-            poseEstimate.tagCount > 0 && poseEstimate.avgTagDist < MIN_TAG_REJECTION_METERS;
+        return
+            poseEstimate != null && poseEstimate.pose != null &&
+            poseEstimate.tagCount > LimelightConstants.MIN_TAG_COUNT_REJECTION && 
+            poseEstimate.avgTagDist < LimelightConstants.MIN_TAG_REJECTION_METERS;
+    }
+
+    /**
+     * @return Whether the first estimate is better than the second
+     */
+    private boolean isBetterPoseEstimate(PoseEstimate first, PoseEstimate second) {
+        return poseEstimateScore(first) > poseEstimateScore(second);
+    }
+
+    /*
+     * Weights the different aspects of a pose estimate to give it a comparable score. Tunable to achieve
+     * the best pose estimates for our specific purpose.
+     */
+    private double poseEstimateScore(PoseEstimate p) {
+        return
+            p.tagCount * LimelightConstants.POSE_ESTIMATE_WEIGHTS[0] +
+            Math.min((1.0 / p.avgTagDist), 5) * LimelightConstants.POSE_ESTIMATE_WEIGHTS[2] +
+            p.tagSpan * LimelightConstants.POSE_ESTIMATE_WEIGHTS[2];
     }
 
     public void toggleDisabledLeds(boolean disable) {
@@ -329,8 +308,6 @@ public class RobotSystem extends SubsystemBase {
     @Override
     public void periodic() {
         var drivePose = drive.getPose();
-
-        lastImuAngleDegrees = drivePose.getRotation().getDegrees();
         
         ZoneManager.updateRobotPose(drivePose);
 
@@ -364,22 +341,6 @@ public class RobotSystem extends SubsystemBase {
             DogLog.log("PDH/HardwareFault", pdh.getFaults().HardwareFault);
         }
     }
-    
-    private void logVisibleTags(String limelightName, LimelightHelpers.LimelightResults llResults) {
-        if (llResults == null) return;
-
-        var currentTags = llResults.targets_Fiducials;
-        if (currentTags == null || currentTags.length == 0) return;
-
-        List<Pose3d> visibleTags = new ArrayList<>();
-        for (var tag : currentTags) {
-            tagFieldLayout.getTagPose((int) tag.fiducialID).ifPresent(visibleTags::add);
-        }
-
-        if (!visibleTags.isEmpty()) {
-            DogLog.log(limelightName + "/VisibleTagPoses", visibleTags.toArray(new Pose3d[0]));
-        }
-    }
 
     private void logStats() {
         var canStatus = RobotController.getCANStatus();
@@ -388,19 +349,18 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
 
         if (LOG_LIMELIGHTS) {
-            //Log the megatag 1 poses of our limelights
-            if (frontLLResults != null) {
-                var m1Pose = frontLLResults.getBotPose3d_wpiBlue();
-                if (m1Pose != null) {
-                    DogLog.log(FRONT_LL + "/wpiBlue_Pose3d", m1Pose);
-                }
-            }
+            for (String ll : LimelightConstants.LIMELIGHTS) {
+                PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
+                if (m1Pose != null)
+                    DogLog.log(ll + "/M1Pose", m1Pose.pose);
 
-            if (rightLLResults != null) {
-                var m1Pose = rightLLResults.getBotPose3d_wpiBlue();
-                if (m1Pose != null) {
-                    DogLog.log(RIGHT_LL + "/wpiBlue_Pose3d", m1Pose);
+                List<Pose3d> visibleTags = new ArrayList<>();
+                for (var tag : m1Pose.rawFiducials) {
+                    tagFieldLayout.getTagPose(tag.id).ifPresent(visibleTags::add);
                 }
+
+                if (!visibleTags.isEmpty())
+                    DogLog.log(ll + "/VisibleTags", visibleTags.toArray(new Pose3d[0]));
             }
         }
     }

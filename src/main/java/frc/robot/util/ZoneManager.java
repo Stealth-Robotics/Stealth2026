@@ -13,8 +13,8 @@ public class ZoneManager {
 
     private static final RectZone passing = new RectZone(5.2, 0, 16.5, 8.07);
 
-    private static final RectZone leftTrench = new RectZone(3.8, 6.87, 5.3, 8.07);
-    private static final RectZone rightTrench = new RectZone(3.8, 0, 5.3, 1.25);
+    // private static final RectZone leftTrench = new RectZone(3.8, 6.87, 5.3, 8.07);
+    // private static final RectZone rightTrench = new RectZone(3.8, 0, 5.3, 1.25);
 
     public enum FieldZone {
         HUB,
@@ -29,9 +29,7 @@ public class ZoneManager {
 
     public static FieldZone getZone() {
         //Make sure trench zone overrides all others for safety reasons
-        if (inLeftTrenchZone() || inRightTrenchZone())
-            return FieldZone.TRENCH;
-        else if (inHubZone())
+        if (inHubZone())
             return FieldZone.HUB;
         else if (inPassingZone())
             return FieldZone.PASS;
@@ -47,13 +45,15 @@ public class ZoneManager {
         return AllianceUtility.flipRectZone(passing).contains(robotPose.getTranslation());
     }
 
-    private static boolean inLeftTrenchZone() {
-        return AllianceUtility.forceFlipRectZone(leftTrench).contains(robotPose.getTranslation()) ||
-            leftTrench.contains(robotPose.getTranslation());
-    }
+    //Currently unused because we don't care if we are inside the trench
 
-    private static boolean inRightTrenchZone() {
-        return AllianceUtility.forceFlipRectZone(rightTrench).contains(robotPose.getTranslation()) ||
-            rightTrench.contains(robotPose.getTranslation());
-    }
+    // private static boolean inLeftTrenchZone() {
+    //     return AllianceUtility.forceFlipRectZone(leftTrench).contains(robotPose.getTranslation()) ||
+    //         leftTrench.contains(robotPose.getTranslation());
+    // }
+
+    // private static boolean inRightTrenchZone() {
+    //     return AllianceUtility.forceFlipRectZone(rightTrench).contains(robotPose.getTranslation()) ||
+    //         rightTrench.contains(robotPose.getTranslation());
+    // }
 }
