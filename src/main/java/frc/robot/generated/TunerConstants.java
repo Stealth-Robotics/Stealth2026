@@ -245,6 +245,10 @@ public class TunerConstants {
         );
     }
 
+    public static CANBus getCanBus() {
+        return kCANBus;
+    }
+
 
     /**
      * Swerve Drive class utilizing CTR Electronics' Phoenix 6 API with the selected device types.

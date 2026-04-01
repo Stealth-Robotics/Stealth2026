@@ -65,10 +65,6 @@ public class TransferSubsystem extends SubsystemBase {
         feederMotor.getConfigurator().apply(feederConfig);
     }
 
-    public void spinAtPower(double power) {
-        spindexerMotor.setControl(spindexerController.withOutput(MathUtil.clamp(power, 0, 12)));
-    }
-
     public void spin() {
         spindexerMotor.setControl(spindexerController.withOutput(SPINNING_VOLTAGE));
     }

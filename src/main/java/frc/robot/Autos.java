@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 
@@ -97,7 +98,8 @@ public class Autos {
 
         firstCycle.done().onTrue(
             new SequentialCommandGroup(
-                new WaitCommand(6), //Shooting time after first cycle
+                new WaitUntilCommand(()-> shooter.getIsHopperEmpty()).withTimeout(6),
+                //new WaitCommand(6).onlyWhile(() -> !shooter.hopperEmpty()), //Shooting time after first cycle
                 stopAgitating(),
                 stopShooting(),
                 secondCycle.cmd()
