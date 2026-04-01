@@ -7,12 +7,10 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.util.Units;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
@@ -21,7 +19,6 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
@@ -36,12 +33,12 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
+import frc.robot.util.AllianceUtility;
 import frc.robot.util.DogLogUtil;
 import frc.robot.util.DrivingMode;
 import frc.robot.util.LimelightConstants;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
-import frc.robot.util.LimelightHelpers.LimelightResults;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
 import frc.robot.util.ZoneManager.FieldZone;
 import frc.robot.util.ZoneManager;
@@ -75,6 +72,9 @@ public class RobotSystem extends SubsystemBase {
     private final PowerDistribution pdh = new PowerDistribution(63, ModuleType.kRev);
     private final Notifier pdhNotifier;
 
+    //Pose centered on the front of the hub to reset to if our vision goes haywire
+    private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
+
     private long lastMs = 0;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
@@ -105,6 +105,10 @@ public class RobotSystem extends SubsystemBase {
                 logPdhStats();
         });
         pdhNotifier.startPeriodic(0.5);
+    }
+
+    public Command forceResetOdometry() {
+        return new InstantCommand(() -> drive.resetPose(AllianceUtility.flipPose(ODOMETRY_RESET_POSE)));
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract, BooleanSupplier agitate) {

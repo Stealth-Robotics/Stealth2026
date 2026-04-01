@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
+import frc.robot.util.ShotCalculator.SOTMResult;
 import frc.robot.util.ShotCalculator;
 
 public class ShootingSuperstructure extends SubsystemBase {
@@ -34,18 +35,20 @@ public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
+    private SOTMResult lastSOTMResult = new SOTMResult(0, 0, 0);
+
     //Allows us to manually offset the set RPMs during a match
     private int RPMOffset = 0;
 
     //Prevents us from shooting if we are tiled enough to miss our target
-    private final double MAX_PITCH_DEGREES = 5;
+    private final double MAX_PITCH_DEGREES = 8;
     private final double MAX_ROLL_DEGREES = 8;
 
     //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
     private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {2.0, 2.0, Math.PI};
 
     //Prevents us from shooting if we are accelerating too fast to track our target (m/s^2, m/s^2, rad/s^2)
-    private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {1.5, 1.5, Math.PI};
+    private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
 
     //Used by the CANRange to determine whether a fuel is detected
     private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(0.5);
@@ -70,9 +73,10 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double FIELD_CENTER_Y_DIVIDER = 4.034663;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
-
     private final ShotParams leftPass = new ShotParams(new Translation3d(1, 5.75, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+
+    private ShotParams currentShotParams = hub;
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
@@ -151,10 +155,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public Command shoot() {
         return run(() -> {
-            shooter.spinToRPM(ShotCalculator.getTargetFlywheelRPM() + RPMOffset);
+            shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
 
             shooter.setHoodDegrees(
-                (state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : ShotCalculator.getHoodAngle()
+                (state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle()
             );
 
             if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity()) {
@@ -164,7 +168,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             if (alreadySpinningAtTarget) {
                 if (safeToShoot()) {
                     transfer.spin();
-                    transfer.feedAtPower(ShotCalculator.getFeederVolts());
+                    transfer.feed(calculateDistanceToTarget());
                 }
                 else {
                     transfer.stopSpinning();
@@ -215,7 +219,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         ShotParams params = AllianceUtility.flipPose(hub);
         Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
 
-        ShotCalculator.update(
+        SOTMResult sotmResult = ShotCalculator.calculate(
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
@@ -223,12 +227,14 @@ public class ShootingSuperstructure extends SubsystemBase {
             false
         );
 
-        Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
-        Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
+        Rotation2d robotYaw = robotPoseSupplier.get().getRotation();
+        Rotation2d turretAngle = Rotation2d.fromDegrees(sotmResult.turretAngle());
 
-        Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
+        Rotation2d turretTargetRot = turretAngle.minus(robotYaw);
 
         turret.setTargetDegrees(turretTargetRot.getDegrees());
+
+        lastSOTMResult = sotmResult;
     }
 
     /**
@@ -255,7 +261,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             (passingTarget.equals(PassingTarget.LEFT) ? leftPass : rightPass)
         );
 
-        ShotCalculator.update(
+        SOTMResult sotmResult = ShotCalculator.calculate(
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
@@ -263,12 +269,14 @@ public class ShootingSuperstructure extends SubsystemBase {
             true
         );
 
-        Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
-        Rotation2d turretOffset = Rotation2d.fromDegrees(ShotCalculator.getTurretAngle());
+        Rotation2d robotYaw = robotPoseSupplier.get().getRotation();
+        Rotation2d turretAngle = Rotation2d.fromDegrees(sotmResult.turretAngle());
 
-        Rotation2d turretTargetRot = robotYaw.minus(turretOffset);
+        Rotation2d turretTargetRot = turretAngle.minus(robotYaw);
 
         turret.setTargetDegrees(turretTargetRot.getDegrees());
+
+        lastSOTMResult = sotmResult;
     }
 
     /**
@@ -294,6 +302,11 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public boolean isShooting() {
         return isShooting;
+    }
+
+    private double calculateDistanceToTarget() {
+        Translation3d robotTranslation = new Translation3d(robotPoseSupplier.get().getTranslation());
+        return currentShotParams.target().getDistance(robotTranslation);
     }
 
     private void calculateRobotAccel() {
