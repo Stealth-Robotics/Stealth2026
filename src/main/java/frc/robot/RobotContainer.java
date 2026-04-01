@@ -58,6 +58,9 @@ public class RobotContainer {
 
         configureBindings();
         addAutosToChooser();
+
+        //Preload already selected auto
+        autos.preloadAuto(autoChooser.selectedCommand().getName());
     }
 
     public Command getAutonomousCommand() {
@@ -75,7 +78,8 @@ public class RobotContainer {
             robot.setIntakeDefaultCommand(
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
                 () -> driverController.y().getAsBoolean() && deployOverRetract,
-                () -> driverController.y().getAsBoolean() && !deployOverRetract
+                () -> driverController.y().getAsBoolean() && !deployOverRetract,
+                () -> operatorController.b().getAsBoolean()
             );
 
             driverController.y().onTrue(new InstantCommand(() -> deployOverRetract = !deployOverRetract));
@@ -84,7 +88,8 @@ public class RobotContainer {
             robot.setIntakeDefaultCommand(
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
                 () -> driverController.getRightTriggerAxis() > 0.01,
-                () -> driverController.rightBumper().getAsBoolean()
+                () -> driverController.rightBumper().getAsBoolean(),
+                () -> operatorController.b().getAsBoolean()
             );
         }
 
@@ -95,8 +100,7 @@ public class RobotContainer {
 
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
-        
-        operatorController.b().onTrue(robot.agitate());
+    
 
         operatorController.povUp()
             .whileTrue(new InstantCommand(() -> robot.changeRPMOffset(25)));
