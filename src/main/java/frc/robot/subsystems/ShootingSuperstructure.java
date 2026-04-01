@@ -45,7 +45,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {2.0, 2.0, Math.PI};
 
     //Prevents us from shooting if we are accelerating too fast to track our target (m/s^2, m/s^2, rad/s^2)
-    private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {1.5, 1.5, Math.PI};
+    private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
 
     //Used by the CANRange to determine whether a fuel is detected
     private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(0.5);
@@ -70,9 +70,10 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double FIELD_CENTER_Y_DIVIDER = 4.034663;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
-
     private final ShotParams leftPass = new ShotParams(new Translation3d(1, 5.75, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+
+    private ShotParams currentShotParams = hub;
 
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
@@ -164,7 +165,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             if (alreadySpinningAtTarget) {
                 if (safeToShoot()) {
                     transfer.spin();
-                    transfer.feed();
+                    transfer.feed(calculateDistanceToTarget());
                 }
                 else {
                     transfer.stopSpinning();
@@ -294,6 +295,11 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public boolean isShooting() {
         return isShooting;
+    }
+
+    private double calculateDistanceToTarget() {
+        Translation3d robotTranslation = new Translation3d(robotPoseSupplier.get().getTranslation());
+        return currentShotParams.target().getDistance(robotTranslation);
     }
 
     private void calculateRobotAccel() {

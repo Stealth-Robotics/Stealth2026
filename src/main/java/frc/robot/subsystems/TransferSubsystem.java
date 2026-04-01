@@ -2,11 +2,12 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.DogLogUtil;
 
@@ -21,13 +22,20 @@ public class TransferSubsystem extends SubsystemBase {
     private final VoltageOut feederController = new VoltageOut(0);
 
     private final double SPINNING_VOLTAGE = 12;
-    private final double FEEDING_VOLTAGE = 10;
+    private final double FEEDING_VOLTAGE = 12;
 
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
     private final int SPINDEXER_STATOR_LIMIT = 50;
     private final int FEEDER_STATOR_LIMIT = 50;
+
+    private static final InterpolatingDoubleTreeMap distanceToFeederVoltage = new InterpolatingDoubleTreeMap() {{
+        put(1.96, 8.0);
+        put(2.35, 10.0);
+        put(2.5, 11.5);
+        put(2.75, 12.0);
+    }};
     
     private long lastMs = 0;
 
@@ -63,8 +71,8 @@ public class TransferSubsystem extends SubsystemBase {
         feederMotor.setControl(feederController.withOutput(-FEEDING_VOLTAGE));
     }
 
-    public void feed() {
-        feederMotor.setControl(feederController.withOutput(FEEDING_VOLTAGE));
+    public void feed(double metersToTarget) {
+        feederMotor.setControl(feederController.withOutput(distanceToFeederVoltage.get(metersToTarget)));
     }
 
     public void stopFeeding() {
