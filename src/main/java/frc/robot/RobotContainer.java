@@ -89,6 +89,7 @@ public class RobotContainer {
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
+        driverController.a().whileTrue(robot.shoot());
         
         //Operator Controls
 
@@ -129,6 +130,8 @@ public class RobotContainer {
     public void disabledPeriodic() {
         String selectedName = autoChooser.selectedCommand().getName();
         if (selectedName != null && !selectedName.equals(lastAutoName)) {
+            DogLog.log("Auto Old Name", lastAutoName);
+            DogLog.log("Auto New Name", selectedName);
             lastAutoName = selectedName;
             autos.preloadAuto(selectedName);
         }
