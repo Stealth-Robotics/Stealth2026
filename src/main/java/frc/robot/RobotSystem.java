@@ -149,13 +149,14 @@ public class RobotSystem extends SubsystemBase {
         ).beforeStarting(
             () -> {
                 Trigger deployTrigger = new Trigger(deploy);
-                deployTrigger.onTrue(intake.deployCommand());
+                deployTrigger.onTrue(intake.deployCommand())
+                .onFalse(intake.agitate().onlyIf(agitate));
 
                 Trigger retractTrigger = new Trigger(retract);
                 retractTrigger.onTrue(new ConditionalCommand(intake.retractCommand(), intake.agitate(), agitate));
 
                 Trigger agitateTrigger = new Trigger(agitate);
-                agitateTrigger.onTrue(intake.agitate());
+                agitateTrigger.onTrue(intake.agitate().onlyIf(deployTrigger.negate()));
             }
         );
 
