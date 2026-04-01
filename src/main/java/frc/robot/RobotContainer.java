@@ -58,6 +58,9 @@ public class RobotContainer {
 
         configureBindings();
         addAutosToChooser();
+
+        //Preload already selected auto
+        autos.preloadAuto(autoChooser.selectedCommand().getName());
     }
 
     public Command getAutonomousCommand() {
