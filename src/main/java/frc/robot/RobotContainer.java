@@ -20,7 +20,7 @@ public class RobotContainer {
     private final Driver driver = Driver.MO;
 
     private enum Driver {
-        MATT, MO, BOGDANANOV
+        MATT, MO, COACH_BOGDANANOV
     }
 
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -95,9 +95,10 @@ public class RobotContainer {
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
+
+        driverController.back().onTrue(robot.forceResetOdometry());
         
         //Operator Controls
-
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
     
