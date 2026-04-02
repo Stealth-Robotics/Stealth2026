@@ -98,8 +98,8 @@ public class Autos {
 
         firstCycle.done().onTrue(
             new SequentialCommandGroup(
-                new WaitUntilCommand(()-> shooter.getIsHopperEmpty()).withTimeout(6),
-                //new WaitCommand(6).onlyWhile(() -> !shooter.hopperEmpty()), //Shooting time after first cycle
+                // new WaitUntilCommand(()-> shooter.getIsHopperEmpty()).withTimeout(6),
+                new WaitCommand(6), //Shooting time after first cycle
                 stopAgitating(),
                 stopShooting(),
                 secondCycle.cmd()

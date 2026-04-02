@@ -87,7 +87,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private boolean applyIdle = true;
     private boolean isShotRequested = false;
-    private boolean isActiveShooter = false;
+    private boolean isShooterActive = false;
     private boolean wasShotDetectedBefore = false;
 
     private double[] currentRobotAccel = {0.0, 0.0, 0.0};
@@ -174,12 +174,12 @@ public class ShootingSuperstructure extends SubsystemBase {
                     double metersToTarget = calculateDistanceToTarget();
                     transfer.spin(metersToTarget);
                     transfer.feed(metersToTarget);
-                    isActiveShooter = true;
+                    isShooterActive = true;
                 }
                 else {
                     transfer.stopSpinning();
                     transfer.stopFeeding();
-                    isActiveShooter = false;
+                    isShooterActive = false;
                 }
             }
         })
@@ -190,7 +190,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
             isShotRequested = false;
             alreadySpinningAtTarget = false;
-            isActiveShooter = false;
+            isShooterActive = false;
         })
         .onlyWhile(() -> {
             return state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING);
@@ -211,9 +211,8 @@ public class ShootingSuperstructure extends SubsystemBase {
         shooter.coastShooter();
     }
 
-    // TODO: tune timeout values for agitation and hopper empty
     public boolean getNeedsHopperAgitate() {
-        return lastShotTimer.hasElapsed(0.5);
+        return lastShotTimer.hasElapsed(1);
     }
 
     public boolean getIsHopperEmpty() {
@@ -320,7 +319,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public boolean isShooting() {
-        return isActiveShooter;
+        return isShooterActive;
     }
 
     private boolean isShotDetected() {
@@ -348,11 +347,10 @@ public class ShootingSuperstructure extends SubsystemBase {
     @Override
     public void periodic() {
         //Keep the hood down unless we are shooting
-        if (!isShotRequested()) {
+        if (!isShotRequested())
             shooter.setHoodDegrees(0);
-        } else {
+        else
             shotSensor.getDistance().refresh();
-        }
 
         // Only run the timer when we are actively shooting.
         if (isShooting() && !lastShotTimer.isRunning()) {
@@ -403,15 +401,15 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         wasShotDetectedBefore = shotDetected;
 
-        // TODO: don't log every loop.
         //Log our shooting stats
         DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
         DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
         DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
-        //TODO: TEMP
-        DogLog.log("ShootingSuperstructure/shotTimer", lastShotTimer.get());
-        DogLog.log("ShootingSuperstructure/ShotSensorDistance", shotSensor.getDistance().getValue().in(Inches));
-        DogLog.log("ShootingSuperstructure/ShotSensorDetected", shotSensor.getIsDetected().getValue());
+
+        // Temporary logging for testing
+        // DogLog.log("ShootingSuperstructure/shotTimer", lastShotTimer.get());
+        // DogLog.log("ShootingSuperstructure/ShotSensorDistance", shotSensor.getDistance().getValue().in(Inches));
+        // DogLog.log("ShootingSuperstructure/ShotSensorDetected", shotSensor.getIsDetected().getValue());
 
         DogLog.forceNt.log("ShootingSuperstructure/state", state.name());
         DogLog.forceNt.log("ShootingSuperstructure/RPM_Offset", RPMOffset);
