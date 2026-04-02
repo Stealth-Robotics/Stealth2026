@@ -90,15 +90,6 @@ public class RobotSystem extends SubsystemBase {
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
 
-        //Rumble shift warning
-        // ShiftTracker.shiftWarningTrigger.onTrue(
-        //     new SequentialCommandGroup(
-        //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1.0)),
-        //         new WaitCommand(1),
-        //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0))
-        //     )
-        // );
-
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
 
         pdhNotifier = new Notifier(() -> {
@@ -352,18 +343,17 @@ public class RobotSystem extends SubsystemBase {
             }
         }
 
-        // long currentMs = System.currentTimeMillis();
-        // if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
-        //     if (LOG_SWERVE_DRIVE)
-        //         logDriveStats();
-        //     logStats();
-        //     lastMs = currentMs;
-        // }
+        long currentMs = System.currentTimeMillis();
+        if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+            if (LOG_SWERVE_DRIVE)
+                logDriveStats();
+            logStats();
+            lastMs = currentMs;
+        }
     }
 
     private void logPdhStats() {
         if (LOG_PDH) {
-            DogLog.log("PDH/AllCurrents", pdh.getAllCurrents());
             DogLog.log("PDH/TotalCurrent", pdh.getTotalCurrent());
             DogLog.log("PDH/Voltage", pdh.getVoltage());
             DogLog.log("PDH/Temperature", pdh.getTemperature());
