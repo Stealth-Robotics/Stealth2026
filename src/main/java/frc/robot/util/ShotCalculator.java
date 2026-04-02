@@ -8,8 +8,6 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import dev.doglog.DogLog;
 
 public class ShotCalculator {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
@@ -17,7 +15,7 @@ public class ShotCalculator {
     private static final double systemPeriod = Units.millisecondsToSeconds(20);
 
     //Time needed for ball to travel through feeder towards the flywheel
-    private static final double mechanismLatency = Units.millisecondsToSeconds(15);
+    private static final double mechanismLatency = Units.millisecondsToSeconds(30);
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
         put(1.96, 2600.0);
@@ -39,9 +37,9 @@ public class ShotCalculator {
     }};
 
     //Velocity smoothing filters
-    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.25, systemPeriod);
-    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.25, systemPeriod);
-    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.25, systemPeriod);
+    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.15, systemPeriod);
+    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.15, systemPeriod);
+    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.15, systemPeriod);
 
     public record SOTMResult(double rpm, double turretAngle, double hoodAngle) {}
 
@@ -108,7 +106,9 @@ public class ShotCalculator {
         double targetFlywheelRPM = baseRPM * veloScale;
 
         double targetTurretAngle = Units.radiansToDegrees(
-            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds)
+            //TODO: Test which line of code performs better
+            // Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds)
+            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX())
         );
         
         double horizontalSpeed = Math.hypot(movingShotVelocity.getX(), movingShotVelocity.getY());
