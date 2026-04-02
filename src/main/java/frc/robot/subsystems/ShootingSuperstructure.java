@@ -41,11 +41,11 @@ public class ShootingSuperstructure extends SubsystemBase {
     private int RPMOffset = 0;
 
     //Prevents us from shooting if we are tiled enough to miss our target
-    private final double MAX_PITCH_DEGREES = 8;
-    private final double MAX_ROLL_DEGREES = 8;
+    private final double MAX_PITCH_RADIANS = Units.degreesToRadians(8);
+    private final double MAX_ROLL_RADIANS = Units.degreesToRadians(8);
 
     //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
-    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {2.0, 2.0, 2 * Math.PI};
+    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {2.0, 2.0, Math.PI};
 
     //Prevents us from shooting if we are accelerating too fast to track our target (m/s^2, m/s^2, rad/s^2)
     private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
@@ -284,19 +284,19 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Makes sure we aren't shooting off the field or that we are going to definitely miss
      */
     private boolean safeToShoot() {
-        boolean isVelocityBelowThreshold = 
+        boolean isVelocityBelowThreshold =
             Math.abs(robotVelocitySupplier.get().vxMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[0] &&
             Math.abs(robotVelocitySupplier.get().vyMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[1] &&
             Math.abs(robotVelocitySupplier.get().omegaRadiansPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[2];
 
-        boolean isAccelBelowThreshold = 
+        boolean isAccelBelowThreshold =
             Math.abs(currentRobotAccel[0]) < MAX_ROBOT_SHOOTING_ACCELERATION[0] &&
             Math.abs(currentRobotAccel[1]) < MAX_ROBOT_SHOOTING_ACCELERATION[1] &&
             Math.abs(currentRobotAccel[2]) < MAX_ROBOT_SHOOTING_ACCELERATION[2];
 
         boolean isRobotLevelEnough = 
-            Math.abs(robotRotationSupplier.get().getX()) < MAX_ROLL_DEGREES &&
-            Math.abs(robotRotationSupplier.get().getY()) < MAX_PITCH_DEGREES;
+            Math.abs(robotRotationSupplier.get().getX()) < MAX_ROLL_RADIANS &&
+            Math.abs(robotRotationSupplier.get().getY()) < MAX_PITCH_RADIANS;
 
         return isVelocityBelowThreshold && isAccelBelowThreshold && isRobotLevelEnough && turret.isReady();
     }

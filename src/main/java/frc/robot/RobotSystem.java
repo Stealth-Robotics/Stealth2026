@@ -65,7 +65,7 @@ public class RobotSystem extends SubsystemBase {
     private final SlewRateLimiter normalThetaLimiter = new SlewRateLimiter(10.0);
 
     private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(3.0), precisionYLimiter = new SlewRateLimiter(3.0);
-    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(8.0);
+    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(10.0);
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
