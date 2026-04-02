@@ -64,8 +64,8 @@ public class RobotSystem extends SubsystemBase {
     private final SlewRateLimiter normalXLimiter = new SlewRateLimiter(5.0), normalYLimiter = new SlewRateLimiter(5.0);
     private final SlewRateLimiter normalThetaLimiter = new SlewRateLimiter(10.0);
 
-    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(2.0), precisionYLimiter = new SlewRateLimiter(2.0);
-    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(5.0);
+    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(3.0), precisionYLimiter = new SlewRateLimiter(3.0);
+    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(8.0);
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
@@ -91,13 +91,13 @@ public class RobotSystem extends SubsystemBase {
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
 
         //Rumble shift warning
-        ShiftTracker.shiftWarningTrigger.onTrue(
-            new SequentialCommandGroup(
-                new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1.0)),
-                new WaitCommand(1),
-                new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0))
-            )
-        );
+        // ShiftTracker.shiftWarningTrigger.onTrue(
+        //     new SequentialCommandGroup(
+        //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 1.0)),
+        //         new WaitCommand(1),
+        //         new InstantCommand(() -> driverController.getHID().setRumble(RumbleType.kBothRumble, 0))
+        //     )
+        // );
 
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
 
@@ -128,7 +128,9 @@ public class RobotSystem extends SubsystemBase {
                 retractTrigger.onTrue(intake.retractCommand());
 
                 Trigger agitateTrigger = new Trigger(agitate);
-                agitateTrigger.whileTrue(intake.agitate().repeatedly().onlyIf(deployTrigger.negate()));
+                agitateTrigger
+                    .whileTrue(intake.agitate().repeatedly().onlyIf(deployTrigger.negate()))
+                    .onFalse(intake.deployCommand());
             }
         );
 
@@ -334,13 +336,29 @@ public class RobotSystem extends SubsystemBase {
         DogLog.forceNt.log("Current Zone", ZoneManager.getZone().name());
         DogLog.forceNt.log("Driving Mode", currentDrivingMode.name());
 
-        long currentMs = System.currentTimeMillis();
-        if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
-            if (LOG_SWERVE_DRIVE)
-                logDriveStats();
-            logStats();
-            lastMs = currentMs;
+        if (LOG_LIMELIGHTS) {
+            for (String ll : LimelightConstants.LIMELIGHTS) {
+                PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
+                if (m1Pose != null && !(m1Pose.pose.getX() == 0 && m1Pose.pose.getY() == 0))
+                    DogLog.log(ll + "/M1Pose", m1Pose.pose);
+
+                List<Pose3d> visibleTags = new ArrayList<>();
+                for (var tag : m1Pose.rawFiducials) {
+                    tagFieldLayout.getTagPose(tag.id).ifPresent(visibleTags::add);
+                }
+
+                if (!visibleTags.isEmpty())
+                    DogLog.log(ll + "/VisibleTags", visibleTags.toArray(new Pose3d[0]));
+            }
         }
+
+        // long currentMs = System.currentTimeMillis();
+        // if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+        //     if (LOG_SWERVE_DRIVE)
+        //         logDriveStats();
+        //     logStats();
+        //     lastMs = currentMs;
+        // }
     }
 
     private void logPdhStats() {
@@ -359,22 +377,6 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("CAN/Utilization", canStatus.percentBusUtilization * 100);
         DogLog.log("CAN/TxError", canStatus.txFullCount);
         DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
-
-        if (LOG_LIMELIGHTS) {
-            for (String ll : LimelightConstants.LIMELIGHTS) {
-                PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
-                if (m1Pose != null)
-                    DogLog.log(ll + "/M1Pose", m1Pose.pose);
-
-                List<Pose3d> visibleTags = new ArrayList<>();
-                for (var tag : m1Pose.rawFiducials) {
-                    tagFieldLayout.getTagPose(tag.id).ifPresent(visibleTags::add);
-                }
-
-                if (!visibleTags.isEmpty())
-                    DogLog.log(ll + "/VisibleTags", visibleTags.toArray(new Pose3d[0]));
-            }
-        }
     }
 
     private void logDriveStats() {

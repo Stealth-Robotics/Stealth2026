@@ -102,8 +102,5 @@ public class LEDSubsystem extends SubsystemBase {
                 candle.setControl(hubActiveAnimation);
             else candle.setControl(hubInactiveAnimation);
         }
-
-        DogLog.log("disabled", isDisabled);
-        DogLog.log("ledstate", currentDisplayMode.name());
     }
 }

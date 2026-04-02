@@ -46,7 +46,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double MAX_ROLL_DEGREES = 8;
 
     //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
-    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {2.0, 2.0, Math.PI};
+    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {2.0, 2.0, 2 * Math.PI};
 
     //Prevents us from shooting if we are accelerating too fast to track our target (m/s^2, m/s^2, rad/s^2)
     private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
@@ -171,8 +171,9 @@ public class ShootingSuperstructure extends SubsystemBase {
             
             if (alreadySpinningAtTarget) {
                 if (safeToShoot()) {
-                    transfer.spin();
-                    transfer.feed(calculateDistanceToTarget());
+                    double metersToTarget = calculateDistanceToTarget();
+                    transfer.spin(metersToTarget);
+                    transfer.feed(metersToTarget);
                     isActiveShooter = true;
                 }
                 else {
@@ -244,7 +245,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         Rotation2d robotYaw = robotPoseSupplier.get().getRotation();
         Rotation2d turretAngle = Rotation2d.fromDegrees(sotmResult.turretAngle());
 
-        Rotation2d turretTargetRot = turretAngle.minus(robotYaw);
+        Rotation2d turretTargetRot = robotYaw.minus(turretAngle);
 
         turret.setTargetDegrees(turretTargetRot.getDegrees());
 
@@ -286,7 +287,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         Rotation2d robotYaw = robotPoseSupplier.get().getRotation();
         Rotation2d turretAngle = Rotation2d.fromDegrees(sotmResult.turretAngle());
 
-        Rotation2d turretTargetRot = turretAngle.minus(robotYaw);
+        Rotation2d turretTargetRot = robotYaw.minus(turretAngle);
 
         turret.setTargetDegrees(turretTargetRot.getDegrees());
 

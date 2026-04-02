@@ -83,13 +83,7 @@ public class ShiftTracker {
 
         //Logging ShiftTracker's calculations
         DogLog.forceNt.log("Match Phase", ShiftTracker.getCurrentMatchPhase());
-
-        String timeString = String.format(
-            "%d:%02d",
-            (int) ShiftTracker.getTimeLeftInShift() / 60,
-            (int) ShiftTracker.getTimeLeftInShift() % 60
-        );
-        DogLog.forceNt.log("Shift Time Left", timeString);
+        DogLog.forceNt.log("Shift Time Left", ShiftTracker.getTimeLeftInShift());
     }
 
     /**
@@ -126,6 +120,8 @@ public class ShiftTracker {
     }
 
     private static double getTimeLeftInShift() {
+        if (!isRunning())
+            return 0;
         return Math.max(0, matchPhase.getEndTime() - getTime());
     }
 

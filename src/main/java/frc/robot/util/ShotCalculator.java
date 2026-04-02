@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import dev.doglog.DogLog;
 
 public class ShotCalculator {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
@@ -24,7 +25,7 @@ public class ShotCalculator {
         put(2.75, 2900.0);
         put(3.0, 2925.0);
         put(3.5, 3000.0);
-        put(4.0, 3100.0);
+        put(4.0, 3050.0);
         put(4.9, 3200.0);
     }};
 
@@ -37,9 +38,9 @@ public class ShotCalculator {
     }};
 
     //Velocity smoothing filters
-    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.2, systemPeriod);
-    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.2, systemPeriod);
-    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.2, systemPeriod);
+    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.25, systemPeriod);
+    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.25, systemPeriod);
+    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.25, systemPeriod);
 
     public record SOTMResult(double rpm, double turretAngle, double hoodAngle) {}
 
@@ -61,6 +62,10 @@ public class ShotCalculator {
         double filteredVx = vxFilter.calculate(robotVelocity.vxMetersPerSecond);
         double filteredVy = vyFilter.calculate(robotVelocity.vyMetersPerSecond);
         double filteredVOmega = vOmegaFilter.calculate(robotVelocity.omegaRadiansPerSecond);
+
+        // DogLog.log("filteredVx", Math.round(filteredVx * 1000.0) / 1000.0);
+        // DogLog.log("filteredVy", Math.round(filteredVy * 1000.0) / 1000.0);
+        // DogLog.log("filteredVOmega", Math.round(filteredVOmega * 1000.0) / 1000.0);
 
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
         fuelExitPose = fuelExitPose.plus(
@@ -106,7 +111,7 @@ public class ShotCalculator {
         double targetFlywheelRPM = baseRPM * veloScale;
 
         double targetTurretAngle = Units.radiansToDegrees(
-            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX())
+            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds)
         );
         
         double horizontalSpeed = Math.hypot(movingShotVelocity.getX(), movingShotVelocity.getY());
