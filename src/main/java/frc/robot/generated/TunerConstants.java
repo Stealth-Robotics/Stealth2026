@@ -245,7 +245,6 @@ public class TunerConstants {
         );
     }
 
-
     /**
      * Swerve Drive class utilizing CTR Electronics' Phoenix 6 API with the selected device types.
      */

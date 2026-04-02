@@ -14,15 +14,14 @@ import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
-import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
+
 import frc.robot.util.DogLogUtil;
 
 public class IntakeSubsystem extends SubsystemBase {
@@ -49,13 +48,13 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 52.0;
 
     private final double DEPLOY_ENCODER_DISCONTINUTY_POINT = 0.651;
-    private final double DEPLOY_POSITION_TOLERANCE = 0.01;
+    private final double DEPLOY_POSITION_TOLERANCE = 0.02;
 
     private final double DEPLOYED_ROTATIONS = 0.0;
-    private final double RETRACTED_ROTATIONS = 0.3;
+    private final double RETRACTED_ROTATIONS = 0.27;
 
-    private final double DEPLOY_kP = 28;
-    private final double RETRACT_kP = 28;
+    private final double DEPLOY_kP = 25;
+    private final double RETRACT_kP = 30;
     private final double FAST_kP = 50;
 
     private final double DEPLOY_kI = 0;
@@ -141,10 +140,10 @@ public class IntakeSubsystem extends SubsystemBase {
      * then back down to toss the fuel into the spindexer.
      */
     public Command agitate() {
-        double tossPercentage = RETRACTED_ROTATIONS * 0.6;
+        double tossPercentage = RETRACTED_ROTATIONS * 0.5;
         return new SequentialCommandGroup(
             new InstantCommand(() -> moveFastTo(tossPercentage), this),
-            new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.3),
+            new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> deploy(), this),
