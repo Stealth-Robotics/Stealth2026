@@ -88,6 +88,9 @@ public class ShootingSuperstructure extends SubsystemBase {
     private int hubShots = 0;
     private int passShots = 0;
 
+    //Tracks how many fuel have been shot since we started trying. Resets after we stop shooting.
+    private int recentShots = 0;
+
     private boolean applyIdle = true;
     private boolean isShotRequested = false;
     private boolean isShooterActive = false;
@@ -220,7 +223,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public boolean isHopperEmpty() {
-        return lastShotTimer.hasElapsed(SECONDS_BEFORE_HOPPER_EMPTY);
+        return recentShots > 0 && lastShotTimer.hasElapsed(SECONDS_BEFORE_HOPPER_EMPTY);
     }
 
     /**
@@ -318,10 +321,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         return isVelocityBelowThreshold && isAccelBelowThreshold && isRobotLevelEnough && turret.isReady();
     }
 
-    public boolean isShotRequested() {
-        return isShotRequested;
-    }
-
     public boolean isShooting() {
         return isShooterActive;
     }
@@ -348,19 +347,46 @@ public class ShootingSuperstructure extends SubsystemBase {
         previousRobotVelo.omegaRadiansPerSecond = robotVelo.omegaRadiansPerSecond;
     }
 
-    @Override
-    public void periodic() {
-        //Keep the hood down unless we are shooting
-        if (!isShotRequested()) shooter.setHoodDegrees(0);
-
+    private void updateShotCounting() {
         // Only run the timer when we are actively shooting.
         if (isShooting() && !lastShotTimer.isRunning()) {
             lastShotTimer.start();
         } 
-        else if (!isShotRequested() && lastShotTimer.isRunning()) {
+        else if (!isShotRequested && lastShotTimer.isRunning()) {
             lastShotTimer.reset();
             lastShotTimer.stop();
         }
+
+        boolean shotDetected = isShotDetected();
+
+        if (shotDetected && !wasShotDetectedBefore) {
+            lastShotTimer.restart();
+
+            switch (state) {
+                case HUB_TRACKING:
+                    hubShots++;
+                    break;
+                case PASSING:
+                    passShots++;
+                    break;
+                default:
+                    break;
+            }
+
+            if (isShooterActive) recentShots++;
+
+            totalShots++;
+        }
+
+        if (!isShooterActive) recentShots = 0;
+
+        wasShotDetectedBefore = shotDetected;
+    }
+
+    @Override
+    public void periodic() {
+        //Keep the hood down unless we are shooting
+        if (!isShotRequested) shooter.setHoodDegrees(0);
       
         switch (state) {
             case IDLE -> {
@@ -381,37 +407,12 @@ public class ShootingSuperstructure extends SubsystemBase {
         }
 
         calculateRobotAccel();
+        updateShotCounting();
 
-        boolean shotDetected = isShotDetected();
-
-        if (shotDetected && !wasShotDetectedBefore) {
-            lastShotTimer.restart();
-
-            switch (state) {
-                case HUB_TRACKING:
-                    hubShots++;
-                    break;
-                case PASSING:
-                    passShots++;
-                    break;
-                default:
-                    break;
-            }
-
-            totalShots++;
-        }
-
-        wasShotDetectedBefore = shotDetected;
-
-        //Log our shooting stats
+        //Log our shooting counts
         DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
         DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
         DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
-
-        // Temporary logging for testing
-        // DogLog.log("ShootingSuperstructure/shotTimer", lastShotTimer.get());
-        // DogLog.log("ShootingSuperstructure/ShotSensorDistance", shotSensor.getDistance().getValue().in(Inches));
-        // DogLog.log("ShootingSuperstructure/ShotSensorDetected", shotSensor.getIsDetected().getValue());
 
         DogLog.forceNt.log("ShootingSuperstructure/state", state.name());
         DogLog.forceNt.log("ShootingSuperstructure/RPM_Offset", RPMOffset);

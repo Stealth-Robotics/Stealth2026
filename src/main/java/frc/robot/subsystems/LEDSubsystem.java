@@ -19,8 +19,6 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 public class LEDSubsystem extends SubsystemBase {
     private final BooleanSupplier hubActive;
 
-    private DisplayMode currentDisplayMode = DisplayMode.DISABLED;
-
     private boolean isDisabled = false;
 
     private final CANdle candle;

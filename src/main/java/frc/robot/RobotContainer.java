@@ -96,17 +96,16 @@ public class RobotContainer {
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
 
-        driverController.back().onTrue(robot.forceResetOdometry());
+        driverController.start().onTrue(robot.forceResetOdometry());
         
         //Operator Controls
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
-    
 
         operatorController.povUp()
-            .whileTrue(new InstantCommand(() -> robot.changeRPMOffset(25)));
+            .onTrue(new InstantCommand(() -> robot.changeRPMOffset(25)));
         operatorController.povDown()
-            .whileTrue(new InstantCommand(() -> robot.changeRPMOffset(-25)));
+            .onTrue(new InstantCommand(() -> robot.changeRPMOffset(-25)));
     }
 
     /*

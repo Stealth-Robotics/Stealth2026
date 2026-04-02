@@ -1,15 +1,12 @@
 package frc.robot;
 
-import choreo.Choreo;
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 
@@ -98,7 +95,6 @@ public class Autos {
 
         firstCycle.done().onTrue(
             new SequentialCommandGroup(
-                // new WaitUntilCommand(()-> shooter.getIsHopperEmpty()).withTimeout(6),
                 new WaitCommand(6), //Shooting time after first cycle
                 stopAgitating(),
                 stopShooting(),
