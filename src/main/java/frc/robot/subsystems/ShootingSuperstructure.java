@@ -41,6 +41,9 @@ public class ShootingSuperstructure extends SubsystemBase {
     //Allows us to manually offset the set RPMs during a match
     private int RPMOffset = 0;
 
+    private final double SECONDS_BEFORE_HOPPER_AGITATE = 1;
+    private final double SECONDS_BEFORE_HOPPER_EMPTY = 3;
+
     //Prevents us from shooting if we are tiled enough to miss our target
     private final double MAX_PITCH_RADIANS = Units.degreesToRadians(8);
     private final double MAX_ROLL_RADIANS = Units.degreesToRadians(8);
@@ -158,28 +161,28 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public Command shoot() {
         return run(() -> {
-            shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
             isShotRequested = true;
+            shotSensor.getDistance().refresh();
 
-            shooter.setHoodDegrees(
-                (state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle()
-            );
+            shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
+            shooter.setHoodDegrees((state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle());
 
-            if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity()) {
+            if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity())
                 alreadySpinningAtTarget = true;
-            }
             
             if (alreadySpinningAtTarget) {
                 if (safeToShoot()) {
+                    isShooterActive = true;
+
                     double metersToTarget = calculateDistanceToTarget();
                     transfer.spin(metersToTarget);
                     transfer.feed(metersToTarget);
-                    isShooterActive = true;
                 }
                 else {
+                    isShooterActive = false;
+
                     transfer.stopSpinning();
                     transfer.stopFeeding();
-                    isShooterActive = false;
                 }
             }
         })
@@ -188,8 +191,9 @@ public class ShootingSuperstructure extends SubsystemBase {
             transfer.stopSpinning();
             transfer.stopFeeding();
 
-            isShotRequested = false;
             alreadySpinningAtTarget = false;
+            
+            isShotRequested = false;
             isShooterActive = false;
         })
         .onlyWhile(() -> {
@@ -211,12 +215,12 @@ public class ShootingSuperstructure extends SubsystemBase {
         shooter.coastShooter();
     }
 
-    public boolean getNeedsHopperAgitate() {
-        return lastShotTimer.hasElapsed(1);
+    public boolean needsHopperAgitate() {
+        return lastShotTimer.hasElapsed(SECONDS_BEFORE_HOPPER_AGITATE);
     }
 
-    public boolean getIsHopperEmpty() {
-        return lastShotTimer.hasElapsed(3);
+    public boolean isHopperEmpty() {
+        return lastShotTimer.hasElapsed(SECONDS_BEFORE_HOPPER_EMPTY);
     }
 
     /**
@@ -347,10 +351,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     @Override
     public void periodic() {
         //Keep the hood down unless we are shooting
-        if (!isShotRequested())
-            shooter.setHoodDegrees(0);
-        else
-            shotSensor.getDistance().refresh();
+        if (!isShotRequested()) shooter.setHoodDegrees(0);
 
         // Only run the timer when we are actively shooting.
         if (isShooting() && !lastShotTimer.isRunning()) {
@@ -385,6 +386,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         if (shotDetected && !wasShotDetectedBefore) {
             lastShotTimer.restart();
+
             switch (state) {
                 case HUB_TRACKING:
                     hubShots++;

@@ -137,12 +137,12 @@ public class RobotSystem extends SubsystemBase {
         return shooter.shoot();
     }
 
-    public BooleanSupplier getNeedsHopperAgitate() {
-        return () -> shooter.getNeedsHopperAgitate();
+    public BooleanSupplier needsHopperAgitate() {
+        return () -> shooter.needsHopperAgitate();
     }
 
-    public BooleanSupplier getIsHopperEmpty() {
-        return ()-> shooter.getIsHopperEmpty();
+    public BooleanSupplier isHopperEmpty() {
+        return ()-> shooter.isHopperEmpty();
     }
 
     public void resetAfterAuto() {
