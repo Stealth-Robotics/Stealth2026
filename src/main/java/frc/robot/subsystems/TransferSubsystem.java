@@ -27,8 +27,8 @@ public class TransferSubsystem extends SubsystemBase {
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
-    private final int SPINDEXER_STATOR_LIMIT = 50;
-    private final int FEEDER_STATOR_LIMIT = 50;
+    private final int SPINDEXER_POWER_LIMIT = 50;
+    private final int FEEDER_POWER_LIMIT = 50;
 
     private static final InterpolatingDoubleTreeMap distanceToVoltage = new InterpolatingDoubleTreeMap() {{
         put(1.0, 6.0);
@@ -48,11 +48,17 @@ public class TransferSubsystem extends SubsystemBase {
         feederConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
-        spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        spindexerConfig.CurrentLimits.StatorCurrentLimit = SPINDEXER_STATOR_LIMIT;
+        spindexerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        spindexerConfig.CurrentLimits.SupplyCurrentLimit = SPINDEXER_POWER_LIMIT;
+        
+        feederConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        feederConfig.CurrentLimits.SupplyCurrentLimit = FEEDER_POWER_LIMIT;
 
-        feederConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        feederConfig.CurrentLimits.StatorCurrentLimit = FEEDER_STATOR_LIMIT;
+        spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = false;
+        spindexerConfig.CurrentLimits.StatorCurrentLimit = 0;
+
+        feederConfig.CurrentLimits.StatorCurrentLimitEnable = false;
+        feederConfig.CurrentLimits.StatorCurrentLimit = 0;
 
         spindexerMotor.getConfigurator().apply(spindexerConfig);
         feederMotor.getConfigurator().apply(feederConfig);

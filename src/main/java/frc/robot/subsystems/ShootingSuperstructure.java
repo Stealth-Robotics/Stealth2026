@@ -18,6 +18,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -51,7 +52,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
 
     //Used by the CANRange to determine whether a fuel is detected
-    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(0.5);
+    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(0.8);
 
     private final Supplier<Pose2d> robotPoseSupplier;
     private final Supplier<ChassisSpeeds> robotVelocitySupplier;
@@ -85,13 +86,15 @@ public class ShootingSuperstructure extends SubsystemBase {
     private int passShots = 0;
 
     private boolean applyIdle = true;
-    private boolean isShooting = false;
+    private boolean isShotRequested = false;
+    private boolean isActiveShooter = false;
     private boolean wasShotDetectedBefore = false;
 
     private double[] currentRobotAccel = {0.0, 0.0, 0.0};
     private ChassisSpeeds previousRobotVelo = new ChassisSpeeds();
 
     private final int CAN_RANGE_ID = 15;
+    private final Timer lastShotTimer = new Timer();
 
     public enum ShooterState {
         IDLE,
@@ -156,6 +159,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     public Command shoot() {
         return run(() -> {
             shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
+            isShotRequested = true;
 
             shooter.setHoodDegrees(
                 (state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle()
@@ -170,22 +174,23 @@ public class ShootingSuperstructure extends SubsystemBase {
                     double metersToTarget = calculateDistanceToTarget();
                     transfer.spin(metersToTarget);
                     transfer.feed(metersToTarget);
+                    isActiveShooter = true;
                 }
                 else {
                     transfer.stopSpinning();
                     transfer.stopFeeding();
+                    isActiveShooter = false;
                 }
             }
-
-            isShooting = true;
         })
         .finallyDo(() -> {
             shooter.coastShooter();
             transfer.stopSpinning();
             transfer.stopFeeding();
 
-            isShooting = false;
+            isShotRequested = false;
             alreadySpinningAtTarget = false;
+            isActiveShooter = false;
         })
         .onlyWhile(() -> {
             return state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING);
@@ -204,6 +209,15 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public void coastShooter() {
         shooter.coastShooter();
+    }
+
+    // TODO: tune timeout values for agitation and hopper empty
+    public boolean getNeedsHopperAgitate() {
+        return lastShotTimer.hasElapsed(0.5);
+    }
+
+    public boolean getIsHopperEmpty() {
+        return lastShotTimer.hasElapsed(3);
     }
 
     /**
@@ -301,8 +315,18 @@ public class ShootingSuperstructure extends SubsystemBase {
         return isVelocityBelowThreshold && isAccelBelowThreshold && isRobotLevelEnough && turret.isReady();
     }
 
+    public boolean isShotRequested() {
+        return isShotRequested;
+    }
+
     public boolean isShooting() {
-        return isShooting;
+        return isActiveShooter;
+    }
+
+    private boolean isShotDetected() {
+        //shotSensor.getDistance().refresh();
+        double dist = shotSensor.getDistance().getValue().in(Inches);
+        return dist < FUEL_DETECTED_DISTANCE_THRESHOLD.in(Inches);
     }
 
     private double calculateDistanceToTarget() {
@@ -325,8 +349,21 @@ public class ShootingSuperstructure extends SubsystemBase {
     @Override
     public void periodic() {
         //Keep the hood down unless we are shooting
-        if (!isShooting()) shooter.setHoodDegrees(0);
+        if (!isShotRequested()) {
+            shooter.setHoodDegrees(0);
+        } else {
+            shotSensor.getDistance().refresh();
+        }
 
+        // Only run the timer when we are actively shooting.
+        if (isShooting() && !lastShotTimer.isRunning()) {
+            lastShotTimer.start();
+        } else if (!isShotRequested() && 
+        lastShotTimer.isRunning()) {
+            lastShotTimer.reset();
+            lastShotTimer.stop();
+        }
+      
         switch (state) {
             case IDLE -> {
                 if (applyIdle) {
@@ -346,10 +383,11 @@ public class ShootingSuperstructure extends SubsystemBase {
         }
 
         calculateRobotAccel();
-
-        boolean shotDetected = shotSensor.getIsDetected().getValue();
+        //boolean shotDetected = shotSensor.getIsDetected().getValue();
+        boolean shotDetected = isShotDetected();
 
         if (shotDetected && !wasShotDetectedBefore) {
+            lastShotTimer.restart();
             switch (state) {
                 case HUB_TRACKING:
                     hubShots++;
@@ -366,10 +404,15 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         wasShotDetectedBefore = shotDetected;
 
+        // TODO: don't log every loop.
         //Log our shooting stats
         DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
         DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
         DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
+        //TODO: TEMP
+        DogLog.log("ShootingSuperstructure/shotTimer", lastShotTimer.get());
+        DogLog.log("ShootingSuperstructure/ShotSensorDistance", shotSensor.getDistance().getValue().in(Inches));
+        DogLog.log("ShootingSuperstructure/ShotSensorDetected", shotSensor.getIsDetected().getValue());
 
         DogLog.forceNt.log("ShootingSuperstructure/state", state.name());
         DogLog.forceNt.log("ShootingSuperstructure/RPM_Offset", RPMOffset);
