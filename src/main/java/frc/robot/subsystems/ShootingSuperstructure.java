@@ -124,14 +124,14 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensorConfig.withProximityParams(
             new ProximityParamsConfigs()
                 .withProximityThreshold(FUEL_DETECTED_DISTANCE_THRESHOLD)
-                .withProximityHysteresis(Inches.of(0.01))
+                .withProximityHysteresis(Inches.of(0.3))
           );
 
         shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
 
         shotSensor.getConfigurator().apply(shotSensorConfig);
 
-        shotSensor.getIsDetected().setUpdateFrequency(100, 0.005);
+        shotSensor.getIsDetected().setUpdateFrequency(100, 0.02);
     }
 
     public void changeRPMOffset(int delta) {
