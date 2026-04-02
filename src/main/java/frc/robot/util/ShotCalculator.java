@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import dev.doglog.DogLog;
 
 public class ShotCalculator {
@@ -62,10 +63,6 @@ public class ShotCalculator {
         double filteredVx = vxFilter.calculate(robotVelocity.vxMetersPerSecond);
         double filteredVy = vyFilter.calculate(robotVelocity.vyMetersPerSecond);
         double filteredVOmega = vOmegaFilter.calculate(robotVelocity.omegaRadiansPerSecond);
-
-        // DogLog.log("filteredVx", Math.round(filteredVx * 1000.0) / 1000.0);
-        // DogLog.log("filteredVy", Math.round(filteredVy * 1000.0) / 1000.0);
-        // DogLog.log("filteredVOmega", Math.round(filteredVOmega * 1000.0) / 1000.0);
 
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
         fuelExitPose = fuelExitPose.plus(

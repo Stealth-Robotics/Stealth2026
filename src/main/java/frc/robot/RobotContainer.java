@@ -17,10 +17,10 @@ import frc.robot.util.ShiftTracker;
 import frc.robot.Autos.AutoPosition;
 
 public class RobotContainer {
-    private final Driver driver = Driver.TEST;
+    private final Driver driver = Driver.MO;
 
     private enum Driver {
-        MATT, MO, TEST
+        MATT, MO, COACH_BOGDANANOV
     }
 
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -97,12 +97,6 @@ public class RobotContainer {
         driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
 
         driverController.back().onTrue(robot.forceResetOdometry());
-
-        if (driver.equals(Driver.TEST)) {
-            driverController.a().whileTrue(robot.shoot())
-                .and(robot.getNeedsHopperAgitate())
-                .onTrue(robot.agitate());
-        }
         
         //Operator Controls
         operatorController.rightBumper().whileTrue(robot.shoot());
@@ -141,7 +135,7 @@ public class RobotContainer {
     public void disabledPeriodic() {
         String selectedName = autoChooser.selectedCommand().getName();
         if (selectedName != null && !selectedName.equals(lastAutoName)) {
-              lastAutoName = selectedName;
+            lastAutoName = selectedName;
             autos.preloadAuto(selectedName);
         }
     }
