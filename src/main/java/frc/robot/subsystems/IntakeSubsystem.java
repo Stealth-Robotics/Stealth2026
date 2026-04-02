@@ -52,7 +52,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_POSITION_TOLERANCE = 0.01;
 
     private final double DEPLOYED_ROTATIONS = 0.0;
-    private final double RETRACTED_ROTATIONS = 0.3;
+    private final double RETRACTED_ROTATIONS = 0.27;
 
     private final double DEPLOY_kP = 28;
     private final double RETRACT_kP = 28;
@@ -144,7 +144,7 @@ public class IntakeSubsystem extends SubsystemBase {
         double tossPercentage = RETRACTED_ROTATIONS * 0.6;
         return new SequentialCommandGroup(
             new InstantCommand(() -> moveFastTo(tossPercentage), this),
-            new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.3),
+            new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> deploy(), this),
