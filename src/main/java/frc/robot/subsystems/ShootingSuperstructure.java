@@ -324,7 +324,6 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     private boolean isShotDetected() {
-        //shotSensor.getDistance().refresh();
         double dist = shotSensor.getDistance().getValue().in(Inches);
         return dist < FUEL_DETECTED_DISTANCE_THRESHOLD.in(Inches);
     }
@@ -358,8 +357,8 @@ public class ShootingSuperstructure extends SubsystemBase {
         // Only run the timer when we are actively shooting.
         if (isShooting() && !lastShotTimer.isRunning()) {
             lastShotTimer.start();
-        } else if (!isShotRequested() && 
-        lastShotTimer.isRunning()) {
+        } 
+        else if (!isShotRequested() && lastShotTimer.isRunning()) {
             lastShotTimer.reset();
             lastShotTimer.stop();
         }
@@ -383,7 +382,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         }
 
         calculateRobotAccel();
-        //boolean shotDetected = shotSensor.getIsDetected().getValue();
+
         boolean shotDetected = isShotDetected();
 
         if (shotDetected && !wasShotDetectedBefore) {

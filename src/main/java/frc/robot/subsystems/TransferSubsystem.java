@@ -21,7 +21,6 @@ public class TransferSubsystem extends SubsystemBase {
     private final VoltageOut spindexerController = new VoltageOut(0);
     private final VoltageOut feederController = new VoltageOut(0);
 
-    private final double SPINNING_VOLTAGE = 12;
     private final double FEEDING_VOLTAGE = 12;
 
     private final int SPINDEXER_MOTOR_ID = 5;
