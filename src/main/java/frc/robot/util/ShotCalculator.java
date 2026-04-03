@@ -53,21 +53,23 @@ public class ShotCalculator {
     /**
      * Inserts a new RPM value into the map for the given distance. 
      * The distance is rounded to 2 decimal places to prevent issues with floating point precision when looking up values later.
-     * @param rpm The RPM value to insert into the map for the current distance to the goal
+     * @param rpmDelta The RPM value to insert into the map for the current distance to the goal
      */
-    public static void insertHubShotRPM(double rpm) {
-        double distance = Math.round(lastMetersToGoal * 100.0) / 100.0;
-        hubDistanceToRPM.updateNearest(distance, rpm);
+    public static void insertHubShotRPM(double rpmDelta) {
+        double distance = lastMetersToGoal;
+        double nearestValue = hubDistanceToRPM.getNearestValue(distance);
+        hubDistanceToRPM.updateNearest(distance, nearestValue + rpmDelta);
     }
 
     /**
     * Inserts a new RPM value into the map for the given distance. 
     * The distance is rounded to 2 decimal places to prevent issues with floating point precision when looking up values later.
-    * @param rpm The RPM value to insert into the map for the current distance to the goal
+    * @param rpmDelta The RPM value to insert into the map for the current distance to the goal
     */
-    public static void insertPassShotRPM(double rpm) {
-        double distance = Math.round(lastMetersToGoal * 100.0) / 100.0;
-        passingDistanceToRPM.updateNearest(distance, rpm);
+    public static void insertPassShotRPM(double rpmDelta) {
+        double distance = lastMetersToGoal;
+        double nearestValue = passingDistanceToRPM.getNearestValue(distance);
+        passingDistanceToRPM.updateNearest(distance, nearestValue + rpmDelta);
     }
 
     /**

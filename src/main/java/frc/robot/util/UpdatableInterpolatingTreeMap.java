@@ -123,11 +123,28 @@ public class UpdatableInterpolatingTreeMap<K, V> {
       m_map.put(ceilingKey, value);
       return;
     }
+  }
+  
+  /**
+   * Returns the value associated with the key nearest to the provided key.
+   * @param key The key to find the nearest neighbor of.
+   * @return The value associated with the nearest key.
+   */
+  public V getNearestValue (K key) {
+    K ceilingKey = m_map.ceilingKey(key);
+    K floorKey = m_map.floorKey(key);
+
+    if (ceilingKey == null) {
+      return m_map.get(floorKey);
+    }
+    if (floorKey == null) {
+      return m_map.get(ceilingKey);
+    }
 
     if (m_inverseInterpolator.inverseInterpolate(floorKey, ceilingKey, key) < 0.5) {
-      m_map.put(floorKey, value);
+      return m_map.get(floorKey);
     } else {
-      m_map.put(ceilingKey, value);
+      return m_map.get(ceilingKey);
     }
   }
 
@@ -136,7 +153,10 @@ public class UpdatableInterpolatingTreeMap<K, V> {
     m_map.clear();
   }
 
-    public static class Double extends UpdatableInterpolatingTreeMap<java.lang.Double, java.lang.Double> {
+  /**
+   * A convenience class for using doubles as keys and values in an UpdatableInterpolatingTreeMap.
+   */
+  public static class Double extends UpdatableInterpolatingTreeMap<java.lang.Double, java.lang.Double> {
     public Double() {
       super(InverseInterpolator.forDouble(), Interpolator.forDouble());
     }
