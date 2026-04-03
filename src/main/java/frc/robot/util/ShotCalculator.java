@@ -5,7 +5,6 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 
@@ -17,18 +16,20 @@ public class ShotCalculator {
     //Time needed for ball to travel through feeder towards the flywheel
     private static final double mechanismLatency = Units.millisecondsToSeconds(30);
 
-    private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(1.96, 2600.0);
-        put(2.35, 2800.0);
-        put(2.5, 2800.0);
-        put(2.75, 2900.0);
-        put(3.0, 2925.0);
-        put(3.5, 3000.0);
-        put(4.0, 3050.0);
-        put(4.9, 3200.0);
+    private static double lastMetersToGoal = 0.0;
+
+    private static final UpdatableInterpolatingTreeMap.Double hubDistanceToRPM = new UpdatableInterpolatingTreeMap.Double() {{
+            put(1.96, 2600.0);
+            put(2.35, 2800.0);
+            put(2.5, 2800.0);
+            put(2.75, 2900.0);
+            put(3.0, 2925.0);
+            put(3.5, 3000.0);
+            put(4.0, 3050.0);
+            put(4.9, 3200.0);
     }};
 
-    private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
+    private static final UpdatableInterpolatingTreeMap.Double passingDistanceToRPM = new UpdatableInterpolatingTreeMap.Double() {{
         put(3.0, 3000.0);
         put(5.0, 3200.0);
         put(8.0, 3800.0);
@@ -47,6 +48,26 @@ public class ShotCalculator {
         vxFilter.reset();
         vyFilter.reset();
         vOmegaFilter.reset();
+    }
+
+    /**
+     * Inserts a new RPM value into the map for the given distance. 
+     * The distance is rounded to 2 decimal places to prevent issues with floating point precision when looking up values later.
+     * @param rpm The RPM value to insert into the map for the current distance to the goal
+     */
+    public static void insertHubShotRPM(double rpm) {
+        double distance = Math.round(lastMetersToGoal * 100.0) / 100.0;
+        hubDistanceToRPM.put(distance, rpm);
+    }
+
+    /**
+    * Inserts a new RPM value into the map for the given distance. 
+    * The distance is rounded to 2 decimal places to prevent issues with floating point precision when looking up values later.
+    * @param rpm The RPM value to insert into the map for the current distance to the goal
+    */
+    public static void insertPassShotRPM(double rpm) {
+        double distance = Math.round(lastMetersToGoal * 100.0) / 100.0;
+        passingDistanceToRPM.put(distance, rpm);
     }
 
     /**
@@ -97,9 +118,9 @@ public class ShotCalculator {
             fuelZVelo
         );
 
-        double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
+        lastMetersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
 
-        double baseRPM = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToRPM.get(metersToGoal);
+        double baseRPM = (isPassShot) ? passingDistanceToRPM.get(lastMetersToGoal) : hubDistanceToRPM.get(lastMetersToGoal);
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();
 
         //Scale up the measured RPM by the scale needed to compensate for robot velocity

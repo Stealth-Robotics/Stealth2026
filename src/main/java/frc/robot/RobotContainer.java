@@ -99,6 +99,8 @@ public class RobotContainer {
                 .onFalse(robot.stopAgitating());
 
                 driverController.a().onTrue(robot.agitate());
+                driverController.povUp().onTrue(robot.changeRpmMap(25));
+                driverController.povDown().onTrue(robot.changeRpmMap(-25));
         }
         else {
             robot.setIntakeDefaultCommand(

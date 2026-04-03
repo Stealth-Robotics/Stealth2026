@@ -139,6 +139,19 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensor.getIsDetected().setUpdateFrequency(100, 0.02);
     }
 
+    /*
+     * Allows us to adjust our RPM mapping on the fly during a match. 
+     * Adjusts the most recent RPM mapping (hub or pass) based on our current state.
+     */
+    public void changeRpmMap(int delta) {
+        double newRpm = lastSOTMResult.rpm() + delta;
+        if (state.equals(ShooterState.HUB_TRACKING)){
+            ShotCalculator.insertHubShotRPM(newRpm);
+        } else if (state.equals(ShooterState.PASSING)) {
+            ShotCalculator.insertPassShotRPM(newRpm);
+        }
+    }
+
     public void changeRPMOffset(int delta) {
         RPMOffset += delta;
     }
