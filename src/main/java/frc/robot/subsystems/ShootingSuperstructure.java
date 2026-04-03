@@ -55,7 +55,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
 
     //Used by the CANRange to determine whether a fuel is detected
-    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(0.8);
+    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(3.8);
 
     private final Supplier<Pose2d> robotPoseSupplier;
     private final Supplier<ChassisSpeeds> robotVelocitySupplier;
@@ -130,7 +130,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensorConfig.withProximityParams(
             new ProximityParamsConfigs()
                 .withProximityThreshold(FUEL_DETECTED_DISTANCE_THRESHOLD)
-                .withProximityHysteresis(Inches.of(0.3))
           );
 
         shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
@@ -165,8 +164,6 @@ public class ShootingSuperstructure extends SubsystemBase {
     public Command shoot() {
         return run(() -> {
             isShotRequested = true;
-            shotSensor.getDistance().refresh();
-
             shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
             shooter.setHoodDegrees((state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle());
 
@@ -326,7 +323,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     private boolean isShotDetected() {
-        double dist = shotSensor.getDistance().getValue().in(Inches);
+        double dist = shotSensor.getDistance(true).getValue().in(Inches);
         return dist < FUEL_DETECTED_DISTANCE_THRESHOLD.in(Inches);
     }
 
@@ -352,7 +349,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         if (isShooting() && !lastShotTimer.isRunning()) {
             lastShotTimer.start();
         } 
-        else if (!isShotRequested && lastShotTimer.isRunning()) {
+        else if (!isShooting() && lastShotTimer.isRunning()) {
             lastShotTimer.reset();
             lastShotTimer.stop();
         }
@@ -381,6 +378,17 @@ public class ShootingSuperstructure extends SubsystemBase {
         if (!isShooterActive) recentShots = 0;
 
         wasShotDetectedBefore = shotDetected;
+
+        //Log our shooting counts
+        DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
+        DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
+        DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
+        
+        // The Below lines are for debugging shot detection
+        // DogLog.log("ShootingSuperstructure/Recent_Shots", recentShots);
+        // DogLog.log("ShootingSuperstructure/ShotTimer", lastShotTimer.get());
+        // DogLog.log("ShootingSuperstructure/Shot_Distance", shotSensor.getDistance().getValue().in(Inches));
+        // DogLog.log("ShootingSuperstructure/Shot_Threshold", FUEL_DETECTED_DISTANCE_THRESHOLD.in(Inches));
     }
 
     @Override
@@ -408,12 +416,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         calculateRobotAccel();
         updateShotCounting();
-
-        //Log our shooting counts
-        DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
-        DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
-        DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
-
+        // TODO: Move to a lower rate logger to save bandwidth
         DogLog.forceNt.log("ShootingSuperstructure/state", state.name());
         DogLog.forceNt.log("ShootingSuperstructure/RPM_Offset", RPMOffset);
     }

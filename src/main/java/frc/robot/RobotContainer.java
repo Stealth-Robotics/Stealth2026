@@ -20,7 +20,7 @@ public class RobotContainer {
     private final Driver driver = Driver.MO;
 
     private enum Driver {
-        MATT, MO, COACH_BOGDANANOV
+        MATT, MO, COACH_BOGDANANOV, CODE_MONKEY
     }
 
     private final CommandXboxController driverController = new CommandXboxController(0);
@@ -83,6 +83,22 @@ public class RobotContainer {
             );
 
             driverController.y().onTrue(new InstantCommand(() -> deployOverRetract = !deployOverRetract));
+        }
+        else if (driver.equals(Driver.CODE_MONKEY)) {
+            robot.setIntakeDefaultCommand(
+                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+                () -> driverController.getRightTriggerAxis() > 0.01,
+                () -> driverController.y().getAsBoolean(),
+                () -> operatorController.b().getAsBoolean()
+            );
+
+            driverController.rightBumper()
+                .whileTrue(robot.shoot())
+                .and(robot.needsHopperAgitate())
+                .onTrue(robot.agitateRepeatedly())
+                .onFalse(robot.stopAgitating());
+
+                driverController.a().onTrue(robot.agitate());
         }
         else {
             robot.setIntakeDefaultCommand(

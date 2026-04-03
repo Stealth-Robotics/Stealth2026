@@ -153,6 +153,14 @@ public class RobotSystem extends SubsystemBase {
         return intake.agitate();
     }
 
+    public Command agitateRepeatedly() {
+        return intake.agitate().repeatedly();
+    }   
+
+    public Command stopAgitating() {
+        return intake.stopCommand();
+    }
+
     public Command clearTransfer() {
         return shooter.clearTransfer();
     }
