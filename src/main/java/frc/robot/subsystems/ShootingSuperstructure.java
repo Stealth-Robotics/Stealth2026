@@ -144,10 +144,11 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Adjusts the most recent RPM mapping (hub or pass) based on our current state.
      */
     public void changeRpmMap(int delta) {
+        double newRpm = lastSOTMResult.rpm() + delta;
         if (state.equals(ShooterState.HUB_TRACKING)){
-            ShotCalculator.insertHubShotRPM(delta);
+            ShotCalculator.insertHubShotRPM(newRpm);
         } else if (state.equals(ShooterState.PASSING)) {
-            ShotCalculator.insertPassShotRPM(delta);
+            ShotCalculator.insertPassShotRPM(newRpm);
         }
     }
 
