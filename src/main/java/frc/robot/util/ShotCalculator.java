@@ -57,7 +57,7 @@ public class ShotCalculator {
      */
     public static void insertHubShotRPM(double rpm) {
         double distance = Math.round(lastMetersToGoal * 100.0) / 100.0;
-        hubDistanceToRPM.put(distance, rpm);
+        hubDistanceToRPM.updateNearest(distance, rpm);
     }
 
     /**
@@ -67,7 +67,7 @@ public class ShotCalculator {
     */
     public static void insertPassShotRPM(double rpm) {
         double distance = Math.round(lastMetersToGoal * 100.0) / 100.0;
-        passingDistanceToRPM.put(distance, rpm);
+        passingDistanceToRPM.updateNearest(distance, rpm);
     }
 
     /**
