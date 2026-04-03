@@ -129,6 +129,14 @@ public class RobotSystem extends SubsystemBase {
         intake.setDefaultCommand(intakeDefaultCommand);
     }
 
+    public Command agitateRepeatedly() {
+        return intake.agitate().repeatedly();
+    }   
+
+    public Command stopAgitating() {
+        return intake.stopCommand();
+    }
+
     public Command dashboardHoodReset() {
         return shooter.dashboardHoodReset();
     }
