@@ -41,8 +41,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     //Allows us to manually offset the set RPMs during a match
     private int RPMOffset = 0;
 
-    private final double SECONDS_BEFORE_HOPPER_AGITATE = 1;
-    private final double SECONDS_BEFORE_HOPPER_EMPTY = 3;
+    private final double SECONDS_BEFORE_HOPPER_AGITATE = 2;
+    private final double SECONDS_BEFORE_HOPPER_EMPTY = 4;
 
     //Prevents us from shooting if we are tiled enough to miss our target
     private final double MAX_PITCH_RADIANS = Units.degreesToRadians(8);
@@ -78,7 +78,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams leftPass = new ShotParams(new Translation3d(1, 5.75, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.8, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private ShotParams currentShotParams = hub;
 

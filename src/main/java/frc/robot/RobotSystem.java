@@ -306,8 +306,7 @@ public class RobotSystem extends SubsystemBase {
     private double poseEstimateScore(PoseEstimate p) {
         return
             p.tagCount * LimelightConstants.POSE_ESTIMATE_WEIGHTS[0] +
-            Math.min((1.0 / p.avgTagDist), 5) * LimelightConstants.POSE_ESTIMATE_WEIGHTS[2] +
-            p.tagSpan * LimelightConstants.POSE_ESTIMATE_WEIGHTS[2];
+            Math.min((1.0 / p.avgTagDist), 5) * LimelightConstants.POSE_ESTIMATE_WEIGHTS[1];
     }
 
     public void toggleDisabledLeds(boolean disable) {
@@ -334,11 +333,12 @@ public class RobotSystem extends SubsystemBase {
 
         DogLog.forceNt.log("Current Zone", ZoneManager.getZone().name());
         DogLog.forceNt.log("Driving Mode", currentDrivingMode.name());
+        DogLog.forceNt.log("DrivePose", drivePose);
 
         if (LOG_LIMELIGHTS) {
             for (String ll : LimelightConstants.LIMELIGHTS) {
                 PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
-                if (m1Pose != null && !(m1Pose.pose.getX() == 0 && m1Pose.pose.getY() == 0))
+                if (m1Pose != null)
                     DogLog.log(ll + "/M1Pose", m1Pose.pose);
 
                 List<Pose3d> visibleTags = new ArrayList<>();

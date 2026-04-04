@@ -34,7 +34,7 @@ public class ZoneManager {
         else if (inPassingZone())
             return FieldZone.PASS;
         else
-            return FieldZone.UNKNOWN;
+            return FieldZone.HUB;
     }
 
     private static boolean inHubZone() {
