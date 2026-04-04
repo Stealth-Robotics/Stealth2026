@@ -50,6 +50,12 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledPeriodic() {
         m_robotContainer.disabledPeriodic();
+        
+        double robotHeading = m_robotContainer.getRobotRotation().getDegrees();
+        
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetRobotOrientation(ll, robotHeading, 0, 0, 0, 0, 0);
+        }
     }
 
     @Override

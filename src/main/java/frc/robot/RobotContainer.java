@@ -7,6 +7,7 @@ import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
 import edu.wpi.first.hal.simulation.RoboRioDataJNI;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -87,14 +88,14 @@ public class RobotContainer {
         else {
             robot.setIntakeDefaultCommand(
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-                () -> driverController.getRightTriggerAxis() > 0.01,
+                () -> driverController.getRightTriggerAxis() > 0.1,
                 () -> driverController.rightBumper().getAsBoolean(),
                 () -> operatorController.b().getAsBoolean()
             );
         }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
-        driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
+        driverController.leftTrigger(0.1).whileTrue(robot.activatePrecisionDriving());
 
         driverController.start().onTrue(robot.forceResetOdometry());
         
@@ -151,6 +152,10 @@ public class RobotContainer {
 
     public void toggleDisabledLeds(boolean disable) {
         robot.toggleDisabledLeds(disable);
+    }
+
+    public Rotation2d getRobotRotation() {
+        return robot.getRobotRotation();
     }
 
     public void resetFuelCounter() {

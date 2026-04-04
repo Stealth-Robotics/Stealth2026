@@ -202,6 +202,14 @@ public class ShootingSuperstructure extends SubsystemBase {
         });
     }
 
+    public Command startSpindexerShake() {
+        return transfer.startShake();
+    }
+
+    public void cancelSpindexerShake() {
+        transfer.cancelShake();
+    }
+
     public Command clearTransfer() {
         return run(() -> {
             transfer.reverseFeed();

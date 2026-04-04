@@ -41,7 +41,7 @@ public class Autos {
     }
 
     private Command stopShooting() {
-        return new InstantCommand(() -> shooter.shoot().cancel());
+        return new InstantCommand(() -> shooter.shoot().cancel()).andThen(stopAgitating());
     }
 
     private Command startAgitating() {
@@ -57,11 +57,53 @@ public class Autos {
     }
 
     private Command deployAndIntake() {
-        return intake.deployCommand().andThen(intake.intakeCommand());
+        return intake.deployCommand()
+            .andThen(intake.intakeCommand())
+            .andThen(shooter.startSpindexerShake());
+    }
+
+    private Command shootCommand() {
+        return new InstantCommand(() -> shooter.cancelSpindexerShake())
+            .andThen(shooter.shoot());
     }
 
     private Command spinupShooter() {
         return shooter.spinUp(2500);
+    }
+
+    /*
+     * Goated auto that was definitely not stolen from 2056
+     */
+    public AutoRoutine doubleBean(AutoPosition position) {
+        String pathName = switch (position) {
+            case LEFT -> "LeftDoubleBean";
+            case RIGHT -> "RightDoubleBean";
+            default -> "";
+        };
+
+        if (pathName.isBlank())
+            return nothingAuto;
+
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        AutoTrajectory path = routine.trajectory(pathName, 0);
+        path.atTime("Intake").onTrue(deployAndIntake());
+        path.atTime("Spinup").onTrue(spinupShooter());
+        path.atTime("Shoot").onTrue(shootCommand());
+        path.atTime("StopShoot").onTrue(stopShooting());
+        
+        path.atTime("Intake2").onTrue(deployAndIntake());
+        path.atTime("Spinup2").onTrue(spinupShooter());
+        path.atTime("Shoot2").onTrue(shootCommand().alongWith(startAgitating()));
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                path.resetOdometry(),
+                path.cmd()
+            )
+        );
+
+        return routine;
     }
 
     public AutoRoutine doubleBump(AutoPosition position) {
