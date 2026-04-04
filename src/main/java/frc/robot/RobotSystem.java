@@ -7,10 +7,14 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
@@ -86,6 +90,9 @@ public class RobotSystem extends SubsystemBase {
 
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
+
+        //Set the drive odometry standard deviations
+        drive.setStateStdDevs(VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(2)));
 
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
 
@@ -273,10 +280,18 @@ public class RobotSystem extends SubsystemBase {
             }
 
             if (bestPoseEstimate != null) {
+                double scalingFactor = Math.pow(bestPoseEstimate.avgTagDist, 2) / Math.max(bestPoseEstimate.tagCount, 1);
+
+                Vector<N3> stddevs = VecBuilder.fill(
+                    LimelightConstants.VISION_XY_STDDEV * scalingFactor,
+                    LimelightConstants.VISION_XY_STDDEV * scalingFactor,
+                    LimelightConstants.VISION_THETA_STDDEV *scalingFactor
+                );
+
                 drive.addVisionMeasurement(
                     bestPoseEstimate.pose,
                     bestPoseEstimate.timestampSeconds,
-                    LimelightConstants.VISION_STDDEVS
+                    stddevs
                 );
             }
         }
@@ -284,8 +299,9 @@ public class RobotSystem extends SubsystemBase {
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
         return
-            poseEstimate != null && poseEstimate.pose != null &&
-            poseEstimate.tagCount > LimelightConstants.MIN_TAG_COUNT_REJECTION && 
+            poseEstimate != null && poseEstimate.pose != null && 
+            !poseEstimate.pose.equals(Pose2d.kZero) && AllianceUtility.isWithinField(poseEstimate.pose) &&
+            poseEstimate.tagCount > LimelightConstants.MIN_TAG_COUNT_REJECTION &&
             poseEstimate.avgTagDist < LimelightConstants.MIN_TAG_REJECTION_METERS;
     }
 

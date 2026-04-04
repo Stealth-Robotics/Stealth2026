@@ -18,6 +18,10 @@ public class AllianceUtility {
         return latestAlliance;
     }
 
+    public static boolean isWithinField(Pose2d p) {
+        return p.getX() >= 0 && p.getY() >= 0 && p.getX() <= FIELD_LENGTH_METERS && p.getY() <= FIELD_WIDTH_METERS;
+    }
+
     /**
      * Returns the original Pose2d but rotated 180 degrees around the field's center point (transitioning a coordinate
      * from the BLUE alliance to the RED and vice versa) if the latest alliance is RED, otherwise it returns the original
