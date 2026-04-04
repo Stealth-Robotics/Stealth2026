@@ -102,14 +102,6 @@ public class RobotSystem extends SubsystemBase {
         pdhNotifier.startPeriodic(0.5);
     }
 
-    public Command agitateRepeatedly() {
-        return intake.agitate().repeatedly();
-    }   
-
-    public Command stopAgitating() {
-        return intake.stopCommand();
-    }
-
     public Command forceResetOdometry() {
         return new InstantCommand(() -> drive.resetPose(AllianceUtility.flipPose(ODOMETRY_RESET_POSE)));
     }
