@@ -266,34 +266,51 @@ public class RobotSystem extends SubsystemBase {
     private void updateOdometry() {
         if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < LimelightConstants.MAX_VISION_ANGULAR_VELOCITY) {
             double imuAngle = drive.getPose().getRotation().getDegrees();
-            PoseEstimate bestPoseEstimate = null;
+            // PoseEstimate bestPoseEstimate = null;
 
             for (String limelight : LimelightConstants.LIMELIGHTS) {
                 LimelightHelpers.SetRobotOrientation(limelight, imuAngle, 0, 0, 0, 0, 0);
 
-                var poseEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+                var pEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
-                boolean betterEstimate = (bestPoseEstimate == null || isBetterPoseEstimate(poseEstimate, bestPoseEstimate));
-                if (isGoodPoseEstimate(poseEstimate) && betterEstimate) {
-                    bestPoseEstimate = poseEstimate;
+            //     boolean betterEstimate = (bestPoseEstimate == null || isBetterPoseEstimate(poseEstimate, bestPoseEstimate));
+            //     if (isGoodPoseEstimate(poseEstimate) && betterEstimate) {
+            //         bestPoseEstimate = poseEstimate;
+            //     }
+            // }
+                if (isGoodPoseEstimate(pEstimate)) {
+                    double scalingFactor = Math.pow(pEstimate.avgTagDist, 2) / Math.max(pEstimate.tagCount, 1);
+
+                    Vector<N3> stddevs = VecBuilder.fill(
+                        LimelightConstants.VISION_XY_STDDEV * scalingFactor,
+                        LimelightConstants.VISION_XY_STDDEV * scalingFactor,
+                        LimelightConstants.VISION_THETA_STDDEV *scalingFactor
+                    );
+
+                    drive.addVisionMeasurement(
+                        pEstimate.pose,
+                        pEstimate.timestampSeconds,
+                        stddevs
+                    );
                 }
+
             }
 
-            if (bestPoseEstimate != null) {
-                double scalingFactor = Math.pow(bestPoseEstimate.avgTagDist, 2) / Math.max(bestPoseEstimate.tagCount, 1);
+            // if (bestPoseEstimate != null) {
+            //     double scalingFactor = Math.pow(bestPoseEstimate.avgTagDist, 2) / Math.max(bestPoseEstimate.tagCount, 1);
 
-                Vector<N3> stddevs = VecBuilder.fill(
-                    LimelightConstants.VISION_XY_STDDEV * scalingFactor,
-                    LimelightConstants.VISION_XY_STDDEV * scalingFactor,
-                    LimelightConstants.VISION_THETA_STDDEV *scalingFactor
-                );
+            //     Vector<N3> stddevs = VecBuilder.fill(
+            //         LimelightConstants.VISION_XY_STDDEV * scalingFactor,
+            //         LimelightConstants.VISION_XY_STDDEV * scalingFactor,
+            //         LimelightConstants.VISION_THETA_STDDEV *scalingFactor
+            //     );
 
-                drive.addVisionMeasurement(
-                    bestPoseEstimate.pose,
-                    bestPoseEstimate.timestampSeconds,
-                    stddevs
-                );
-            }
+            //     drive.addVisionMeasurement(
+            //         bestPoseEstimate.pose,
+            //         bestPoseEstimate.timestampSeconds,
+            //         stddevs
+            //     );
+            // }
         }
     }
 
