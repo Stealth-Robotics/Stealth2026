@@ -351,5 +351,7 @@
    {"name":"Intake", "from":{"target":0, "targetTimestamp":0.0, "offset":{"exp":"0.6 s", "val":0.6}}, "event":null},
    {"name":"Shoot", "from":{"target":8, "targetTimestamp":4.75757, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
    {"name":"Intake2", "from":{"target":9, "targetTimestamp":5.49003, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
-   {"name":"Shoot2", "from":{"target":17, "targetTimestamp":10.20543, "offset":{"exp":"0 s", "val":0.0}}, "event":null}]
+   {"name":"Shoot2", "from":{"target":17, "targetTimestamp":10.20543, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
+   {"name":"Spinup", "from":{"target":6, "targetTimestamp":3.90299, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
+   {"name":"Spinup2", "from":{"target":16, "targetTimestamp":8.70849, "offset":{"exp":"0 s", "val":0.0}}, "event":null}]
 }

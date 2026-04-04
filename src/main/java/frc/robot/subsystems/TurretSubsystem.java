@@ -36,7 +36,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final double TURRET_ANGLE_TOLERANCE_DEGREES = 5.0;
 
-    public final double MAX_TURRET_DEGREES = 121;
+    public final double MAX_TURRET_DEGREES = 120;
     private final double TURRET_HOME_DEGREES = 0;
     public final double MIN_TURRET_DEGREES = -54;
 
@@ -63,6 +63,9 @@ public class TurretSubsystem extends SubsystemBase {
 
         turretConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         turretConfig.CurrentLimits.StatorCurrentLimit = TURRET_STATOR_LIMIT;
+
+        turretConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        turretConfig.CurrentLimits.SupplyCurrentLimit = TURRET_STATOR_LIMIT;
 
         turretConfig.Slot0.kP = kP;
         turretConfig.Slot0.kI = kI;

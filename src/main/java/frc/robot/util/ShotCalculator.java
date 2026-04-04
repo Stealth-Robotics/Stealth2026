@@ -15,17 +15,27 @@ public class ShotCalculator {
     private static final double systemPeriod = Units.millisecondsToSeconds(20);
 
     //Time needed for ball to travel through feeder towards the flywheel
-    private static final double mechanismLatency = Units.millisecondsToSeconds(30);
+    private static final double mechanismLatency = Units.millisecondsToSeconds(15);
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
+        // put(1.96, 2600.0);
+        // put(2.35, 2800.0);
+        // put(2.5, 2800.0);
+        // put(2.75, 2900.0);
+        // put(3.0, 2925.0);
+        // put(3.5, 3000.0);
+        // put(4.0, 3050.0);
+        // put(4.9, 3200.0);
+
+        //Bear metal table
         put(1.96, 2600.0);
         put(2.35, 2800.0);
         put(2.5, 2800.0);
         put(2.75, 2900.0);
-        put(3.0, 2925.0);
-        put(3.5, 3000.0);
-        put(4.0, 3050.0);
-        put(4.9, 3200.0);
+        put(3.0, 2900.0);
+        put(3.5, 2950.0);
+        put(4.0, 3000.0);
+        put(4.9, 3300.0);
     }};
 
     private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
@@ -37,9 +47,9 @@ public class ShotCalculator {
     }};
 
     //Velocity smoothing filters
-    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.15, systemPeriod);
-    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.15, systemPeriod);
-    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.15, systemPeriod);
+    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
+    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
+    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
 
     public record SOTMResult(double rpm, double turretAngle, double hoodAngle) {}
 
@@ -105,11 +115,7 @@ public class ShotCalculator {
         //Scale up the measured RPM by the scale needed to compensate for robot velocity
         double targetFlywheelRPM = baseRPM * veloScale;
 
-        double targetTurretAngle = Units.radiansToDegrees(
-            //TODO: Test which line of code performs better
-            // Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds)
-            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX())
-        );
+        double targetTurretAngle = Units.radiansToDegrees(Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()));
         
         double horizontalSpeed = Math.hypot(movingShotVelocity.getX(), movingShotVelocity.getY());
         double targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));

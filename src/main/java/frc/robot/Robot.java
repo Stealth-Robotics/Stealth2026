@@ -63,6 +63,7 @@ public class Robot extends TimedRobot {
 
         for (String ll : LimelightConstants.LIMELIGHTS) {
             LimelightHelpers.SetThrottle(ll, 0);
+            LimelightHelpers.SetIMUMode(ll, 0);
         }
 
         //Reset the ShotCalculator's velocity filters 
@@ -70,7 +71,7 @@ public class Robot extends TimedRobot {
     }
 
     @Override
-    public void autonomousInit() {        
+    public void autonomousInit() {
         ShiftTracker.start();
         
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();

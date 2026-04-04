@@ -59,17 +59,17 @@ public class TunerConstants {
         .withCurrentLimits(
             new CurrentLimitsConfigs()
                 //TODO: Values from Auburn
-                .withSupplyCurrentLimit(80)
+                .withSupplyCurrentLimit(70)
                 .withSupplyCurrentLimitEnable(true)
         );
 
     private static final TalonFXConfiguration steerInitialConfigs = new TalonFXConfiguration()
         .withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withSupplyCurrentLimit(30) //TODO: Value from Auburn
+                .withSupplyCurrentLimit(25) //TODO: Value from Auburn
                 .withSupplyCurrentLimitEnable(true)
 
-                .withStatorCurrentLimit(Amps.of(40))
+                .withStatorCurrentLimit(Amps.of(25))
                 .withStatorCurrentLimitEnable(true)
         );
     private static final CANcoderConfiguration encoderInitialConfigs = new CANcoderConfiguration();

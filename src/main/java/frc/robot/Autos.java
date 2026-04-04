@@ -64,6 +64,47 @@ public class Autos {
         return shooter.spinUp(2500);
     }
 
+    public AutoRoutine moAuto(AutoPosition position) {
+        String pathName = switch (position) {
+            case LEFT -> "LeftMoAuto";
+            case RIGHT -> "RightMoAuto";
+            default -> "";
+        };
+
+        if (pathName.isBlank())
+            return nothingAuto;
+
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
+        firstCycle.atTime("Intake").onTrue(deployAndIntake());
+        firstCycle.atTime("Spinup").onTrue(spinupShooter());
+        firstCycle.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        AutoTrajectory secondCycle = routine.trajectory(pathName, 1);
+        secondCycle.atTime("Intake2").onTrue(deployAndIntake());
+        secondCycle.atTime("Spinup2").onTrue(spinupShooter());
+        secondCycle.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                firstCycle.resetOdometry(),
+                firstCycle.cmd()
+            )
+        );
+
+        firstCycle.done().onTrue(
+            new SequentialCommandGroup(
+                new WaitCommand(5), //Shooting time after first cycle
+                stopAgitating(),
+                stopShooting(),
+                secondCycle.cmd()
+            )
+        );
+
+        return routine;
+    }
+
     public AutoRoutine doubleBump(AutoPosition position) {
         String pathName = switch (position) {
             case LEFT -> "LeftDoubleBump";

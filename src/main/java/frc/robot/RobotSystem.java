@@ -61,8 +61,8 @@ public class RobotSystem extends SubsystemBase {
 
     private double filteredX, filteredY, filteredTheta, lastFilteredX, lastFilteredY, lastFilteredTheta;
 
-    private final SlewRateLimiter normalXLimiter = new SlewRateLimiter(5.0), normalYLimiter = new SlewRateLimiter(5.0);
-    private final SlewRateLimiter normalThetaLimiter = new SlewRateLimiter(10.0);
+    private final SlewRateLimiter normalXLimiter = new SlewRateLimiter(6.0), normalYLimiter = new SlewRateLimiter(6.0);
+    private final SlewRateLimiter normalThetaLimiter = new SlewRateLimiter(12.0);
 
     private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(3.0), precisionYLimiter = new SlewRateLimiter(3.0);
     private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(10.0);

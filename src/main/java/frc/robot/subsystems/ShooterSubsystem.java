@@ -72,8 +72,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private final int HOOD_MOTOR_ID = 4;
     private final int HOOD_ENCODER_ID = 9;
 
-    private final int SHOOTER_STATOR_LIMIT = 60;
-    private final int HOOD_STATOR_LIMIT = 30;
+    private final int SHOOTER_SUPPLY_LIMIT = 60;
+    private final int HOOD_SUPPLY_LIMIT = 30;
 
     private boolean disableHood = false;
     private double requestedHoodDegrees = 0;
@@ -100,8 +100,11 @@ public class ShooterSubsystem extends SubsystemBase {
         shooterConfig.Slot0.kS = SHOOTING_kS;
         shooterConfig.Slot0.kA = SHOOTING_kA;
 
+        shooterConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        shooterConfig.CurrentLimits.SupplyCurrentLimit = SHOOTER_SUPPLY_LIMIT;
+
         shooterConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        shooterConfig.CurrentLimits.StatorCurrentLimit = SHOOTER_STATOR_LIMIT;
+        shooterConfig.CurrentLimits.StatorCurrentLimit = SHOOTER_SUPPLY_LIMIT;
 
         shooterMotor1.getConfigurator().apply(shooterConfig);
         shooterMotor2.getConfigurator().apply(shooterConfig);
@@ -126,8 +129,11 @@ public class ShooterSubsystem extends SubsystemBase {
         hoodConfig.Slot0.kI = HOOD_kI;
         hoodConfig.Slot0.kD = HOOD_kD;
 
+        hoodConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        hoodConfig.CurrentLimits.SupplyCurrentLimit = HOOD_SUPPLY_LIMIT;
+
         hoodConfig.CurrentLimits.StatorCurrentLimitEnable = true;
-        hoodConfig.CurrentLimits.StatorCurrentLimit = HOOD_STATOR_LIMIT;
+        hoodConfig.CurrentLimits.StatorCurrentLimit = HOOD_SUPPLY_LIMIT;
 
         hoodMotor.getConfigurator().apply(hoodConfig);
 

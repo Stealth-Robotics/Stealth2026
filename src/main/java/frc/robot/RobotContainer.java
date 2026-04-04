@@ -118,14 +118,16 @@ public class RobotContainer {
      */
     private void addAutosToChooser() {
         //Newgen autos
-        autoChooser.addRoutine("LeftTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.RIGHT));
+        autoChooser.addRoutine("LeftMoAuto", () -> autos.moAuto(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightMoAuto", () -> autos.moAuto(AutoPosition.RIGHT));
+        // autoChooser.addRoutine("LeftTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftTrenchBump", () -> autos.trenchBump(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightTrenchBump", () -> autos.trenchBump(AutoPosition.RIGHT));
+        // autoChooser.addRoutine("LeftTrenchBump", () -> autos.trenchBump(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightTrenchBump", () -> autos.trenchBump(AutoPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
+        // autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
         
         //OG autos
         autoChooser.addRoutine("Right1CyclePlusOutpost", () -> autos.right1CyclePlusOutpost());
