@@ -26,12 +26,15 @@ public class TransferSubsystem extends SubsystemBase {
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
-    private final int SPINDEXER_POWER_LIMIT = 50;
-    private final int FEEDER_POWER_LIMIT = 50;
+    private final int SPINDEXER_SUPPLY_LIMIT = 50;
+    private final int FEEDER_SUPPLY_LIMIT = 50;
 
-    private static final InterpolatingDoubleTreeMap distanceToVoltage = new InterpolatingDoubleTreeMap() {{
-        put(1.0, 6.0);
-        put(2.5, 9.0);
+    private final int SPINDEXER_STATOR_LIMIT = 45;
+    private final int FEEDER_STATOR_LIMIT = 45;
+
+    private static final InterpolatingDoubleTreeMap distanceToVoltageMap = new InterpolatingDoubleTreeMap() {{
+        put(1.0, 8.0);
+        put(2.5, 10.0);
         put(4.0, 12.0);
     }};
     
@@ -48,10 +51,14 @@ public class TransferSubsystem extends SubsystemBase {
         feederConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
         spindexerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-        spindexerConfig.CurrentLimits.SupplyCurrentLimit = SPINDEXER_POWER_LIMIT;
+        spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        spindexerConfig.CurrentLimits.SupplyCurrentLimit = SPINDEXER_SUPPLY_LIMIT;
+        spindexerConfig.CurrentLimits.StatorCurrentLimit = SPINDEXER_STATOR_LIMIT;
         
         feederConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-        feederConfig.CurrentLimits.SupplyCurrentLimit = FEEDER_POWER_LIMIT;
+        feederConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        feederConfig.CurrentLimits.SupplyCurrentLimit = FEEDER_SUPPLY_LIMIT;
+        feederConfig.CurrentLimits.StatorCurrentLimit = FEEDER_STATOR_LIMIT;
 
         spindexerConfig.CurrentLimits.StatorCurrentLimitEnable = false;
         spindexerConfig.CurrentLimits.StatorCurrentLimit = 0;
@@ -64,7 +71,9 @@ public class TransferSubsystem extends SubsystemBase {
     }
 
     public void spin(double metersToTarget) {
-        spindexerMotor.setControl(spindexerController.withOutput(distanceToVoltage.get(metersToTarget)));
+        spindexerMotor.setControl(
+            spindexerController.withOutput(distanceToVoltageMap.get(metersToTarget))
+        );
     }
 
     public void stopSpinning() {
@@ -76,7 +85,9 @@ public class TransferSubsystem extends SubsystemBase {
     }
 
     public void feed(double metersToTarget) {
-        feederMotor.setControl(feederController.withOutput(distanceToVoltage.get(metersToTarget)));
+        feederMotor.setControl(
+            feederController.withOutput(distanceToVoltageMap.get(metersToTarget))
+        );
     }
 
     public void stopFeeding() {

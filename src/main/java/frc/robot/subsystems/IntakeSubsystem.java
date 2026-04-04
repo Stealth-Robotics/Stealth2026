@@ -51,7 +51,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_POSITION_TOLERANCE = 0.02;
 
     private final double DEPLOYED_ROTATIONS = 0.0;
-    private final double RETRACTED_ROTATIONS = 0.27;
+    private final double RETRACTED_ROTATIONS = 0.308;
 
     private final double DEPLOY_kP = 25;
     private final double RETRACT_kP = 30;

@@ -34,9 +34,9 @@ public class TurretSubsystem extends SubsystemBase {
     //The unclamped value that the turret is commanded to go to (used to see if it is at the target)
     private double rawTargetDegrees = 0;
 
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 5.0;
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 8.0;
 
-    public final double MAX_TURRET_DEGREES = 121;
+    public final double MAX_TURRET_DEGREES = 120;
     private final double TURRET_HOME_DEGREES = 0;
     public final double MIN_TURRET_DEGREES = -54;
 
@@ -51,6 +51,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final int TURRET_ENCODER_ID = 8;
 
     private final int TURRET_STATOR_LIMIT = 35;
+    private final int TURRET_SUPPLY_LIMIT = 30;
     
     private long lastMs = 0;
 
@@ -62,7 +63,9 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig.Feedback.SensorToMechanismRatio = TURRET_SENSOR_TO_MECHANISM_RATIO;
 
         turretConfig.CurrentLimits.StatorCurrentLimitEnable = true;
+        turretConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
         turretConfig.CurrentLimits.StatorCurrentLimit = TURRET_STATOR_LIMIT;
+        turretConfig.CurrentLimits.SupplyCurrentLimit = TURRET_SUPPLY_LIMIT;
 
         turretConfig.Slot0.kP = kP;
         turretConfig.Slot0.kI = kI;
@@ -101,8 +104,8 @@ public class TurretSubsystem extends SubsystemBase {
      */
     public boolean isReady() {
         boolean targetInRange = 
-            rawTargetDegrees < MAX_TURRET_DEGREES &&
-            rawTargetDegrees > MIN_TURRET_DEGREES;
+            rawTargetDegrees < (MAX_TURRET_DEGREES + TURRET_ANGLE_TOLERANCE_DEGREES) &&
+            rawTargetDegrees > (MIN_TURRET_DEGREES - TURRET_ANGLE_TOLERANCE_DEGREES);
 
         return targetInRange &&
             Math.abs(getTurretAngleDegrees() - rawTargetDegrees) < TURRET_ANGLE_TOLERANCE_DEGREES;

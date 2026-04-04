@@ -15,15 +15,12 @@ import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
@@ -64,8 +61,8 @@ public class RobotSystem extends SubsystemBase {
     private final SlewRateLimiter normalXLimiter = new SlewRateLimiter(5.0), normalYLimiter = new SlewRateLimiter(5.0);
     private final SlewRateLimiter normalThetaLimiter = new SlewRateLimiter(10.0);
 
-    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(3.0), precisionYLimiter = new SlewRateLimiter(3.0);
-    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(10.0);
+    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(6.0), precisionYLimiter = new SlewRateLimiter(6.0);
+    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(12.0);
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
@@ -96,6 +93,14 @@ public class RobotSystem extends SubsystemBase {
                 logPdhStats();
         });
         pdhNotifier.startPeriodic(0.5);
+    }
+
+    public Command agitateRepeatedly() {
+        return intake.agitate().repeatedly();
+    }   
+
+    public Command stopAgitating() {
+        return intake.stopCommand();
     }
 
     public Command forceResetOdometry() {
@@ -298,8 +303,7 @@ public class RobotSystem extends SubsystemBase {
     private double poseEstimateScore(PoseEstimate p) {
         return
             p.tagCount * LimelightConstants.POSE_ESTIMATE_WEIGHTS[0] +
-            Math.min((1.0 / p.avgTagDist), 5) * LimelightConstants.POSE_ESTIMATE_WEIGHTS[2] +
-            p.tagSpan * LimelightConstants.POSE_ESTIMATE_WEIGHTS[2];
+            Math.min((1.0 / p.avgTagDist), 5) * LimelightConstants.POSE_ESTIMATE_WEIGHTS[1];
     }
 
     public void toggleDisabledLeds(boolean disable) {
@@ -330,7 +334,7 @@ public class RobotSystem extends SubsystemBase {
         if (LOG_LIMELIGHTS) {
             for (String ll : LimelightConstants.LIMELIGHTS) {
                 PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
-                if (m1Pose != null && !(m1Pose.pose.getX() == 0 && m1Pose.pose.getY() == 0))
+                if (m1Pose != null)
                     DogLog.log(ll + "/M1Pose", m1Pose.pose);
 
                 List<Pose3d> visibleTags = new ArrayList<>();

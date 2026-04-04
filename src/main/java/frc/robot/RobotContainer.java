@@ -99,7 +99,12 @@ public class RobotContainer {
         driverController.start().onTrue(robot.forceResetOdometry());
         
         //Operator Controls
-        operatorController.rightBumper().whileTrue(robot.shoot());
+        operatorController.rightBumper()
+            .whileTrue(robot.shoot())
+            .and(robot.needsHopperAgitate())
+            .onTrue(robot.agitateRepeatedly())
+            .onFalse(robot.stopAgitating());
+
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
 
         operatorController.povUp()

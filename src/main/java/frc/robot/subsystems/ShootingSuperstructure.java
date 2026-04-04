@@ -41,21 +41,21 @@ public class ShootingSuperstructure extends SubsystemBase {
     //Allows us to manually offset the set RPMs during a match
     private int RPMOffset = 0;
 
-    private final double SECONDS_BEFORE_HOPPER_AGITATE = 1;
-    private final double SECONDS_BEFORE_HOPPER_EMPTY = 3;
+    private final double SECONDS_BEFORE_HOPPER_AGITATE = 2;
+    private final double SECONDS_BEFORE_HOPPER_EMPTY = 4;
 
     //Prevents us from shooting if we are tiled enough to miss our target
     private final double MAX_PITCH_RADIANS = Units.degreesToRadians(8);
     private final double MAX_ROLL_RADIANS = Units.degreesToRadians(8);
 
     //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
-    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {2.0, 2.0, Math.PI};
+    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {3.0, 3.0, Math.PI};
 
     //Prevents us from shooting if we are accelerating too fast to track our target (m/s^2, m/s^2, rad/s^2)
     private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
 
     //Used by the CANRange to determine whether a fuel is detected
-    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(0.8);
+    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(3.8);
 
     private final Supplier<Pose2d> robotPoseSupplier;
     private final Supplier<ChassisSpeeds> robotVelocitySupplier;
@@ -78,7 +78,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams leftPass = new ShotParams(new Translation3d(1, 5.75, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.8, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private ShotParams currentShotParams = hub;
 
@@ -130,7 +130,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensorConfig.withProximityParams(
             new ProximityParamsConfigs()
                 .withProximityThreshold(FUEL_DETECTED_DISTANCE_THRESHOLD)
-                .withProximityHysteresis(Inches.of(0.3))
           );
 
         shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
@@ -165,7 +164,6 @@ public class ShootingSuperstructure extends SubsystemBase {
     public Command shoot() {
         return run(() -> {
             isShotRequested = true;
-            shotSensor.getDistance().refresh();
 
             shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
             shooter.setHoodDegrees((state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle());
@@ -326,7 +324,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     private boolean isShotDetected() {
-        double dist = shotSensor.getDistance().getValue().in(Inches);
+        double dist = shotSensor.getDistance(true).getValue().in(Inches);
         return dist < FUEL_DETECTED_DISTANCE_THRESHOLD.in(Inches);
     }
 
@@ -352,7 +350,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         if (isShooting() && !lastShotTimer.isRunning()) {
             lastShotTimer.start();
         } 
-        else if (!isShotRequested && lastShotTimer.isRunning()) {
+        else if (!isShooting() && lastShotTimer.isRunning()) {
             lastShotTimer.reset();
             lastShotTimer.stop();
         }

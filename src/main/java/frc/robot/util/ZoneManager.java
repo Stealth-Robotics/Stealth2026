@@ -28,17 +28,10 @@ public class ZoneManager {
     }
 
     public static FieldZone getZone() {
-        //Make sure trench zone overrides all others for safety reasons
-        if (inHubZone())
-            return FieldZone.HUB;
-        else if (inPassingZone())
+        if (inPassingZone())
             return FieldZone.PASS;
         else
-            return FieldZone.UNKNOWN;
-    }
-
-    private static boolean inHubZone() {
-        return AllianceUtility.flipRectZone(hub).contains(robotPose.getTranslation());
+            return FieldZone.HUB;
     }
 
     private static boolean inPassingZone() {
@@ -46,6 +39,10 @@ public class ZoneManager {
     }
 
     //Currently unused because we don't care if we are inside the trench
+
+    // private static boolean inHubZone() {
+    //     return AllianceUtility.flipRectZone(hub).contains(robotPose.getTranslation());
+    // }
 
     // private static boolean inLeftTrenchZone() {
     //     return AllianceUtility.forceFlipRectZone(leftTrench).contains(robotPose.getTranslation()) ||
