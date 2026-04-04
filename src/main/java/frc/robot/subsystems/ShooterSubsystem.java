@@ -72,7 +72,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final int HOOD_MOTOR_ID = 4;
     private final int HOOD_ENCODER_ID = 9;
 
-    private final int SHOOTER_STATOR_LIMIT = 60;
+    private final int SHOOTER_STATOR_LIMIT = 80;
     private final int HOOD_STATOR_LIMIT = 30;
 
     private final int SHOOTER_SUPPLY_LIMIT = 60;

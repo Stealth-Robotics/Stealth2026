@@ -69,9 +69,10 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_ENCODER_ID = 18;
 
     private final int DEPLOY_STATOR_LIMIT = 50;
-    private final int ROLLER_STATOR_LIMIT = 80;
+    private final int ROLLER_STATOR_LIMIT = 60;
 
-    private final int ROLLER_SUPPLY_CURRENT_LIMIT = 30;
+    private final int ROLLER_SUPPLY_LIMIT = 30;
+    private final int DEPLOY_SUPPLY_LIMIT = 30;
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.35;
 
@@ -90,7 +91,7 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerConfig.CurrentLimits.StatorCurrentLimit = ROLLER_STATOR_LIMIT;
         rollerConfig.CurrentLimits.StatorCurrentLimitEnable = true;
 
-        rollerConfig.CurrentLimits.SupplyCurrentLimit = ROLLER_SUPPLY_CURRENT_LIMIT;
+        rollerConfig.CurrentLimits.SupplyCurrentLimit = ROLLER_SUPPLY_LIMIT;
         rollerConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
         leftRollerMotor.getConfigurator().apply(rollerConfig);
@@ -118,6 +119,9 @@ public class IntakeSubsystem extends SubsystemBase {
 
         deployConfig.CurrentLimits.StatorCurrentLimitEnable = true;
         deployConfig.CurrentLimits.StatorCurrentLimit = DEPLOY_STATOR_LIMIT;
+
+        deployConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+        deployConfig.CurrentLimits.SupplyCurrentLimit = DEPLOY_SUPPLY_LIMIT;
 
         deployConfig.Slot0.kP = RETRACT_kP;
         deployConfig.Slot0.kI = RETRACT_kI;
