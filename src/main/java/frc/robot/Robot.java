@@ -6,7 +6,6 @@ package frc.robot;
 import com.ctre.phoenix6.SignalLogger;
 
 import edu.wpi.first.net.WebServer;
-import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -28,9 +27,6 @@ public class Robot extends TimedRobot {
 
         //Stop hoot replay logging
         SignalLogger.enableAutoLogging(false);
-
-        //Start logging SmartDashboard to the log files
-        DataLogManager.start();
     }
 
     @Override
@@ -47,7 +43,7 @@ public class Robot extends TimedRobot {
 
         for (String ll : LimelightConstants.LIMELIGHTS) {
             LimelightHelpers.SetThrottle(ll, LimelightConstants.LIMELIGHT_DISABLED_THROTTLE);
-            LimelightHelpers.SetIMUMode(ll, 0);
+            LimelightHelpers.SetIMUMode(ll, 1);
         }
     }
 
@@ -62,7 +58,10 @@ public class Robot extends TimedRobot {
         m_robotContainer.resetFuelCounter();
 
         for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetIMUAssistAlpha(ll, 0.5); //Old value = 0.05
+
             LimelightHelpers.SetThrottle(ll, 0);
+            LimelightHelpers.SetIMUMode(ll, 3);
         }
 
         //Reset the ShotCalculator's velocity filters 
@@ -70,7 +69,7 @@ public class Robot extends TimedRobot {
     }
 
     @Override
-    public void autonomousInit() {        
+    public void autonomousInit() {
         ShiftTracker.start();
         
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();

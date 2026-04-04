@@ -7,23 +7,24 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
@@ -64,8 +65,8 @@ public class RobotSystem extends SubsystemBase {
     private final SlewRateLimiter normalXLimiter = new SlewRateLimiter(5.0), normalYLimiter = new SlewRateLimiter(5.0);
     private final SlewRateLimiter normalThetaLimiter = new SlewRateLimiter(10.0);
 
-    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(3.0), precisionYLimiter = new SlewRateLimiter(3.0);
-    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(10.0);
+    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(6.0), precisionYLimiter = new SlewRateLimiter(6.0);
+    private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(12.0);
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
@@ -90,12 +91,23 @@ public class RobotSystem extends SubsystemBase {
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("FieldTelemetry", fieldTelemetry);
 
+        //Set the drive odometry standard deviations
+        drive.setStateStdDevs(VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(2)));
+
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
 
         pdhNotifier = new Notifier(() -> {
                 logPdhStats();
         });
         pdhNotifier.startPeriodic(0.5);
+    }
+
+    public Command agitateRepeatedly() {
+        return intake.agitate().repeatedly();
+    }   
+
+    public Command stopAgitating() {
+        return intake.stopCommand();
     }
 
     public Command forceResetOdometry() {
@@ -280,10 +292,18 @@ public class RobotSystem extends SubsystemBase {
             }
 
             if (bestPoseEstimate != null) {
+                double scalingFactor = Math.pow(bestPoseEstimate.avgTagDist, 2) / Math.max(bestPoseEstimate.tagCount, 1);
+
+                Vector<N3> stddevs = VecBuilder.fill(
+                    LimelightConstants.VISION_XY_STDDEV * scalingFactor,
+                    LimelightConstants.VISION_XY_STDDEV * scalingFactor,
+                    LimelightConstants.VISION_THETA_STDDEV *scalingFactor
+                );
+
                 drive.addVisionMeasurement(
                     bestPoseEstimate.pose,
                     bestPoseEstimate.timestampSeconds,
-                    LimelightConstants.VISION_STDDEVS
+                    stddevs
                 );
             }
         }
@@ -291,8 +311,9 @@ public class RobotSystem extends SubsystemBase {
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
         return
-            poseEstimate != null && poseEstimate.pose != null &&
-            poseEstimate.tagCount > LimelightConstants.MIN_TAG_COUNT_REJECTION && 
+            poseEstimate != null && poseEstimate.pose != null && 
+            !poseEstimate.pose.equals(Pose2d.kZero) && AllianceUtility.isWithinField(poseEstimate.pose) &&
+            poseEstimate.tagCount > LimelightConstants.MIN_TAG_COUNT_REJECTION &&
             poseEstimate.avgTagDist < LimelightConstants.MIN_TAG_REJECTION_METERS;
     }
 
@@ -310,8 +331,7 @@ public class RobotSystem extends SubsystemBase {
     private double poseEstimateScore(PoseEstimate p) {
         return
             p.tagCount * LimelightConstants.POSE_ESTIMATE_WEIGHTS[0] +
-            Math.min((1.0 / p.avgTagDist), 5) * LimelightConstants.POSE_ESTIMATE_WEIGHTS[2] +
-            p.tagSpan * LimelightConstants.POSE_ESTIMATE_WEIGHTS[2];
+            Math.min((1.0 / p.avgTagDist), 5) * LimelightConstants.POSE_ESTIMATE_WEIGHTS[1];
     }
 
     public void toggleDisabledLeds(boolean disable) {
@@ -342,7 +362,7 @@ public class RobotSystem extends SubsystemBase {
         if (LOG_LIMELIGHTS) {
             for (String ll : LimelightConstants.LIMELIGHTS) {
                 PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
-                if (m1Pose != null && !(m1Pose.pose.getX() == 0 && m1Pose.pose.getY() == 0))
+                if (m1Pose != null)
                     DogLog.log(ll + "/M1Pose", m1Pose.pose);
 
                 List<Pose3d> visibleTags = new ArrayList<>();

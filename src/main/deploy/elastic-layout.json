@@ -22,15 +22,23 @@
           },
           {
             "title": "turret_degrees",
-            "x": 0.0,
-            "y": 128.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Large Text Display",
+            "x": 1024.0,
+            "y": 384.0,
+            "width": 256.0,
+            "height": 256.0,
+            "type": "Radial Gauge",
             "properties": {
               "topic": "/Robot/Turret/turret_degrees",
               "period": 0.033,
-              "data_type": "double"
+              "data_type": "double",
+              "start_angle": -54.0,
+              "end_angle": 121.0,
+              "min_value": -54.0,
+              "max_value": 121.0,
+              "number_of_labels": 0,
+              "wrap_value": false,
+              "show_pointer": true,
+              "show_ticks": false
             }
           },
           {
@@ -42,19 +50,6 @@
             "type": "Large Text Display",
             "properties": {
               "topic": "/Robot/Driving Mode",
-              "period": 0.06,
-              "data_type": "string"
-            }
-          },
-          {
-            "title": "Alliance",
-            "x": 0.0,
-            "y": 0.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/Robot/Alliance",
               "period": 0.06,
               "data_type": "string"
             }
@@ -74,15 +69,15 @@
           },
           {
             "title": "shooter_rpm",
-            "x": 128.0,
-            "y": 0.0,
+            "x": 0.0,
+            "y": 128.0,
             "width": 128.0,
             "height": 128.0,
             "type": "Large Text Display",
             "properties": {
               "topic": "/Robot/Shooter/shooter_rpm",
               "period": 0.033,
-              "data_type": "double"
+              "data_type": "int"
             }
           },
           {
@@ -120,7 +115,7 @@
             }
           },
           {
-            "title": "intake_rotations",
+            "title": "deploy_rotations",
             "x": 0.0,
             "y": 384.0,
             "width": 128.0,
@@ -138,11 +133,14 @@
             "y": 256.0,
             "width": 384.0,
             "height": 256.0,
-            "type": "Large Text Display",
+            "type": "Match Time",
             "properties": {
               "topic": "/Robot/Shift Time Left",
               "period": 0.06,
-              "data_type": "string"
+              "data_type": "double",
+              "time_display_mode": "Minutes and Seconds",
+              "red_start_time": 5,
+              "yellow_start_time": 15
             }
           },
           {
@@ -159,72 +157,17 @@
             }
           },
           {
-            "title": "Shot_Total",
-            "x": 1024.0,
-            "y": 384.0,
+            "title": "Hood Reset",
+            "x": 0.0,
+            "y": 0.0,
             "width": 256.0,
-            "height": 256.0,
-            "type": "Large Text Display",
-            "properties": {
-              "topic": "/Robot/ShootingSuperstructure/Shot_Total",
-              "period": 0.06,
-              "data_type": "int"
-            }
-          },
-          {
-            "title": "turret_error_degrees",
-            "x": 896.0,
-            "y": 384.0,
-            "width": 128.0,
             "height": 128.0,
-            "type": "Text Display",
+            "type": "Command",
             "properties": {
-              "topic": "/Robot/Turret/turret_error_degrees",
+              "topic": "/SmartDashboard/Hood Reset",
               "period": 0.06,
-              "data_type": "double",
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "RPM_Offset",
-            "x": 512.0,
-            "y": 512.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/Robot/ShootingSuperstructure/RPM_Offset",
-              "period": 0.06,
-              "data_type": "int",
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "shooter_target_rpm",
-            "x": 640.0,
-            "y": 512.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/Robot/Shooter/shooter_target_rpm",
-              "period": 0.06,
-              "data_type": "int",
-              "show_submit_button": true
-            }
-          },
-          {
-            "title": "roller_temperature_C",
-            "x": 512.0,
-            "y": 384.0,
-            "width": 128.0,
-            "height": 128.0,
-            "type": "Text Display",
-            "properties": {
-              "topic": "/Robot/Intake/roller_temperature_C",
-              "period": 0.06,
-              "data_type": "double",
-              "show_submit_button": true
+              "show_type": true,
+              "maximize_button_space": false
             }
           }
         ]
