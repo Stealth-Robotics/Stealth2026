@@ -100,10 +100,10 @@ public class RobotContainer {
         driverController.start().onTrue(robot.forceResetOdometry());
         
         driverController.rightBumper()
-            .whileTrue(robot.shoot())
-            .and(robot.needsHopperAgitate())
-            .onTrue(robot.agitateRepeatedly())
-            .onFalse(robot.stopAgitating());
+            .whileTrue(robot.shoot());
+            // .and(robot.needsHopperAgitate())
+            // .onTrue(robot.agitateRepeatedly())
+            // .onFalse(robot.stopAgitating());
 
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
 

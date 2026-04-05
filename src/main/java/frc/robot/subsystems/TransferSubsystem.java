@@ -38,8 +38,8 @@ public class TransferSubsystem extends SubsystemBase {
     private final int FEEDER_STATOR_LIMIT = 45;
 
     private static final InterpolatingDoubleTreeMap distanceToVoltageMap = new InterpolatingDoubleTreeMap() {{
-        put(1.0, 8.0);
-        put(2.5, 10.0);
+        put(1.0, 6.0);
+        put(2.5, 8.0);
         put(4.0, 12.0);
     }};
     
