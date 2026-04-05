@@ -7,16 +7,10 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.Vector;
-import edu.wpi.first.math.estimator.PoseEstimator;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
@@ -24,6 +18,7 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -248,7 +243,22 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command seedFieldCentric() {
-        return runOnce(() -> drive.seedFieldCentric());
+        return new SequentialCommandGroup(
+            runOnce(() -> {
+                for (String ll : LimelightConstants.LIMELIGHTS) {
+                    LimelightHelpers.SetIMUMode(ll, 1); //Seeding mode
+                }
+            }),
+            runOnce(() -> drive.seedFieldCentric()),
+            runOnce(() -> {
+                double robotYaw = drive.getPigeon2().getYaw().getValueAsDouble();
+
+                for (String ll : LimelightConstants.LIMELIGHTS) {
+                    LimelightHelpers.SetRobotOrientation(ll, robotYaw, 0, 0, 0, 0, 0);
+                    LimelightHelpers.SetIMUMode(ll, LimelightConstants.TELEOP_IMU_MODE);
+                }
+            })
+        );
     }
 
     public Autos getAutos() {
@@ -260,6 +270,12 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateOdometry() {
+        double robotHeading = drive.getPose().getRotation().getDegrees();
+
+        for (String limelight : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetRobotOrientation(limelight, robotHeading, 0, 0, 0, 0, 0);
+        }
+
         if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < LimelightConstants.MAX_VISION_ANGULAR_VELOCITY) {
             PoseEstimate bestEstimate = null;
 
@@ -267,7 +283,7 @@ public class RobotSystem extends SubsystemBase {
                 var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
                 boolean goodPoseEstimate = isGoodPoseEstimate(estimate);
-                if (LimelightConstants.COMBINE_POSE_ESTIMATES) {
+                if (!LimelightConstants.COMBINE_POSE_ESTIMATES) {
                     if (goodPoseEstimate && isBetterPoseEstimate(estimate, bestEstimate))
                         bestEstimate = estimate;
                 }
@@ -276,13 +292,13 @@ public class RobotSystem extends SubsystemBase {
                 }
             }
 
-            if (LimelightConstants.COMBINE_POSE_ESTIMATES && bestEstimate != null && isGoodPoseEstimate(bestEstimate))
+            if (!LimelightConstants.COMBINE_POSE_ESTIMATES && bestEstimate != null && isGoodPoseEstimate(bestEstimate))
                 drive.addVisionMeasurement(bestEstimate.pose, bestEstimate.timestampSeconds, LimelightConstants.STDDEVS);
         }
     }
 
     private boolean isBetterPoseEstimate(PoseEstimate first, PoseEstimate second) {
-        return (second == null || first.tagCount > second.tagCount || first.avgTagArea < second.avgTagArea);
+        return (second == null || first.tagCount > second.tagCount || first.avgTagArea > second.avgTagArea);
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {

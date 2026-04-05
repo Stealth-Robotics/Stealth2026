@@ -27,6 +27,11 @@ public class Robot extends TimedRobot {
 
         //Stop hoot replay logging
         SignalLogger.enableAutoLogging(false);
+
+        //Set the limelight's tag filter
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetFiducialIDFiltersOverride(ll, LimelightConstants.ALLOWED_TAGS);
+        }
     }
 
     @Override
@@ -35,11 +40,6 @@ public class Robot extends TimedRobot {
 
         //Run the robot container's periodic
         m_robotContainer.periodic();
-
-        double robotHeading = m_robotContainer.getRobotRotation().getDegrees();
-        for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(ll, robotHeading, 0, 0, 0, 0, 0);
-        }
     }
 
     @Override
@@ -49,7 +49,7 @@ public class Robot extends TimedRobot {
         //Disabled IMU mode
         for (String ll : LimelightConstants.LIMELIGHTS) {
             LimelightHelpers.SetThrottle(ll, LimelightConstants.LIMELIGHT_DISABLED_THROTTLE);
-            LimelightHelpers.SetIMUMode(ll, 1);
+            LimelightHelpers.SetIMUMode(ll, LimelightConstants.DISABLED_IMU_MODE);
         }
     }
 
@@ -64,7 +64,7 @@ public class Robot extends TimedRobot {
         m_robotContainer.resetFuelCounter();
 
         for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetIMUAssistAlpha(ll, 0.05);
+            LimelightHelpers.SetIMUAssistAlpha(ll, 0.001); //0.05 old value
             LimelightHelpers.SetThrottle(ll, 0);
         }
 
@@ -84,7 +84,7 @@ public class Robot extends TimedRobot {
 
         //Auto IMU mode
         for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetIMUMode(ll, 0);
+            LimelightHelpers.SetIMUMode(ll, LimelightConstants.AUTO_IMU_MODE);
         }
     }
 
@@ -109,7 +109,7 @@ public class Robot extends TimedRobot {
 
         //Teleop IMU mode
         for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetIMUMode(ll, 3);
+            LimelightHelpers.SetIMUMode(ll, LimelightConstants.TELEOP_IMU_MODE);
         }
     }
 
