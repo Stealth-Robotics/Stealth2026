@@ -46,6 +46,7 @@ public class Robot extends TimedRobot {
     public void disabledInit() {
         m_robotContainer.toggleDisabledLeds(true);
 
+        //Disabled IMU mode
         for (String ll : LimelightConstants.LIMELIGHTS) {
             LimelightHelpers.SetThrottle(ll, LimelightConstants.LIMELIGHT_DISABLED_THROTTLE);
             LimelightHelpers.SetIMUMode(ll, 1);
@@ -81,6 +82,7 @@ public class Robot extends TimedRobot {
             CommandScheduler.getInstance().schedule(m_autonomousCommand);
         }
 
+        //Auto IMU mode
         for (String ll : LimelightConstants.LIMELIGHTS) {
             LimelightHelpers.SetIMUMode(ll, 0);
         }
@@ -105,6 +107,7 @@ public class Robot extends TimedRobot {
             m_autonomousCommand.cancel();
         }
 
+        //Teleop IMU mode
         for (String ll : LimelightConstants.LIMELIGHTS) {
             LimelightHelpers.SetIMUMode(ll, 3);
         }

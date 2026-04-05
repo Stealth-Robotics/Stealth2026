@@ -9,6 +9,7 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
+import edu.wpi.first.math.estimator.PoseEstimator;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -71,7 +72,6 @@ public class RobotSystem extends SubsystemBase {
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
 
     private final PowerDistribution pdh = new PowerDistribution(63, ModuleType.kRev);
-    private final Notifier pdhNotifier;
 
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
@@ -92,11 +92,6 @@ public class RobotSystem extends SubsystemBase {
         SmartDashboard.putData("ElasticField", elasticField);
 
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
-
-        pdhNotifier = new Notifier(() -> {
-                logPdhStats();
-        });
-        pdhNotifier.startPeriodic(0.5);
     }
 
     public Command agitateRepeatedly() {
@@ -266,20 +261,28 @@ public class RobotSystem extends SubsystemBase {
 
     private void updateOdometry() {
         if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < LimelightConstants.MAX_VISION_ANGULAR_VELOCITY) {
+            PoseEstimate bestEstimate = null;
+
             for (String limelight : LimelightConstants.LIMELIGHTS) {
-                var pEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
-                if (isGoodPoseEstimate(pEstimate)) {
-                    Vector<N3> stddevs = VecBuilder.fill(
-                        LimelightConstants.VISION_XY_STDDEV,
-                        LimelightConstants.VISION_XY_STDDEV,
-                        LimelightConstants.VISION_THETA_STDDEV
-                    );
-
-                    drive.addVisionMeasurement(pEstimate.pose, pEstimate.timestampSeconds, stddevs);
+                boolean goodPoseEstimate = isGoodPoseEstimate(estimate);
+                if (LimelightConstants.COMBINE_POSE_ESTIMATES) {
+                    if (goodPoseEstimate && isBetterPoseEstimate(estimate, bestEstimate))
+                        bestEstimate = estimate;
+                }
+                else if (goodPoseEstimate) {
+                    drive.addVisionMeasurement(estimate.pose, estimate.timestampSeconds, LimelightConstants.STDDEVS);
                 }
             }
+
+            if (LimelightConstants.COMBINE_POSE_ESTIMATES && bestEstimate != null && isGoodPoseEstimate(bestEstimate))
+                drive.addVisionMeasurement(bestEstimate.pose, bestEstimate.timestampSeconds, LimelightConstants.STDDEVS);
         }
+    }
+
+    private boolean isBetterPoseEstimate(PoseEstimate first, PoseEstimate second) {
+        return (second == null || first.tagCount > second.tagCount || first.avgTagArea < second.avgTagArea);
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
@@ -287,7 +290,7 @@ public class RobotSystem extends SubsystemBase {
             poseEstimate != null && poseEstimate.pose != null && 
             !poseEstimate.pose.equals(Pose2d.kZero) && AllianceUtility.isWithinField(poseEstimate.pose) &&
             poseEstimate.tagCount > LimelightConstants.MIN_TAG_COUNT_REJECTION &&
-            poseEstimate.avgTagDist < LimelightConstants.MIN_TAG_REJECTION_METERS;
+            poseEstimate.avgTagDist < LimelightConstants.MAX_TAG_DISTANCE;
     }
 
     public void toggleDisabledLeds(boolean disable) {
@@ -319,16 +322,17 @@ public class RobotSystem extends SubsystemBase {
         if (LOG_LIMELIGHTS) {
             for (String ll : LimelightConstants.LIMELIGHTS) {
                 PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
-                if (m1Pose != null)
+                if (m1Pose != null) {
                     DogLog.log(ll + "/M1Pose", m1Pose.pose);
 
-                List<Pose3d> visibleTags = new ArrayList<>();
-                for (var tag : m1Pose.rawFiducials) {
-                    tagFieldLayout.getTagPose(tag.id).ifPresent(visibleTags::add);
-                }
+                    List<Pose3d> visibleTags = new ArrayList<>();
+                    for (var tag : m1Pose.rawFiducials) {
+                        tagFieldLayout.getTagPose(tag.id).ifPresent(visibleTags::add);
+                    }
 
-                if (!visibleTags.isEmpty())
-                    DogLog.log(ll + "/VisibleTags", visibleTags.toArray(new Pose3d[0]));
+                    if (!visibleTags.isEmpty())
+                        DogLog.log(ll + "/VisibleTags", visibleTags.toArray(new Pose3d[0]));
+                }
             }
         }
 
@@ -337,6 +341,7 @@ public class RobotSystem extends SubsystemBase {
             if (LOG_SWERVE_DRIVE)
                 logDriveStats();
             logStats();
+            logPdhStats();
             lastMs = currentMs;
         }
     }
