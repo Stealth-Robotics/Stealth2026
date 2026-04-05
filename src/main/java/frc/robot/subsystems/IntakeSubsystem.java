@@ -51,6 +51,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_POSITION_TOLERANCE = 0.02;
 
     private final double DEPLOYED_ROTATIONS = 0.0;
+    private final double SAFE_ROTATIONS = 0.1;
     private final double RETRACTED_ROTATIONS = 0.308;
 
     private final double DEPLOY_kP = 30;
@@ -71,6 +72,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_SUPPLY_LIMIT = 30;
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.35;
+    private boolean isRetracting = false;
 
     private long lastMs = 0;
  
@@ -159,7 +161,7 @@ public class IntakeSubsystem extends SubsystemBase {
             deployMotor.setControl(
                 deployController.withSlot(0).withPosition(deployController.getPositionMeasure().magnitude() + 0.006)
             );
-        }));
+        })).finallyDo(() -> deploy());
     }
 
     // public Command agitate() {
@@ -184,11 +186,30 @@ public class IntakeSubsystem extends SubsystemBase {
         return error <= DEPLOY_POSITION_TOLERANCE;
     }
 
+    public boolean isRetracting() {
+        return isRetracting;
+    }
+
+    public boolean isDeployed() {
+        return isAtPosition(DEPLOYED_ROTATIONS);
+    }
+
+    public boolean isSafe() {
+        return isAtPosition(SAFE_ROTATIONS);
+    }
+
+    public void safe() {
+        isRetracting = false;
+        deployMotor.setControl(deployController.withSlot(0).withPosition(SAFE_ROTATIONS));
+    }
+
     public void deploy() {
+        isRetracting = false;
         deployMotor.setControl(deployController.withSlot(0).withPosition(DEPLOYED_ROTATIONS));
     }
 
     public void retract() {
+        isRetracting = true;
         deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS));
     }
 
@@ -206,12 +227,12 @@ public class IntakeSubsystem extends SubsystemBase {
         return runOnce(() -> deploy());
     }
 
-    public Command bumpRetract() {
-        return runOnce(() -> deployMotor.setControl(deployController.withSlot(0).withPosition(DEPLOYED_ROTATIONS * 0.25)));
-    }
-
     public Command retractCommand() {
         return runOnce(() -> retract());
+    }
+
+    public Command safeCommand() {
+        return runOnce(() -> safe());
     }
 
     @Override

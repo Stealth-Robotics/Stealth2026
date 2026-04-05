@@ -7,10 +7,12 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
@@ -37,6 +39,7 @@ import frc.robot.util.LimelightConstants;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
+import frc.robot.util.LimelightHelpers.RawFiducial;
 import frc.robot.util.ZoneManager.FieldZone;
 import frc.robot.util.ZoneManager;
 
@@ -106,6 +109,14 @@ public class RobotSystem extends SubsystemBase {
             () -> {
                 double targetRollerSpeed = rollerSpeed.getAsDouble();
                 intake.setRollerSpeed(targetRollerSpeed);
+
+                if (ZoneManager.inBumpZone() && targetRollerSpeed < 0.1 && intake.isDeployed()
+                    && !deploy.getAsBoolean() && !agitate.getAsBoolean()) {
+                    intake.safe();
+                }
+                else if (!ZoneManager.inBumpZone() && intake.isSafe() && !intake.isRetracting()) {
+                    intake.deploy();
+                }
             }
         ).beforeStarting(
             () -> {
@@ -158,10 +169,6 @@ public class RobotSystem extends SubsystemBase {
 
     public void changeRPMOffset(int delta) {
         shooter.changeRPMOffset(delta);
-    }
-
-    public Rotation2d getRobotRotation() {
-        return drive.getPose().getRotation();
     }
 
     private void updateShootingState() {
@@ -243,22 +250,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command seedFieldCentric() {
-        return new SequentialCommandGroup(
-            runOnce(() -> {
-                for (String ll : LimelightConstants.LIMELIGHTS) {
-                    LimelightHelpers.SetIMUMode(ll, 1); //Seeding mode
-                }
-            }),
-            runOnce(() -> drive.seedFieldCentric()),
-            runOnce(() -> {
-                double robotYaw = drive.getPigeon2().getYaw().getValueAsDouble();
-
-                for (String ll : LimelightConstants.LIMELIGHTS) {
-                    LimelightHelpers.SetRobotOrientation(ll, robotYaw, 0, 0, 0, 0, 0);
-                    LimelightHelpers.SetIMUMode(ll, LimelightConstants.TELEOP_IMU_MODE);
-                }
-            })
-        );
+        return runOnce(() -> drive.seedFieldCentric());
     }
 
     public Autos getAutos() {
@@ -302,11 +294,20 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
-        return
-            poseEstimate != null && poseEstimate.pose != null && 
-            !poseEstimate.pose.equals(Pose2d.kZero) && AllianceUtility.isWithinField(poseEstimate.pose) &&
-            poseEstimate.tagCount > LimelightConstants.MIN_TAG_COUNT_REJECTION &&
-            poseEstimate.avgTagDist < LimelightConstants.MAX_TAG_DISTANCE;
+        if (
+            poseEstimate == null || poseEstimate.pose == null ||poseEstimate.pose.equals(Pose2d.kZero) 
+            || !AllianceUtility.isWithinField(poseEstimate.pose) ||
+            poseEstimate.tagCount <= LimelightConstants.MIN_TAG_COUNT_REJECTION ||
+            poseEstimate.avgTagDist >= LimelightConstants.MAX_TAG_DISTANCE
+        ) return false;
+
+        for (RawFiducial tag : poseEstimate.rawFiducials) {
+            if (tag.ambiguity > LimelightConstants.MAX_TAG_AMBIGUITY) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public void toggleDisabledLeds(boolean disable) {

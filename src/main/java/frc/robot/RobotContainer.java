@@ -152,10 +152,6 @@ public class RobotContainer {
         robot.toggleDisabledLeds(disable);
     }
 
-    public Rotation2d getRobotRotation() {
-        return robot.getRobotRotation();
-    }
-
     public void resetFuelCounter() {
         robot.resetFuelShotCount();
     }

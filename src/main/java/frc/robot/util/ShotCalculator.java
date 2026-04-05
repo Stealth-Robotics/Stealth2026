@@ -1,5 +1,6 @@
 package frc.robot.util;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -72,6 +73,8 @@ public class ShotCalculator {
             )
         );
 
+        DogLog.log("vOmega", filteredVOmega);
+
         //Clamp targetHeight to make sure values don't result in a NaN result
         targetHeight = Math.max(targetHeight, Math.max(fuelExitPose.getZ(), targetPose.getZ()));
 
@@ -106,7 +109,7 @@ public class ShotCalculator {
         double targetFlywheelRPM = baseRPM * veloScale;
 
         double targetTurretAngle = Units.radiansToDegrees(
-            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX())
+            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds * 1.5)
         );
         
         double horizontalSpeed = Math.hypot(movingShotVelocity.getX(), movingShotVelocity.getY());

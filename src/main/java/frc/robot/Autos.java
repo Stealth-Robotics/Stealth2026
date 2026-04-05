@@ -70,6 +70,36 @@ public class Autos {
     }
 
     /*
+     * Delayed middle steal auto
+     */
+    public AutoRoutine sadMiddleBean(AutoPosition position) {
+        String pathName = switch (position) {
+            case LEFT -> "LeftSadBean";
+            case RIGHT -> "RightSadBean";
+            default -> "";
+        };
+
+        if (pathName.isBlank())
+            return nothingAuto;
+
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        AutoTrajectory path = routine.trajectory(pathName, 0);
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                path.resetOdometry(),
+                new WaitCommand(5), //Wait for other bots to do their first cycle
+                deployAndIntake(),
+                path.cmd(),
+                shootCommand().alongWith(startAgitating())
+            )
+        );
+
+        return routine;
+    }
+
+    /*
      * Goated auto that was definitely not stolen from 2056
      */
     public AutoRoutine doubleBean(AutoPosition position) {
