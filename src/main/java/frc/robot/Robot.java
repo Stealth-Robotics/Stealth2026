@@ -63,10 +63,8 @@ public class Robot extends TimedRobot {
         m_robotContainer.resetFuelCounter();
 
         for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetIMUAssistAlpha(ll, 0.05); //Old value = 0.05
-
+            LimelightHelpers.SetIMUAssistAlpha(ll, 0.05);
             LimelightHelpers.SetThrottle(ll, 0);
-            LimelightHelpers.SetIMUMode(ll, 3);
         }
 
         //Reset the ShotCalculator's velocity filters 
@@ -81,6 +79,10 @@ public class Robot extends TimedRobot {
 
         if (m_autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(m_autonomousCommand);
+        }
+
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetIMUMode(ll, 0);
         }
     }
 
@@ -101,6 +103,10 @@ public class Robot extends TimedRobot {
 
         if (m_autonomousCommand != null) {
             m_autonomousCommand.cancel();
+        }
+
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetIMUMode(ll, 3);
         }
     }
 

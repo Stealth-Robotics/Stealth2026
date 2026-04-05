@@ -147,6 +147,21 @@ public class IntakeSubsystem extends SubsystemBase {
         );
     }
 
+    public Command cheesyAgitate() {
+        double tossPercentage = RETRACTED_ROTATIONS * 0.5;
+        return new SequentialCommandGroup(
+            new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
+            new InstantCommand(() -> moveFastTo(tossPercentage), this),
+            new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
+            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
+            new InstantCommand(() -> setRollerSpeed(0))
+        ).andThen(run(() -> {
+            deployMotor.setControl(
+                deployController.withSlot(0).withPosition(deployController.getPositionMeasure().magnitude() + 0.006)
+            );
+        }));
+    }
+
     // public Command agitate() {
     //     return runOnce(() -> deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS)));
     // }

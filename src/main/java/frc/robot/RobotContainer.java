@@ -89,8 +89,8 @@ public class RobotContainer {
             robot.setIntakeDefaultCommand(
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
                 () -> driverController.getRightTriggerAxis() > 0.1,
-                () -> driverController.y().getAsBoolean(),
-                () -> driverController.b().getAsBoolean()
+                () -> driverController.rightBumper().getAsBoolean(),
+                () -> operatorController.b().getAsBoolean()
             );
         }
 
@@ -99,12 +99,7 @@ public class RobotContainer {
 
         driverController.start().onTrue(robot.forceResetOdometry());
         
-        driverController.rightBumper()
-            .whileTrue(robot.shoot());
-            // .and(robot.needsHopperAgitate())
-            // .onTrue(robot.agitateRepeatedly())
-            // .onFalse(robot.stopAgitating());
-
+        operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
 
         operatorController.povUp()

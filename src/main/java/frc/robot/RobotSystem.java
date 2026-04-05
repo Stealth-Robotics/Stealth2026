@@ -129,7 +129,7 @@ public class RobotSystem extends SubsystemBase {
 
                 Trigger agitateTrigger = new Trigger(agitate);
                 agitateTrigger
-                    .whileTrue(intake.agitate().repeatedly().onlyIf(deployTrigger.negate()))
+                    .whileTrue(intake.cheesyAgitate().onlyIf(deployTrigger.negate()))
                     .onFalse(intake.deployCommand());
             }
         );
@@ -270,12 +270,10 @@ public class RobotSystem extends SubsystemBase {
                 var pEstimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
                 if (isGoodPoseEstimate(pEstimate)) {
-                    double scalingFactor = Math.pow(pEstimate.avgTagDist, 2) / Math.max(pEstimate.tagCount, 1);
-
                     Vector<N3> stddevs = VecBuilder.fill(
-                        LimelightConstants.VISION_XY_STDDEV * scalingFactor,
-                        LimelightConstants.VISION_XY_STDDEV * scalingFactor,
-                        LimelightConstants.VISION_THETA_STDDEV * scalingFactor
+                        LimelightConstants.VISION_XY_STDDEV,
+                        LimelightConstants.VISION_XY_STDDEV,
+                        LimelightConstants.VISION_THETA_STDDEV
                     );
 
                     drive.addVisionMeasurement(pEstimate.pose, pEstimate.timestampSeconds, stddevs);

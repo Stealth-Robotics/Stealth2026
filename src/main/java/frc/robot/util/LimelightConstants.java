@@ -10,7 +10,7 @@ public class LimelightConstants {
 
     public static final double MAX_VISION_ANGULAR_VELOCITY = Math.PI; //Rad/s
 
-    public static final double MIN_TAG_REJECTION_METERS = 3.5;
+    public static final double MIN_TAG_REJECTION_METERS = 4.5;
     public static final int MIN_TAG_COUNT_REJECTION = 0;
 
     public static final String[] LIMELIGHTS = {

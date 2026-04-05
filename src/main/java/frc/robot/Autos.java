@@ -86,18 +86,26 @@ public class Autos {
 
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("Intake").onTrue(deployAndIntake());
-        path.atTime("Spinup").onTrue(spinupShooter().andThen(intake.bumpRetract()));
-        path.atTime("Shoot").onTrue(shootCommand().alongWith(startAgitating()));
-        path.atTime("StopShoot").onTrue(stopShooting());
+        path.atTime("Spinup").onTrue(spinupShooter());
+        path.atTime("Shoot").onTrue(shootCommand());
         
-        path.atTime("Intake2").onTrue(deployAndIntake());
-        path.atTime("Spinup2").onTrue(spinupShooter());
-        path.atTime("Shoot2").onTrue(shootCommand().alongWith(startAgitating()));
+        AutoTrajectory path2 = routine.trajectory(pathName, 1);
+        path2.atTime("Intake2").onTrue(deployAndIntake());
+        path2.atTime("Spinup2").onTrue(spinupShooter());
+        path2.atTime("Shoot2").onTrue(shootCommand().alongWith(startAgitating()));
 
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
                 path.cmd()
+            )
+        );
+
+        path.done().onTrue(
+            new SequentialCommandGroup(
+                new WaitCommand(4), //Shooting time after first cycle
+                stopShooting(),
+                path2.cmd()
             )
         );
 
