@@ -89,17 +89,17 @@ public class RobotContainer {
             robot.setIntakeDefaultCommand(
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
                 () -> driverController.getRightTriggerAxis() > 0.1,
-                () -> driverController.rightBumper().getAsBoolean(),
-                () -> operatorController.b().getAsBoolean()
+                () -> driverController.y().getAsBoolean(),
+                () -> driverController.b().getAsBoolean()
             );
         }
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
-        driverController.leftTrigger(0.1).whileTrue(robot.activatePrecisionDriving());
+        driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
 
         driverController.start().onTrue(robot.forceResetOdometry());
         
-        operatorController.rightBumper()
+        driverController.rightBumper()
             .whileTrue(robot.shoot())
             .and(robot.needsHopperAgitate())
             .onTrue(robot.agitateRepeatedly())
@@ -117,15 +117,18 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
+
+        autoChooser.addRoutine("LeftDoubleBean", () -> autos.doubleBean(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightDoubleBean", () -> autos.doubleBean(AutoPosition.RIGHT));
         //Newgen autos
-        autoChooser.addRoutine("LeftTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.RIGHT));
+        // autoChooser.addRoutine("LeftTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftTrenchBump", () -> autos.trenchBump(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightTrenchBump", () -> autos.trenchBump(AutoPosition.RIGHT));
+        // autoChooser.addRoutine("LeftTrenchBump", () -> autos.trenchBump(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightTrenchBump", () -> autos.trenchBump(AutoPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
+        // autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
         
         //OG autos
         autoChooser.addRoutine("Right1CyclePlusOutpost", () -> autos.right1CyclePlusOutpost());

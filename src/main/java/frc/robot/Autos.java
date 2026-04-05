@@ -41,7 +41,7 @@ public class Autos {
     }
 
     private Command stopShooting() {
-        return new InstantCommand(() -> shooter.shoot().cancel()).andThen(stopAgitating());
+        return shooter.spinUp(0).andThen(stopAgitating());
     }
 
     private Command startAgitating() {
@@ -58,13 +58,11 @@ public class Autos {
 
     private Command deployAndIntake() {
         return intake.deployCommand()
-            .andThen(intake.intakeCommand())
-            .andThen(shooter.startSpindexerShake());
+            .andThen(intake.intakeCommand());
     }
 
     private Command shootCommand() {
-        return new InstantCommand(() -> shooter.cancelSpindexerShake())
-            .andThen(shooter.shoot());
+        return shooter.shoot();
     }
 
     private Command spinupShooter() {
@@ -88,8 +86,8 @@ public class Autos {
 
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("Intake").onTrue(deployAndIntake());
-        path.atTime("Spinup").onTrue(spinupShooter());
-        path.atTime("Shoot").onTrue(shootCommand());
+        path.atTime("Spinup").onTrue(spinupShooter().andThen(intake.bumpRetract()));
+        path.atTime("Shoot").onTrue(shootCommand().alongWith(startAgitating()));
         path.atTime("StopShoot").onTrue(stopShooting());
         
         path.atTime("Intake2").onTrue(deployAndIntake());

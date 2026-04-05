@@ -2,7 +2,7 @@ package frc.robot.util;
 
 public enum DrivingMode {
     NORMAL(1.0),
-    PRECISION(0.4);
+    PRECISION(0.35);
 
     /**
      * Allows us to slow down when performing certain actions like shooting or climbing

@@ -196,6 +196,10 @@ public class IntakeSubsystem extends SubsystemBase {
         return runOnce(() -> deploy());
     }
 
+    public Command bumpRetract() {
+        return runOnce(() -> deployMotor.setControl(deployController.withSlot(1).withPosition(DEPLOYED_ROTATIONS * 0.25)));
+    }
+
     public Command retractCommand() {
         return runOnce(() -> retract());
     }

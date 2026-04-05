@@ -91,9 +91,6 @@ public class RobotSystem extends SubsystemBase {
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("ElasticField", elasticField);
 
-        //Set the drive odometry standard deviations
-        drive.setStateStdDevs(VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(2)));
-
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
 
         pdhNotifier = new Notifier(() -> {
@@ -126,9 +123,6 @@ public class RobotSystem extends SubsystemBase {
                 deployTrigger
                     .onTrue(intake.deployCommand())
                     .onFalse(intake.agitate().onlyIf(agitate));
-
-                Trigger shakeTrigger = new Trigger(() -> deploy.getAsBoolean() && !shooter.isShooting());
-                shakeTrigger.whileTrue(shooter.shakeSpindexer());
 
                 Trigger retractTrigger = new Trigger(retract);
                 retractTrigger.onTrue(intake.retractCommand());
@@ -322,6 +316,7 @@ public class RobotSystem extends SubsystemBase {
 
         DogLog.forceNt.log("Current Zone", ZoneManager.getZone().name());
         DogLog.forceNt.log("Driving Mode", currentDrivingMode.name());
+        DogLog.forceNt.log("Drive Pose", drivePose);
 
         if (LOG_LIMELIGHTS) {
             for (String ll : LimelightConstants.LIMELIGHTS) {

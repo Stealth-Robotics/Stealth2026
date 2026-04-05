@@ -35,6 +35,11 @@ public class Robot extends TimedRobot {
 
         //Run the robot container's periodic
         m_robotContainer.periodic();
+
+        double robotHeading = m_robotContainer.getRobotRotation().getDegrees();
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetRobotOrientation(ll, robotHeading, 0, 0, 0, 0, 0);
+        }
     }
 
     @Override
@@ -50,12 +55,6 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledPeriodic() {
         m_robotContainer.disabledPeriodic();
-        
-        double robotHeading = m_robotContainer.getRobotRotation().getDegrees();
-        
-        for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(ll, robotHeading, 0, 0, 0, 0, 0);
-        }
     }
 
     @Override
@@ -64,7 +63,7 @@ public class Robot extends TimedRobot {
         m_robotContainer.resetFuelCounter();
 
         for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetIMUAssistAlpha(ll, 0.5); //Old value = 0.05
+            LimelightHelpers.SetIMUAssistAlpha(ll, 0.05); //Old value = 0.05
 
             LimelightHelpers.SetThrottle(ll, 0);
             LimelightHelpers.SetIMUMode(ll, 3);

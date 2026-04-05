@@ -78,7 +78,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams leftPass = new ShotParams(new Translation3d(1, 5.75, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
-    private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.8, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
+    private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.2, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
     private ShotParams currentShotParams = hub;
 
@@ -154,7 +154,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command spinUp(double rpm) {
-        return new InstantCommand(() -> shooter.spinToRPM(rpm));
+        return runOnce(() -> shooter.spinToRPM(rpm));
     }
 
     public Command dashboardHoodReset() {
@@ -192,6 +192,8 @@ public class ShootingSuperstructure extends SubsystemBase {
             transfer.stopSpinning();
             transfer.stopFeeding();
 
+            shooter.setHoodDegrees(0);
+
             alreadySpinningAtTarget = false;
             
             isShotRequested = false;
@@ -200,14 +202,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         .onlyWhile(() -> {
             return state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING);
         });
-    }
-
-    public Command startSpindexerShake() {
-        return transfer.startShake();
-    }
-
-    public void cancelSpindexerShake() {
-        transfer.cancelShake();
     }
 
     public Command clearTransfer() {

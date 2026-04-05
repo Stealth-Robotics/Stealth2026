@@ -51,7 +51,7 @@ public class TunerConstants {
 
     // The stator current at which the wheels start to slip;
     // This needs to be tuned to your individual robot
-    private static final Current kSlipCurrent = Amps.of(90);
+    private static final Current kSlipCurrent = Amps.of(120);
 
     // Initial configs for the drive and steer motors and the azimuth encoder; these cannot be null.
     // Some configs will be overwritten; check the `with*InitialConfigs()` API documentation.
@@ -68,12 +68,13 @@ public class TunerConstants {
     private static final TalonFXConfiguration steerInitialConfigs = new TalonFXConfiguration()
         .withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withSupplyCurrentLimit(25)
+                .withSupplyCurrentLimit(30)
                 .withSupplyCurrentLimitEnable(true)
 
-                .withStatorCurrentLimit(Amps.of(20))
+                .withStatorCurrentLimit(Amps.of(30))
                 .withStatorCurrentLimitEnable(true)
         );
+
     private static final CANcoderConfiguration encoderInitialConfigs = new CANcoderConfiguration();
     // Configs for the Pigeon 2; leave this null to skip applying Pigeon 2 configs
     private static final Pigeon2Configuration pigeonConfigs = new Pigeon2Configuration()
@@ -86,17 +87,17 @@ public class TunerConstants {
 
     // CAN bus that the devices are located on;
     // All swerve devices must share the same CAN bus
-    public static final CANBus kCANBus = new CANBus("canivore", "./logs/canivore.hoot");
+    public static final CANBus kCANBus = new CANBus("canivore", "./logs/example.hoot");
 
     // Theoretical free speed (m/s) at 12 V applied output;
     // This needs to be tuned to your individual robot
-    public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(5.12);
+    public static final LinearVelocity kSpeedAt12Volts = MetersPerSecond.of(4.39);
 
     // Every 1 rotation of the azimuth results in kCoupleRatio drive motor turns;
     // This may need to be tuned to your individual robot
-    private static final double kCoupleRatio = 3.857142857142857;
+    private static final double kCoupleRatio = 4.5;
 
-    private static final double kDriveGearRatio = 6.026785714285714;
+    private static final double kDriveGearRatio = 7.03125;
     private static final double kSteerGearRatio = 26.09090909090909;
     private static final Distance kWheelRadius = Inches.of(2);
 
@@ -145,7 +146,7 @@ public class TunerConstants {
     private static final int kFrontLeftDriveMotorId = 21;
     private static final int kFrontLeftSteerMotorId = 22;
     private static final int kFrontLeftEncoderId = 20;
-    private static final Angle kFrontLeftEncoderOffset = Rotations.of(-0.23486328125);
+    private static final Angle kFrontLeftEncoderOffset = Rotations.of(-0.239990234375);
     private static final boolean kFrontLeftSteerMotorInverted = false;
     private static final boolean kFrontLeftEncoderInverted = false;
 
@@ -156,7 +157,7 @@ public class TunerConstants {
     private static final int kFrontRightDriveMotorId = 11;
     private static final int kFrontRightSteerMotorId = 12;
     private static final int kFrontRightEncoderId = 10;
-    private static final Angle kFrontRightEncoderOffset = Rotations.of(-0.25146484375);
+    private static final Angle kFrontRightEncoderOffset = Rotations.of(-0.246337890625);
     private static final boolean kFrontRightSteerMotorInverted = false;
     private static final boolean kFrontRightEncoderInverted = false;
 
@@ -167,7 +168,7 @@ public class TunerConstants {
     private static final int kBackLeftDriveMotorId = 41;
     private static final int kBackLeftSteerMotorId = 42;
     private static final int kBackLeftEncoderId = 40;
-    private static final Angle kBackLeftEncoderOffset = Rotations.of(0.43505859375);
+    private static final Angle kBackLeftEncoderOffset = Rotations.of(0.436767578125);
     private static final boolean kBackLeftSteerMotorInverted = false;
     private static final boolean kBackLeftEncoderInverted = false;
 
@@ -178,7 +179,7 @@ public class TunerConstants {
     private static final int kBackRightDriveMotorId = 31;
     private static final int kBackRightSteerMotorId = 32;
     private static final int kBackRightEncoderId = 30;
-    private static final Angle kBackRightEncoderOffset = Rotations.of(-0.281494140625);
+    private static final Angle kBackRightEncoderOffset = Rotations.of(-0.28173828125);
     private static final boolean kBackRightSteerMotorInverted = false;
     private static final boolean kBackRightEncoderInverted = false;
 
@@ -207,36 +208,6 @@ public class TunerConstants {
             kBackRightXPos, kBackRightYPos, kInvertRightSide, kBackRightSteerMotorInverted, kBackRightEncoderInverted
         );
 
-        // Friendly device names for logging and diagnostics. Map CAN/Device IDs to a short human
-        // readable identifier so log messages can display meaningful names instead of raw IDs.
-        public static final java.util.Map<Integer, String> kDeviceFriendlyNames = java.util.Map.ofEntries(
-            java.util.Map.entry(kFrontLeftDriveMotorId, "FrontLeft-Drive"),
-            java.util.Map.entry(kFrontLeftSteerMotorId, "FrontLeft-Steer"),
-            java.util.Map.entry(kFrontLeftEncoderId, "FrontLeft-Encoder"),
-
-            java.util.Map.entry(kFrontRightDriveMotorId, "FrontRight-Drive"),
-            java.util.Map.entry(kFrontRightSteerMotorId, "FrontRight-Steer"),
-            java.util.Map.entry(kFrontRightEncoderId, "FrontRight-Encoder"),
-
-            java.util.Map.entry(kBackLeftDriveMotorId, "BackLeft-Drive"),
-            java.util.Map.entry(kBackLeftSteerMotorId, "BackLeft-Steer"),
-            java.util.Map.entry(kBackLeftEncoderId, "BackLeft-Encoder"),
-
-            java.util.Map.entry(kBackRightDriveMotorId, "BackRight-Drive"),
-            java.util.Map.entry(kBackRightSteerMotorId, "BackRight-Steer"),
-            java.util.Map.entry(kBackRightEncoderId, "BackRight-Encoder"),
-
-            java.util.Map.entry(kPigeonId, "Pigeon2")
-        );
-
-        /**
-         * Returns a friendly name for a device ID, falling back to a "CAN#" string when
-         * an explicit mapping does not exist.
-         */
-        public static String getDeviceName(int deviceId) {
-            return kDeviceFriendlyNames.getOrDefault(deviceId, "CAN#" + deviceId);
-        }
-
     /**
      * Creates a CommandSwerveDrivetrain instance.
      * This should only be called once in your robot program,.
@@ -246,6 +217,7 @@ public class TunerConstants {
             DrivetrainConstants, FrontLeft, FrontRight, BackLeft, BackRight
         );
     }
+
 
     /**
      * Swerve Drive class utilizing CTR Electronics' Phoenix 6 API with the selected device types.
@@ -307,10 +279,10 @@ public class TunerConstants {
          *                                  unspecified or set to 0 Hz, this is 250 Hz on
          *                                  CAN FD, and 100 Hz on CAN 2.0.
          * @param odometryStandardDeviation The standard deviation for odometry calculation
-         *                                  in the form [x, y, theta]ᵀ, with units in meters
+         *                                  in the form [x, y, theta]áµ€, with units in meters
          *                                  and radians
          * @param visionStandardDeviation   The standard deviation for vision calculation
-         *                                  in the form [x, y, theta]ᵀ, with units in meters
+         *                                  in the form [x, y, theta]áµ€, with units in meters
          *                                  and radians
          * @param modules                   Constants for each specific module
          */
@@ -327,5 +299,35 @@ public class TunerConstants {
                 odometryStandardDeviation, visionStandardDeviation, modules
             );
         }
+    }
+
+    // Friendly device names for logging and diagnostics. Map CAN/Device IDs to a short human
+    // readable identifier so log messages can display meaningful names instead of raw IDs.
+    public static final java.util.Map<Integer, String> kDeviceFriendlyNames = java.util.Map.ofEntries(
+        java.util.Map.entry(kFrontLeftDriveMotorId, "FrontLeft-Drive"),
+        java.util.Map.entry(kFrontLeftSteerMotorId, "FrontLeft-Steer"),
+        java.util.Map.entry(kFrontLeftEncoderId, "FrontLeft-Encoder"),
+
+        java.util.Map.entry(kFrontRightDriveMotorId, "FrontRight-Drive"),
+        java.util.Map.entry(kFrontRightSteerMotorId, "FrontRight-Steer"),
+        java.util.Map.entry(kFrontRightEncoderId, "FrontRight-Encoder"),
+
+        java.util.Map.entry(kBackLeftDriveMotorId, "BackLeft-Drive"),
+        java.util.Map.entry(kBackLeftSteerMotorId, "BackLeft-Steer"),
+        java.util.Map.entry(kBackLeftEncoderId, "BackLeft-Encoder"),
+
+        java.util.Map.entry(kBackRightDriveMotorId, "BackRight-Drive"),
+        java.util.Map.entry(kBackRightSteerMotorId, "BackRight-Steer"),
+        java.util.Map.entry(kBackRightEncoderId, "BackRight-Encoder"),
+
+        java.util.Map.entry(kPigeonId, "Pigeon2")
+    );
+
+    /**
+     * Returns a friendly name for a device ID, falling back to a "CAN#" string when
+     * an explicit mapping does not exist.
+     */
+    public static String getDeviceName(int deviceId) {
+        return kDeviceFriendlyNames.getOrDefault(deviceId, "CAN#" + deviceId);
     }
 }

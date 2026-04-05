@@ -31,19 +31,11 @@ public class TransferSubsystem extends SubsystemBase {
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
-    private final int SPINDEXER_SUPPLY_LIMIT = 50;
-    private final int FEEDER_SUPPLY_LIMIT = 50;
+    private final int SPINDEXER_SUPPLY_LIMIT = 40;
+    private final int FEEDER_SUPPLY_LIMIT = 60;
 
     private final int SPINDEXER_STATOR_LIMIT = 45;
     private final int FEEDER_STATOR_LIMIT = 45;
-
-    private final Command shakeCommand =
-        Commands.sequence(
-            runOnce(() -> spinAtVoltage(5)),
-            new WaitCommand(0.25),
-            runOnce(() -> spinAtVoltage(-5))
-        )
-        .finallyDo(() -> stopSpinning()).repeatedly();
 
     private static final InterpolatingDoubleTreeMap distanceToVoltageMap = new InterpolatingDoubleTreeMap() {{
         put(1.0, 8.0);
@@ -81,14 +73,6 @@ public class TransferSubsystem extends SubsystemBase {
 
         spindexerMotor.getConfigurator().apply(spindexerConfig);
         feederMotor.getConfigurator().apply(feederConfig);
-    }
-
-    public Command startShake() {
-        return shakeCommand;
-    }
-
-    public void cancelShake() {
-        shakeCommand.cancel();
     }
 
     public void spin(double metersToTarget) {
