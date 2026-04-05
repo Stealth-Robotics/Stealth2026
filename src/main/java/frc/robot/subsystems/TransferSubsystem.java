@@ -8,7 +8,12 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.DogLogUtil;
 
 public class TransferSubsystem extends SubsystemBase {
@@ -26,15 +31,15 @@ public class TransferSubsystem extends SubsystemBase {
     private final int SPINDEXER_MOTOR_ID = 5;
     private final int FEEDER_MOTOR_ID = 6;
 
-    private final int SPINDEXER_SUPPLY_LIMIT = 50;
-    private final int FEEDER_SUPPLY_LIMIT = 50;
+    private final int SPINDEXER_SUPPLY_LIMIT = 40;
+    private final int FEEDER_SUPPLY_LIMIT = 60;
 
     private final int SPINDEXER_STATOR_LIMIT = 45;
     private final int FEEDER_STATOR_LIMIT = 45;
 
     private static final InterpolatingDoubleTreeMap distanceToVoltageMap = new InterpolatingDoubleTreeMap() {{
-        put(1.0, 8.0);
-        put(2.5, 10.0);
+        put(1.0, 6.0);
+        put(2.5, 8.0);
         put(4.0, 12.0);
     }};
     
@@ -71,13 +76,17 @@ public class TransferSubsystem extends SubsystemBase {
     }
 
     public void spin(double metersToTarget) {
+        spinAtVoltage(distanceToVoltageMap.get(metersToTarget));
+    }
+
+    private void spinAtVoltage(double voltage) {
         spindexerMotor.setControl(
-            spindexerController.withOutput(distanceToVoltageMap.get(metersToTarget))
+            spindexerController.withOutput(voltage)
         );
     }
 
     public void stopSpinning() {
-        spindexerMotor.setControl(spindexerController.withOutput(0));
+        spinAtVoltage(0);
     }
 
     public void reverseFeed() {

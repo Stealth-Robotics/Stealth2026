@@ -24,9 +24,9 @@ public class ShotCalculator {
         put(2.35, 2800.0);
         put(2.5, 2800.0);
         put(2.75, 2900.0);
-        put(3.0, 2925.0);
+        put(3.0, 2950.0);
         put(3.5, 3000.0);
-        put(4.0, 3050.0);
+        put(4.0, 3100.0);
         put(4.9, 3250.0);
     }};
 
@@ -39,9 +39,9 @@ public class ShotCalculator {
     }};
 
     //Velocity smoothing filters
-    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.15, systemPeriod);
-    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.15, systemPeriod);
-    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.15, systemPeriod);
+    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
+    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
+    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
 
     public record SOTMResult(double rpm, double turretAngle, double hoodAngle) {}
 
@@ -90,7 +90,7 @@ public class ShotCalculator {
                 filteredVx * totalLatencySeconds,
                 filteredVy * totalLatencySeconds,
                 0,
-                new Rotation3d(0, 0, filteredVOmega * totalLatencySeconds)
+                Rotation3d.kZero
             )
         );
 

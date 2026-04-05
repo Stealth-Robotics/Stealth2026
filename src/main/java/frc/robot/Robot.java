@@ -27,6 +27,11 @@ public class Robot extends TimedRobot {
 
         //Stop hoot replay logging
         SignalLogger.enableAutoLogging(false);
+
+        //Set the limelight's tag filter
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetFiducialIDFiltersOverride(ll, LimelightConstants.ALLOWED_TAGS);
+        }
     }
 
     @Override
@@ -41,9 +46,10 @@ public class Robot extends TimedRobot {
     public void disabledInit() {
         m_robotContainer.toggleDisabledLeds(true);
 
+        //Disabled IMU mode
         for (String ll : LimelightConstants.LIMELIGHTS) {
             LimelightHelpers.SetThrottle(ll, LimelightConstants.LIMELIGHT_DISABLED_THROTTLE);
-            LimelightHelpers.SetIMUMode(ll, 1);
+            LimelightHelpers.SetIMUMode(ll, LimelightConstants.DISABLED_IMU_MODE);
         }
     }
 
@@ -58,10 +64,8 @@ public class Robot extends TimedRobot {
         m_robotContainer.resetFuelCounter();
 
         for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetIMUAssistAlpha(ll, 0.5); //Old value = 0.05
-
+            LimelightHelpers.SetIMUAssistAlpha(ll, 0.001); //0.05 old value
             LimelightHelpers.SetThrottle(ll, 0);
-            LimelightHelpers.SetIMUMode(ll, 3);
         }
 
         //Reset the ShotCalculator's velocity filters 
@@ -76,6 +80,11 @@ public class Robot extends TimedRobot {
 
         if (m_autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(m_autonomousCommand);
+        }
+
+        //Auto IMU mode
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetIMUMode(ll, LimelightConstants.AUTO_IMU_MODE);
         }
     }
 
@@ -96,6 +105,11 @@ public class Robot extends TimedRobot {
 
         if (m_autonomousCommand != null) {
             m_autonomousCommand.cancel();
+        }
+
+        //Teleop IMU mode
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetIMUMode(ll, LimelightConstants.TELEOP_IMU_MODE);
         }
     }
 

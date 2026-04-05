@@ -53,12 +53,8 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOYED_ROTATIONS = 0.0;
     private final double RETRACTED_ROTATIONS = 0.308;
 
-    private final double DEPLOY_kP = 25;
-    private final double RETRACT_kP = 30;
+    private final double DEPLOY_kP = 30;
     private final double FAST_kP = 50;
-
-    private final double DEPLOY_kI = 0;
-    private final double RETRACT_kI = 0;
 
     private final double DEPLOY_kACCEL = 20;
     private final double DEPLOY_kVELO = 30;
@@ -123,13 +119,8 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
         deployConfig.CurrentLimits.SupplyCurrentLimit = DEPLOY_SUPPLY_LIMIT;
 
-        deployConfig.Slot0.kP = RETRACT_kP;
-        deployConfig.Slot0.kI = RETRACT_kI;
-
-        deployConfig.Slot1.kP = DEPLOY_kP;
-        deployConfig.Slot1.kI = DEPLOY_kI;
-
-        deployConfig.Slot2.kP = FAST_kP;
+        deployConfig.Slot0.kP = DEPLOY_kP;
+        deployConfig.Slot1.kP = FAST_kP;
         
         deployConfig.MotionMagic.MotionMagicAcceleration = DEPLOY_kACCEL;
         deployConfig.MotionMagic.MotionMagicCruiseVelocity = DEPLOY_kVELO;
@@ -144,17 +135,36 @@ public class IntakeSubsystem extends SubsystemBase {
      * then back down to toss the fuel into the spindexer.
      */
     public Command agitate() {
-        double tossPercentage = RETRACTED_ROTATIONS * 0.5;
+        double tossPercentage = RETRACTED_ROTATIONS * 0.75;
         return new SequentialCommandGroup(
+            new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
             new InstantCommand(() -> moveFastTo(tossPercentage), this),
             new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
-            new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> deploy(), this),
             new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.25),
             new InstantCommand(() -> setRollerSpeed(0))
         );
     }
+
+    public Command cheesyAgitate() {
+        double tossPercentage = RETRACTED_ROTATIONS * 0.5;
+        return new SequentialCommandGroup(
+            new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
+            new InstantCommand(() -> moveFastTo(tossPercentage), this),
+            new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
+            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
+            new InstantCommand(() -> setRollerSpeed(0))
+        ).andThen(run(() -> {
+            deployMotor.setControl(
+                deployController.withSlot(0).withPosition(deployController.getPositionMeasure().magnitude() + 0.006)
+            );
+        }));
+    }
+
+    // public Command agitate() {
+    //     return runOnce(() -> deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS)));
+    // }
 
     public void setRollerSpeed(double speed) {
         leftRollerMotor.setControl(
@@ -164,7 +174,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     private void moveFastTo(double rotations) {
-        deployMotor.setControl(deployController.withPosition(rotations).withSlot(2));
+        deployMotor.setControl(deployController.withPosition(rotations).withSlot(1));
     }
 
     public boolean isAtPosition(double rotations) {
@@ -175,7 +185,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void deploy() {
-        deployMotor.setControl(deployController.withSlot(1).withPosition(DEPLOYED_ROTATIONS));
+        deployMotor.setControl(deployController.withSlot(0).withPosition(DEPLOYED_ROTATIONS));
     }
 
     public void retract() {
@@ -194,6 +204,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command deployCommand() {
         return runOnce(() -> deploy());
+    }
+
+    public Command bumpRetract() {
+        return runOnce(() -> deployMotor.setControl(deployController.withSlot(0).withPosition(DEPLOYED_ROTATIONS * 0.25)));
     }
 
     public Command retractCommand() {
