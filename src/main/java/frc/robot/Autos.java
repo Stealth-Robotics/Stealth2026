@@ -7,16 +7,16 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import frc.robot.util.AutoStartingPosition;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 
 public class Autos {
     private final AutoFactory autoFactory;
+    private final AutoRoutine nothingAuto;
 
     private final IntakeSubsystem intake;
     private final ShootingSuperstructure shooter;
-
-    private final AutoRoutine nothingAuto;
 
     public Autos(AutoFactory autoFactory, IntakeSubsystem intake, ShootingSuperstructure shooter) {
         this.autoFactory = autoFactory;
@@ -25,12 +25,6 @@ public class Autos {
         this.shooter = shooter;
 
         nothingAuto = autoFactory.newRoutine("nothing");
-    }
-
-    public enum AutoPosition {
-        LEFT,
-        MIDDLE,
-        RIGHT
     }
 
     /**
@@ -72,7 +66,7 @@ public class Autos {
     /*
      * Delayed middle steal auto
      */
-    public AutoRoutine middle(AutoPosition position) {
+    public AutoRoutine middle(AutoStartingPosition position) {
         String pathName = switch (position) {
             case LEFT -> "LeftMiddle";
             case RIGHT -> "RightMiddle";
@@ -104,7 +98,7 @@ public class Autos {
     /*
      * Two cycle auto that goes bump then trench
      */
-    public AutoRoutine tb(AutoPosition position) {
+    public AutoRoutine tb(AutoStartingPosition position) {
         String pathName = switch (position) {
             case LEFT -> "LeftTB";
             case RIGHT -> "RightTB";
@@ -147,7 +141,7 @@ public class Autos {
     /*
      * Two cycle auto that goes bump then trench
      */
-    public AutoRoutine tt(AutoPosition position) {
+    public AutoRoutine tt(AutoStartingPosition position) {
         String pathName = switch (position) {
             case LEFT -> "LeftTT";
             case RIGHT -> "RightTT";

@@ -7,12 +7,10 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
@@ -20,7 +18,6 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -261,49 +258,46 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
+    public double getRobotYawDegrees() {
+        return drive.getPose().getRotation().getDegrees();
+    }
+
     private void updateOdometry() {
-        double robotHeading = drive.getPose().getRotation().getDegrees();
+        PoseEstimate bestEstimate = null;
 
         for (String limelight : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(limelight, robotHeading, 0, 0, 0, 0, 0);
+            var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+
+            if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
+                bestEstimate = estimate;
         }
 
-        if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < LimelightConstants.MAX_VISION_ANGULAR_VELOCITY) {
-            PoseEstimate bestEstimate = null;
-
-            for (String limelight : LimelightConstants.LIMELIGHTS) {
-                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-
-                boolean goodPoseEstimate = isGoodPoseEstimate(estimate);
-                if (!LimelightConstants.COMBINE_POSE_ESTIMATES) {
-                    if (goodPoseEstimate && isBetterPoseEstimate(estimate, bestEstimate))
-                        bestEstimate = estimate;
-                }
-                else if (goodPoseEstimate) {
-                    drive.addVisionMeasurement(estimate.pose, estimate.timestampSeconds, LimelightConstants.STDDEVS);
-                }
-            }
-
-            if (!LimelightConstants.COMBINE_POSE_ESTIMATES && bestEstimate != null && isGoodPoseEstimate(bestEstimate))
-                drive.addVisionMeasurement(bestEstimate.pose, bestEstimate.timestampSeconds, LimelightConstants.STDDEVS);
+        if (bestEstimate != null) {
+            drive.addVisionMeasurement(
+                bestEstimate.pose,
+                bestEstimate.timestampSeconds, 
+                LimelightConstants.STDDEVS
+            );
         }
     }
 
     private boolean isBetterPoseEstimate(PoseEstimate first, PoseEstimate second) {
-        return (second == null || first.tagCount > second.tagCount || first.avgTagArea > second.avgTagArea);
+        return second == null || first.tagCount > second.tagCount || first.avgTagArea > second.avgTagArea;
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
         if (
-            poseEstimate == null || poseEstimate.pose == null ||poseEstimate.pose.equals(Pose2d.kZero) 
+            poseEstimate == null || poseEstimate.pose == null || poseEstimate.pose.equals(Pose2d.kZero) 
             || !AllianceUtility.isWithinField(poseEstimate.pose) ||
             poseEstimate.tagCount <= LimelightConstants.MIN_TAG_COUNT_REJECTION ||
             poseEstimate.avgTagDist >= LimelightConstants.MAX_TAG_DISTANCE
         ) return false;
 
-        for (RawFiducial tag : poseEstimate.rawFiducials) {
-            if (tag.ambiguity > LimelightConstants.MAX_TAG_AMBIGUITY) {
-                return false;
+        if (poseEstimate.tagCount <= 1) {
+            for (RawFiducial tag : poseEstimate.rawFiducials) {
+                if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) {
+                    return false;
+                }
             }
         }
 

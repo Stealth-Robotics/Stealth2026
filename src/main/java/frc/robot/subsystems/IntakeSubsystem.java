@@ -52,10 +52,11 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private final double DEPLOYED_ROTATIONS = 0.0;
     private final double SAFE_ROTATIONS = 0.1;
-    private final double RETRACTED_ROTATIONS = 0.308;
+    private final double RETRACTED_ROTATIONS = 0.3;
 
-    private final double DEPLOY_kP = 30;
-    private final double FAST_kP = 50;
+    private final double DEPLOY_kP = 20;
+    private final double RETRACT_kP = 30;
+    private final double FAST_kP = 40;
 
     private final double DEPLOY_kACCEL = 20;
     private final double DEPLOY_kVELO = 30;
@@ -122,7 +123,8 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.CurrentLimits.SupplyCurrentLimit = DEPLOY_SUPPLY_LIMIT;
 
         deployConfig.Slot0.kP = DEPLOY_kP;
-        deployConfig.Slot1.kP = FAST_kP;
+        deployConfig.Slot1.kP = RETRACT_kP;
+        deployConfig.Slot2.kP = FAST_kP;
         
         deployConfig.MotionMagic.MotionMagicAcceleration = DEPLOY_kACCEL;
         deployConfig.MotionMagic.MotionMagicCruiseVelocity = DEPLOY_kVELO;
@@ -159,14 +161,10 @@ public class IntakeSubsystem extends SubsystemBase {
             new InstantCommand(() -> setRollerSpeed(0))
         ).andThen(run(() -> {
             deployMotor.setControl(
-                deployController.withSlot(0).withPosition(deployController.getPositionMeasure().magnitude() + 0.006)
+                deployController.withSlot(1).withPosition(deployController.getPositionMeasure().magnitude() + 0.006)
             );
         })).finallyDo(() -> deploy());
     }
-
-    // public Command agitate() {
-    //     return runOnce(() -> deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS)));
-    // }
 
     public void setRollerSpeed(double speed) {
         leftRollerMotor.setControl(
@@ -176,7 +174,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     private void moveFastTo(double rotations) {
-        deployMotor.setControl(deployController.withPosition(rotations).withSlot(1));
+        deployMotor.setControl(deployController.withPosition(rotations).withSlot(2));
     }
 
     public boolean isAtPosition(double rotations) {
@@ -200,7 +198,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public void safe() {
         isRetracting = false;
-        deployMotor.setControl(deployController.withSlot(0).withPosition(SAFE_ROTATIONS));
+        deployMotor.setControl(deployController.withSlot(1).withPosition(SAFE_ROTATIONS));
     }
 
     public void deploy() {
@@ -210,7 +208,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public void retract() {
         isRetracting = true;
-        deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS));
+        deployMotor.setControl(deployController.withSlot(1).withPosition(RETRACTED_ROTATIONS));
     }
 
     // AUTO COMMANDS

@@ -7,7 +7,6 @@ import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
 import edu.wpi.first.hal.simulation.RoboRioDataJNI;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -15,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
-import frc.robot.Autos.AutoPosition;
+import frc.robot.util.AutoStartingPosition;
 
 public class RobotContainer {
     private final Driver driver = Driver.MO;
@@ -89,7 +88,7 @@ public class RobotContainer {
             robot.setIntakeDefaultCommand(
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
                 () -> driverController.getRightTriggerAxis() > 0.1,
-                () -> driverController.rightBumper().getAsBoolean(),
+                () -> driverController.y().getAsBoolean(),
                 () -> operatorController.b().getAsBoolean()
             );
         }
@@ -99,7 +98,7 @@ public class RobotContainer {
 
         driverController.start().onTrue(robot.forceResetOdometry());
         
-        operatorController.rightBumper().whileTrue(robot.shoot());
+        driverController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
 
         operatorController.povUp()
@@ -112,14 +111,14 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addRoutine("LeftTB", () -> autos.tb(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightTB", () -> autos.tb(AutoPosition.RIGHT));
+        autoChooser.addRoutine("LeftTB", () -> autos.tb(AutoStartingPosition.LEFT));
+        autoChooser.addRoutine("RightTB", () -> autos.tb(AutoStartingPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftTT", () -> autos.tt(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightTT", () -> autos.tt(AutoPosition.RIGHT));
+        autoChooser.addRoutine("LeftTT", () -> autos.tt(AutoStartingPosition.LEFT));
+        autoChooser.addRoutine("RightTT", () -> autos.tt(AutoStartingPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftMiddle", () -> autos.middle(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightMiddle", () -> autos.middle(AutoPosition.RIGHT));
+        autoChooser.addRoutine("LeftMiddle", () -> autos.middle(AutoStartingPosition.LEFT));
+        autoChooser.addRoutine("RightMiddle", () -> autos.middle(AutoStartingPosition.RIGHT));
     } 
 
     /*
@@ -138,6 +137,10 @@ public class RobotContainer {
     public void periodic() {
         AllianceUtility.update();
         ShiftTracker.update();
+    }
+
+    public double getRobotYawDegrees() {
+        return robot.getRobotYawDegrees();
     }
 
     public void toggleDisabledLeds(boolean disable) {

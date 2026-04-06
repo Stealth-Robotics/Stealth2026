@@ -7,27 +7,24 @@ import edu.wpi.first.math.util.Units;
 
 public class LimelightConstants {
     public static final TagFilterMode TAG_FILTER_MODE = TagFilterMode.ALL;
-    public static final boolean COMBINE_POSE_ESTIMATES = false;
 
     public static final int DISABLED_IMU_MODE = 0;
-    public static final int AUTO_IMU_MODE = 3;
-    public static final int TELEOP_IMU_MODE = 3;
+    public static final int AUTO_IMU_MODE = 0;
+    public static final int TELEOP_IMU_MODE = 0;
 
-    public static final int LIMELIGHT_DISABLED_THROTTLE = 100;
+    public static final int LIMELIGHT_DISABLED_THROTTLE = 200;
 
-    public static final Vector<N3> STDDEVS = VecBuilder.fill(0.01, 0.01, Units.degreesToRadians(10));
+    public static final Vector<N3> STDDEVS = VecBuilder.fill(0.1, 0.1, Units.degreesToRadians(10));
 
-    public static final double MAX_TAG_AMBIGUITY= 0.6;
+    public static final double MAX_TAG_AMBIGUITY = 0.35;
 
-    public static final double MAX_VISION_ANGULAR_VELOCITY = 2.0; //Rad/s
-
-    public static final double MAX_TAG_DISTANCE = 4.0;
+    public static final double MAX_TAG_DISTANCE = 3;
     public static final int MIN_TAG_COUNT_REJECTION = 0;
 
     public static final String[] LIMELIGHTS = {
         "limelight-front",
-        "limelight-right"
-        // "limelight-left"
+        "limelight-right",
+        "limelight-left"
     };
 
     public enum TagFilterMode {
@@ -50,6 +47,7 @@ public class LimelightConstants {
         );
 
         private final int[] tags;
+
         TagFilterMode(int[] tags) {
             this.tags = tags;
         }
