@@ -262,27 +262,35 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateOdometry() {
-        PoseEstimate bestEstimate = null;
+        var driveSpeeds = drive.getState().Speeds;
+        double linearSpeed = Math.hypot(driveSpeeds.vxMetersPerSecond, driveSpeeds.vyMetersPerSecond);
+        boolean isSlow = 
+            linearSpeed < 3 &&
+            Math.abs(driveSpeeds.omegaRadiansPerSecond) < 2;
 
-        double robotYaw = drive.getState().Pose.getRotation().getDegrees();
-        double robotYawRate = drive.getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
+        if (isSlow) {
+            PoseEstimate bestEstimate = null;
 
-        for (String limelight : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(limelight, robotYaw, robotYawRate, 0, 0, 0, 0);
+            double robotYaw = drive.getState().Pose.getRotation().getDegrees();
+            double robotYawRate = drive.getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
 
-            // var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
-            var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+            for (String limelight : LimelightConstants.LIMELIGHTS) {
+                LimelightHelpers.SetRobotOrientation(limelight, robotYaw, robotYawRate, 0, 0, 0, 0);
 
-            if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
-                bestEstimate = estimate;
-        }
+                // var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
-        if (bestEstimate != null) {
-            drive.addVisionMeasurement(
-                bestEstimate.pose,
-                bestEstimate.timestampSeconds, 
-                LimelightConstants.STDDEVS
-            );
+                if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
+                    bestEstimate = estimate;
+            }
+
+            if (bestEstimate != null) {
+                drive.addVisionMeasurement(
+                    bestEstimate.pose,
+                    bestEstimate.timestampSeconds,
+                    LimelightConstants.STDDEVS
+                );
+            }
         }
     }
 
