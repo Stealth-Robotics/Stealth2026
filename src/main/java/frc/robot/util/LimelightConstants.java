@@ -8,9 +8,11 @@ import edu.wpi.first.math.util.Units;
 public class LimelightConstants {
     public static final TagFilterMode TAG_FILTER_MODE = TagFilterMode.ALL;
 
-    public static final int DISABLED_IMU_MODE = 0;
-    public static final int AUTO_IMU_MODE = 0;
-    public static final int TELEOP_IMU_MODE = 0;
+    //0 = external, 1 = seed internal, 2 = external, 3 = mt1 + internal, 4 = internal + external
+    public static final int DISABLED_IMU_MODE = 1;
+    public static final int ENABLED_IMU_MODE = 4;
+
+    public static final double IMU_ALPHA = 0.001; //0.05 old value
 
     public static final int LIMELIGHT_DISABLED_THROTTLE = 200;
 

@@ -78,8 +78,7 @@ public class RobotSystem extends SubsystemBase {
         intake = new IntakeSubsystem();
         shooter = new ShootingSuperstructure(
             () -> drive.getPose(), 
-            () -> drive.getFieldRelativeVelocity(),
-            () -> drive.getRotation3d()
+            () -> drive.getFieldRelativeVelocity()
         );
         led = new LEDSubsystem(() -> ShiftTracker.hubIsActive());
 
@@ -265,8 +264,14 @@ public class RobotSystem extends SubsystemBase {
     private void updateOdometry() {
         PoseEstimate bestEstimate = null;
 
+        double robotYaw = drive.getState().Pose.getRotation().getDegrees();
+        double robotYawRate = drive.getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
+
         for (String limelight : LimelightConstants.LIMELIGHTS) {
-            var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+            LimelightHelpers.SetRobotOrientation(limelight, robotYaw, robotYawRate, 0, 0, 0, 0);
+
+            // var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+            var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
             if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
                 bestEstimate = estimate;

@@ -20,6 +20,8 @@ public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
     private final RobotContainer m_robotContainer;
 
+    private boolean isDisabled = true;
+
     public Robot() {
         m_robotContainer = new RobotContainer();
 
@@ -29,9 +31,10 @@ public class Robot extends TimedRobot {
         //Stop hoot replay logging
         SignalLogger.enableAutoLogging(false);
 
-        //Set the limelight's tag filter
+        //Set the limelight's tag filter & IMU alpha
         for (String ll : LimelightConstants.LIMELIGHTS) {
             LimelightHelpers.SetFiducialIDFiltersOverride(ll, LimelightConstants.TAG_FILTER_MODE.getTags());
+            LimelightHelpers.SetIMUAssistAlpha(ll, LimelightConstants.IMU_ALPHA);
         }
     }
 
@@ -42,23 +45,26 @@ public class Robot extends TimedRobot {
         //Run the robot container's periodic
         m_robotContainer.periodic();
 
-        double robotHeading = m_robotContainer.getRobotYawDegrees();
-        
-        for (String limelight : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(limelight, robotHeading, 0, 0, 0, 0, 0);
+        //Limelight IMU
+        if (isDisabled) {
+            for (String ll : LimelightConstants.LIMELIGHTS) {
+                LimelightHelpers.SetThrottle(ll, LimelightConstants.LIMELIGHT_DISABLED_THROTTLE);
+                LimelightHelpers.SetIMUMode(ll, LimelightConstants.DISABLED_IMU_MODE);
+            }
+        }
+        else {
+            for (String ll : LimelightConstants.LIMELIGHTS) {
+                LimelightHelpers.SetThrottle(ll, 0);
+                LimelightHelpers.SetIMUMode(ll, LimelightConstants.ENABLED_IMU_MODE);
+            }
         }
     }
 
     @Override
     public void disabledInit() {
+        isDisabled = true;
+
         m_robotContainer.toggleDisabledLeds(true);
-
-        //Disabled IMU mode
-        for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetThrottle(ll, LimelightConstants.LIMELIGHT_DISABLED_THROTTLE);
-            LimelightHelpers.SetIMUMode(ll, LimelightConstants.DISABLED_IMU_MODE);
-        }
-
         Elastic.selectTab("Disabled");
     }
 
@@ -69,13 +75,10 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledExit() {
+        isDisabled = false;
+
         m_robotContainer.toggleDisabledLeds(false);
         m_robotContainer.resetFuelCounter();
-
-        for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetIMUAssistAlpha(ll, 0.001); //0.05 old value
-            LimelightHelpers.SetThrottle(ll, 0);
-        }
 
         Elastic.selectTab("Teleoperated");
 
@@ -91,11 +94,6 @@ public class Robot extends TimedRobot {
 
         if (m_autonomousCommand != null) {
             CommandScheduler.getInstance().schedule(m_autonomousCommand);
-        }
-
-        //Auto IMU mode
-        for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetIMUMode(ll, LimelightConstants.AUTO_IMU_MODE);
         }
     }
 
@@ -116,11 +114,6 @@ public class Robot extends TimedRobot {
 
         if (m_autonomousCommand != null) {
             m_autonomousCommand.cancel();
-        }
-
-        //Teleop IMU mode
-        for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetIMUMode(ll, LimelightConstants.TELEOP_IMU_MODE);
         }
     }
 

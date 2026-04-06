@@ -44,10 +44,6 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double SECONDS_BEFORE_HOPPER_AGITATE = 2;
     private final double SECONDS_BEFORE_HOPPER_EMPTY = 4;
 
-    //Prevents us from shooting if we are tiled enough to miss our target
-    private final double MAX_PITCH_RADIANS = Units.degreesToRadians(8);
-    private final double MAX_ROLL_RADIANS = Units.degreesToRadians(8);
-
     //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
     private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {3.0, 3.0, Math.PI};
 
@@ -59,7 +55,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Supplier<Pose2d> robotPoseSupplier;
     private final Supplier<ChassisSpeeds> robotVelocitySupplier;
-    private final Supplier<Rotation3d> robotRotationSupplier;
 
     //Flag used to spin up for shooting and then forget checking rpms
     private boolean alreadySpinningAtTarget = false;
@@ -113,7 +108,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         RIGHT
     }
 
-    public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier, Supplier<Rotation3d> robotRotationSupplier) {
+    public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier) {
         shooter = new ShooterSubsystem();
         turret = new TurretSubsystem();
         transfer = new TransferSubsystem();
@@ -122,7 +117,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         this.robotPoseSupplier = robotPoseSupplier;
         this.robotVelocitySupplier = robotVelocitySupplier;
-        this.robotRotationSupplier = robotRotationSupplier;
 
         //Configure CANRange sensor
         shotSensorConfig.FovParams.FOVRangeX = 6.75;
@@ -314,11 +308,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             Math.abs(currentRobotAccel[1]) < MAX_ROBOT_SHOOTING_ACCELERATION[1] &&
             Math.abs(currentRobotAccel[2]) < MAX_ROBOT_SHOOTING_ACCELERATION[2];
 
-        boolean isRobotLevelEnough = 
-            Math.abs(robotRotationSupplier.get().getX()) < MAX_ROLL_RADIANS &&
-            Math.abs(robotRotationSupplier.get().getY()) < MAX_PITCH_RADIANS;
-
-        return isVelocityBelowThreshold && isAccelBelowThreshold && isRobotLevelEnough && turret.isReady();
+        return isVelocityBelowThreshold && isAccelBelowThreshold && turret.isReady();
     }
 
     public boolean isShooting() {
