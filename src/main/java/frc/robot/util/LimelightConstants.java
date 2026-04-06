@@ -26,12 +26,13 @@ public class LimelightConstants {
 
     public static final double MAX_VISION_ANGULAR_VELOCITY = 2.0; //Rad/s
 
-    public static final double MAX_TAG_DISTANCE = 4.0;
-    public static final int MIN_TAG_COUNT_REJECTION = 0;
+    public static final double MAX_TAG_DISTANCE = 3.5;
+    public static final int MIN_TAG_COUNT_REJECTION = 1;
+    public static final double MAX_TAG_AMBIGUITY = 0.5;
 
     public static final String[] LIMELIGHTS = {
         "limelight-front",
-        "limelight-right"
-        // "limelight-left"
+        "limelight-right",
+        "limelight-left"
     };
 }

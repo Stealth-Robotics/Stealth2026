@@ -281,7 +281,6 @@ public class RobotSystem extends SubsystemBase {
 
             for (String limelight : LimelightConstants.LIMELIGHTS) {
                 var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-
                 boolean goodPoseEstimate = isGoodPoseEstimate(estimate);
                 if (!LimelightConstants.COMBINE_POSE_ESTIMATES) {
                     if (goodPoseEstimate && isBetterPoseEstimate(estimate, bestEstimate))
@@ -301,13 +300,22 @@ public class RobotSystem extends SubsystemBase {
         return (second == null || first.tagCount > second.tagCount || first.avgTagArea > second.avgTagArea);
     }
 
-    private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
-        return
-            poseEstimate != null && poseEstimate.pose != null && 
-            !poseEstimate.pose.equals(Pose2d.kZero) && AllianceUtility.isWithinField(poseEstimate.pose) &&
-            poseEstimate.tagCount > LimelightConstants.MIN_TAG_COUNT_REJECTION &&
-            poseEstimate.avgTagDist < LimelightConstants.MAX_TAG_DISTANCE;
+    private boolean isGoodPoseEstimate(PoseEstimate estimate) {
+
+        if (estimate == null || estimate.pose == null || estimate.pose.equals(Pose2d.kZero) ||
+            !AllianceUtility.isWithinField(estimate.pose) || 
+            estimate.tagCount <= LimelightConstants.MIN_TAG_COUNT_REJECTION ||
+            estimate.avgTagDist >= LimelightConstants.MAX_TAG_DISTANCE) {
+            return false;
+        }
+
+        if (estimate.tagCount == 1 && estimate.rawFiducials[0].ambiguity > LimelightConstants.MAX_TAG_AMBIGUITY) { 
+            return false;
+        }
+
+        return true;
     }
+
 
     public void toggleDisabledLeds(boolean disable) {
         led.setIsDisabled(disable);
@@ -344,6 +352,7 @@ public class RobotSystem extends SubsystemBase {
                     List<Pose3d> visibleTags = new ArrayList<>();
                     for (var tag : m1Pose.rawFiducials) {
                         tagFieldLayout.getTagPose(tag.id).ifPresent(visibleTags::add);
+                        DogLog.log("" + ll + "/ambiguity/" + tag.id, tag.ambiguity);
                     }
 
                     if (!visibleTags.isEmpty())
