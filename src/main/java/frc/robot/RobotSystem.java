@@ -175,9 +175,9 @@ public class RobotSystem extends SubsystemBase {
         FieldZone zone = ZoneManager.getZone();
 
         if (zone.equals(FieldZone.HUB))
-            shooter.setState(ShooterState.HUB_TRACKING);
+            shooter.setState(ShooterState.HUB);
         else if (zone.equals(FieldZone.PASS))
-            shooter.setState(ShooterState.PASSING);
+            shooter.setState(ShooterState.PASS);
         else
             shooter.setState(ShooterState.IDLE);
     }

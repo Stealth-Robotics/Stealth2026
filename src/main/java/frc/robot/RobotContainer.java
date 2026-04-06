@@ -112,22 +112,14 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
+        autoChooser.addRoutine("LeftTB", () -> autos.tb(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightTB", () -> autos.tb(AutoPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftDoubleBean", () -> autos.doubleBean(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightDoubleBean", () -> autos.doubleBean(AutoPosition.RIGHT));
-        //Newgen autos
-        // autoChooser.addRoutine("LeftTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.LEFT));
-        // autoChooser.addRoutine("RightTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.RIGHT));
+        autoChooser.addRoutine("LeftTT", () -> autos.tt(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightTT", () -> autos.tt(AutoPosition.RIGHT));
 
-        // autoChooser.addRoutine("LeftTrenchBump", () -> autos.trenchBump(AutoPosition.LEFT));
-        // autoChooser.addRoutine("RightTrenchBump", () -> autos.trenchBump(AutoPosition.RIGHT));
-
-        // autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
-        // autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
-        
-        //OG autos
-        autoChooser.addRoutine("Right1CyclePlusOutpost", () -> autos.right1CyclePlusOutpost());
-        autoChooser.addRoutine("Left1CyclePlusDepot", () -> autos.left1CyclePlusDepot());
+        autoChooser.addRoutine("LeftMiddle", () -> autos.middle(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightMiddle", () -> autos.middle(AutoPosition.RIGHT));
     } 
 
     /*

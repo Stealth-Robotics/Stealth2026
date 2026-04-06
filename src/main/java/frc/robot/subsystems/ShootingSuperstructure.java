@@ -104,8 +104,8 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public enum ShooterState {
         IDLE,
-        PASSING,
-        HUB_TRACKING
+        PASS,
+        HUB
     }
 
     public enum PassingTarget {
@@ -166,7 +166,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             isShotRequested = true;
 
             shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
-            shooter.setHoodDegrees((state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle());
+            shooter.setHoodDegrees((state.equals(ShooterState.PASS)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle());
 
             if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity())
                 alreadySpinningAtTarget = true;
@@ -200,7 +200,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             isShooterActive = false;
         })
         .onlyWhile(() -> {
-            return state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING);
+            return state.equals(ShooterState.HUB) || state.equals(ShooterState.PASS);
         });
     }
 
@@ -363,10 +363,10 @@ public class ShootingSuperstructure extends SubsystemBase {
             lastShotTimer.restart();
 
             switch (state) {
-                case HUB_TRACKING:
+                case HUB:
                     hubShots++;
                     break;
-                case PASSING:
+                case PASS:
                     passShots++;
                     break;
                 default:
@@ -395,12 +395,12 @@ public class ShootingSuperstructure extends SubsystemBase {
                 }
             }
 
-            case HUB_TRACKING -> {
+            case HUB -> {
                 trackHub();
                 applyIdle = true;
             }
 
-            case PASSING -> {
+            case PASS -> {
                 pass();
                 applyIdle = true;
             }
