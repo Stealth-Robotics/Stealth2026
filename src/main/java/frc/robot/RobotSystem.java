@@ -264,11 +264,11 @@ public class RobotSystem extends SubsystemBase {
     private void updateOdometry() {
         PoseEstimate bestEstimate = null;
 
-        double robotYaw = drive.getState().Pose.getRotation().getDegrees();
-        double robotYawRate = drive.getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
+        double yaw = drive.getState().Pose.getRotation().getDegrees();
+        double yawRate = drive.getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
 
         for (String limelight : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(limelight, robotYaw, robotYawRate, 0, 0, 0, 0);
+            LimelightHelpers.SetRobotOrientation(limelight, yaw, yawRate, 0, 0, 0, 0);
 
             // var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
             var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
