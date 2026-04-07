@@ -49,13 +49,14 @@ public class Autos {
     }
 
     private Command spinupShooter() {
-        return shooter.spinUp(2500);
+        return shooter.spinUp(2800);
     }
 
     private Command startShooting() {
         return shooter.shoot().alongWith(
             new SequentialCommandGroup(
-                new WaitCommand(1),
+                intake.agitate(), //One quick agitate to start the ball rolling (pun intended)
+                new WaitCommand(1.5),
                 intake.agitate().repeatedly()
             )
         );
@@ -65,7 +66,7 @@ public class Autos {
         return shooter.stopShooting().andThen(stopAgitating());
     }
 
-    public AutoRoutine mareBetal() {
+    public AutoRoutine leftBear() {
         String pathName = "LeftBear";
 
         AutoRoutine routine = autoFactory.newRoutine("routine");
@@ -94,10 +95,10 @@ public class Autos {
     /*
      * Two cycle auto that goes bump then trench
      */
-    public AutoRoutine tb(AutoStartingPosition position) {
+    public AutoRoutine bumpTrench(AutoStartingPosition position) {
         String pathName = switch (position) {
-            case LEFT -> "LeftTB";
-            case RIGHT -> "RightTB";
+            case LEFT -> "LeftBT";
+            case RIGHT -> "RightBT";
             default -> "";
         };
 
@@ -134,28 +135,10 @@ public class Autos {
         return routine;
     }
 
-    public AutoRoutine testAuto() {
-        AutoRoutine routine = autoFactory.newRoutine("routine");
-
-        routine.active().onTrue(
-            new SequentialCommandGroup(
-                deployAndIntake(),
-                new WaitCommand(2),
-                spinupShooter(),
-                new WaitCommand(2),
-                startShooting().withTimeout(5),
-                stopShooting(),
-                retractAndStopIntake()
-            )
-        );
-
-        return routine;
-    }
-
     /*
-     * Two cycle auto that goes bump then trench
+     * Two cycle auto that goes through the trench twice
      */
-    public AutoRoutine tt(AutoStartingPosition position) {
+    public AutoRoutine doubleTrench(AutoStartingPosition position) {
         String pathName = switch (position) {
             case LEFT -> "LeftTT";
             case RIGHT -> "RightTT";

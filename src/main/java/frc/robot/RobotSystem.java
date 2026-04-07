@@ -107,7 +107,7 @@ public class RobotSystem extends SubsystemBase {
                 double targetRollerSpeed = rollerSpeed.getAsDouble();
                 intake.setRollerSpeed(targetRollerSpeed);
 
-                if (ZoneManager.inBumpZone() && targetRollerSpeed < 0.1 && intake.isDeployed()
+                if (ZoneManager.inBumpZone() && intake.isDeployed()
                     && !deploy.getAsBoolean() && !agitate.getAsBoolean()) {
                     intake.safe();
                 }

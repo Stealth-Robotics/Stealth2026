@@ -311,7 +311,8 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Makes sure we aren't shooting off the field or that we are going to definitely miss
      */
     private boolean safeToShoot() {
-        if (DriverStation.isAutonomousEnabled())
+        boolean turretReady = turret.isReady();
+        if (DriverStation.isAutonomousEnabled() && turretReady)
             return true;
 
         boolean isVelocityBelowThreshold = true;
@@ -329,7 +330,7 @@ public class ShootingSuperstructure extends SubsystemBase {
                 Math.abs(currentRobotAccel[2]) < MAX_ROBOT_SHOOTING_ACCELERATION[2];
         }
 
-        return isVelocityBelowThreshold && isAccelBelowThreshold && turret.isReady();
+        return isVelocityBelowThreshold && isAccelBelowThreshold && turretReady;
     }
 
     public boolean isShooting() {

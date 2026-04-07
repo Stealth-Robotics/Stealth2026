@@ -112,18 +112,13 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addRoutine("LeftBear", () -> autos.mareBetal());
+        autoChooser.addRoutine("LeftBear", () -> autos.leftBear());
 
-        autoChooser.addRoutine("LeftTB", () -> autos.tb(AutoStartingPosition.LEFT));
-        autoChooser.addRoutine("RightTB", () -> autos.tb(AutoStartingPosition.RIGHT));
+        autoChooser.addRoutine("LeftBumpTrench", () -> autos.bumpTrench(AutoStartingPosition.LEFT));
+        autoChooser.addRoutine("RightBumpTrench", () -> autos.bumpTrench(AutoStartingPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftTT", () -> autos.tt(AutoStartingPosition.LEFT));
-        autoChooser.addRoutine("RightTT", () -> autos.tt(AutoStartingPosition.RIGHT));
-
-        // autoChooser.addRoutine("TestAuto", () -> autos.testAuto());
-
-        // autoChooser.addRoutine("LeftMiddle", () -> autos.middle(AutoStartingPosition.LEFT));
-        // autoChooser.addRoutine("RightMiddle", () -> autos.middle(AutoStartingPosition.RIGHT));
+        autoChooser.addRoutine("LeftDoubleTrench", () -> autos.doubleTrench(AutoStartingPosition.LEFT));
+        autoChooser.addRoutine("RightDoubleTrench", () -> autos.doubleTrench(AutoStartingPosition.RIGHT));
     } 
 
     /*
