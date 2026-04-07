@@ -4,7 +4,9 @@ import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AutoStartingPosition;
@@ -34,62 +36,57 @@ public class Autos {
         autoFactory.cache().loadTrajectory(autoName);
     }
 
-    private Command stopShooting() {
-        return shooter.spinUp(0).andThen(stopAgitating());
-    }
-
-    private Command startAgitating() {
-        return new SequentialCommandGroup(
-            new WaitCommand(1),
-            intake.agitate().repeatedly()
-        );
-    }
-
     private Command stopAgitating() {
-        //Overrides the agitating using requirements
         return new InstantCommand(() -> intake.stopCommand());
     }
 
     private Command deployAndIntake() {
-        return intake.deployCommand()
-            .andThen(intake.intakeCommand());
+        return intake.deployCommand().andThen(intake.intakeCommand());
     }
 
-    private Command shootCommand() {
-        return shooter.shoot();
+    private Command retractAndStopIntake() {
+        return intake.retractCommand().andThen(intake.stopCommand());
     }
 
     private Command spinupShooter() {
-        return shooter.spinUp(2500);
+        return shooter.spinUp(2800);
     }
 
-    /*
-     * Delayed middle steal auto
-     */
-    public AutoRoutine middle(AutoStartingPosition position) {
-        String pathName = switch (position) {
-            case LEFT -> "LeftMiddle";
-            case RIGHT -> "RightMiddle";
-            default -> "";
-        };
+    private Command startShooting() {
+        return shooter.shoot().alongWith(
+            new SequentialCommandGroup(
+                intake.agitate(), //One quick agitate to start the ball rolling (pun intended)
+                new WaitCommand(1.5),
+                intake.agitate().repeatedly()
+            )
+        );
+    }
 
-        if (pathName.isBlank())
-            return nothingAuto;
+    private Command stopShooting() {
+        return shooter.stopShooting().andThen(stopAgitating());
+    }
+
+    public AutoRoutine leftBear() {
+        String pathName = "LeftBear";
 
         AutoRoutine routine = autoFactory.newRoutine("routine");
 
         AutoTrajectory path = routine.trajectory(pathName, 0);
+        path.atTime("Intake").onTrue(deployAndIntake());
+        path.atTime("Spinup").onTrue(spinupShooter());
+        path.atTime("Shoot").onTrue(startShooting());
+        path.atTime("Depot").onTrue(stopShooting().andThen(deployAndIntake()));
 
         routine.active().onTrue(
             new SequentialCommandGroup(
                 path.resetOdometry(),
-                shootCommand(),
-                new WaitCommand(5), //Wait for other bots to do their first cycle
-                stopShooting(),
-                deployAndIntake(),
-                path.cmd(),
-                shootCommand().alongWith(startAgitating())
+                new WaitCommand(4),
+                path.cmd()
             )
+        );
+
+        path.done().onTrue(
+            startShooting()
         );
 
         return routine;
@@ -98,10 +95,10 @@ public class Autos {
     /*
      * Two cycle auto that goes bump then trench
      */
-    public AutoRoutine tb(AutoStartingPosition position) {
+    public AutoRoutine bumpTrench(AutoStartingPosition position) {
         String pathName = switch (position) {
-            case LEFT -> "LeftTB";
-            case RIGHT -> "RightTB";
+            case LEFT -> "LeftBT";
+            case RIGHT -> "RightBT";
             default -> "";
         };
 
@@ -113,12 +110,12 @@ public class Autos {
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("Intake").onTrue(deployAndIntake());
         path.atTime("Spinup").onTrue(spinupShooter());
-        path.atTime("Shoot").onTrue(shootCommand());
+        path.atTime("Shoot").onTrue(startShooting());
         
         AutoTrajectory path2 = routine.trajectory(pathName, 1);
         path2.atTime("Intake2").onTrue(deployAndIntake());
         path2.atTime("Spinup2").onTrue(spinupShooter());
-        path2.atTime("Shoot2").onTrue(shootCommand().alongWith(startAgitating()));
+        path2.atTime("Shoot2").onTrue(startShooting());
 
         routine.active().onTrue(
             new SequentialCommandGroup(
@@ -139,9 +136,9 @@ public class Autos {
     }
 
     /*
-     * Two cycle auto that goes bump then trench
+     * Two cycle auto that goes through the trench twice
      */
-    public AutoRoutine tt(AutoStartingPosition position) {
+    public AutoRoutine doubleTrench(AutoStartingPosition position) {
         String pathName = switch (position) {
             case LEFT -> "LeftTT";
             case RIGHT -> "RightTT";
@@ -156,12 +153,12 @@ public class Autos {
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("Intake").onTrue(deployAndIntake());
         path.atTime("Spinup").onTrue(spinupShooter());
-        path.atTime("Shoot").onTrue(shootCommand());
+        path.atTime("Shoot").onTrue(startShooting());
         
         AutoTrajectory path2 = routine.trajectory(pathName, 1);
         path2.atTime("Intake2").onTrue(deployAndIntake());
         path2.atTime("Spinup2").onTrue(spinupShooter());
-        path2.atTime("Shoot2").onTrue(shootCommand().alongWith(startAgitating()));
+        path2.atTime("Shoot2").onTrue(startShooting());
 
         routine.active().onTrue(
             new SequentialCommandGroup(
@@ -172,7 +169,7 @@ public class Autos {
 
         path.done().onTrue(
             new SequentialCommandGroup(
-                new WaitCommand(4), //Shooting time after first cycle
+                new WaitCommand(5), //Shooting time after first cycle
                 stopShooting(),
                 path2.cmd()
             )

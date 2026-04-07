@@ -19,19 +19,27 @@ public class ShotCalculator {
     private static final double mechanismLatency = Units.millisecondsToSeconds(30);
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(1.96, 2600.0);
-        put(2.35, 2800.0);
-        put(2.5, 2800.0);
-        put(2.75, 2900.0);
-        put(3.0, 2950.0);
-        put(3.5, 3000.0);
-        put(4.0, 3100.0);
-        put(4.9, 3250.0);
+        // put(1.96, 2600.0);
+        // put(2.35, 2800.0);
+        // put(2.5, 2800.0);
+        // put(2.75, 2900.0);
+        // put(3.0, 2950.0);
+        // put(3.5, 3000.0);
+        // put(4.0, 3100.0);
+        // put(4.9, 3250.0);
+        put(2.0, 2600.0);
+        put(2.16, 2800.0);
+        put(2.54, 2800.0);
+        put(3.18, 2900.0);
+        put(3.25, 2900.0);
+        put(3.9, 3000.0);
+        put(4.6, 3220.0);
+        put(5.28, 3300.0);
     }};
 
     private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(3.0, 3000.0);
-        put(5.0, 3200.0);
+        put(3.0, 2800.0);
+        put(5.0, 3100.0);
         put(8.0, 3800.0);
         put(11.0, 4200.0);
         put(14.0, 6000.0);
@@ -73,8 +81,6 @@ public class ShotCalculator {
             )
         );
 
-        DogLog.log("vOmega", filteredVOmega);
-
         //Clamp targetHeight to make sure values don't result in a NaN result
         targetHeight = Math.max(targetHeight, Math.max(fuelExitPose.getZ(), targetPose.getZ()));
 
@@ -101,6 +107,7 @@ public class ShotCalculator {
         );
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
+        DogLog.log("MetersToTarget", metersToGoal);
 
         double baseRPM = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToRPM.get(metersToGoal);
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();

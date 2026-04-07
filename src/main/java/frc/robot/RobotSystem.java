@@ -11,6 +11,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
@@ -106,7 +107,7 @@ public class RobotSystem extends SubsystemBase {
                 double targetRollerSpeed = rollerSpeed.getAsDouble();
                 intake.setRollerSpeed(targetRollerSpeed);
 
-                if (ZoneManager.inBumpZone() && targetRollerSpeed < 0.1 && intake.isDeployed()
+                if (ZoneManager.inBumpZone() && intake.isDeployed()
                     && !deploy.getAsBoolean() && !agitate.getAsBoolean()) {
                     intake.safe();
                 }
@@ -262,27 +263,30 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateOdometry() {
-        PoseEstimate bestEstimate = null;
+        var driveSpeeds = drive.getState().Speeds;
+        double linearSpeed = Math.hypot(driveSpeeds.vxMetersPerSecond, driveSpeeds.vyMetersPerSecond);
 
-        double robotYaw = drive.getState().Pose.getRotation().getDegrees();
-        double robotYawRate = drive.getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
+        if (linearSpeed < 3 && Math.abs(driveSpeeds.omegaRadiansPerSecond) < 2) {
+            PoseEstimate bestEstimate = null;
 
-        for (String limelight : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(limelight, robotYaw, robotYawRate, 0, 0, 0, 0);
+            double robotYaw = drive.getState().Pose.getRotation().getDegrees();
+            double robotYawRate = drive.getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
 
-            // var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
-            var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+            for (String limelight : LimelightConstants.LIMELIGHTS) {
+                LimelightHelpers.SetRobotOrientation(limelight, robotYaw, robotYawRate, 0, 0, 0, 0);
 
-            if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
-                bestEstimate = estimate;
-        }
+                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+                if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
+                    bestEstimate = estimate;
+            }
 
-        if (bestEstimate != null) {
-            drive.addVisionMeasurement(
-                bestEstimate.pose,
-                bestEstimate.timestampSeconds, 
-                LimelightConstants.STDDEVS
-            );
+            if (bestEstimate != null) {
+                drive.addVisionMeasurement(
+                    bestEstimate.pose,
+                    bestEstimate.timestampSeconds,
+                    LimelightConstants.STDDEVS
+                );
+            }
         }
     }
 
@@ -294,8 +298,9 @@ public class RobotSystem extends SubsystemBase {
         if (
             poseEstimate == null || poseEstimate.pose == null || poseEstimate.pose.equals(Pose2d.kZero) 
             || !AllianceUtility.isWithinField(poseEstimate.pose) ||
-            poseEstimate.tagCount <= LimelightConstants.MIN_TAG_COUNT_REJECTION ||
-            poseEstimate.avgTagDist >= LimelightConstants.MAX_TAG_DISTANCE
+            poseEstimate.tagCount <= LimelightConstants.MIN_TAG_COUNT ||
+           (poseEstimate.tagCount == 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_SINGLE_TAG_DISTANCE) ||
+           (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE)
         ) return false;
 
         if (poseEstimate.tagCount <= 1) {
