@@ -36,6 +36,7 @@ public class RobotContainer {
 
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
+            .withNtPublish(true)
             .withCaptureDs(false)
             .withLogExtras(false)
             .withCaptureConsole(true)
@@ -88,7 +89,7 @@ public class RobotContainer {
             robot.setIntakeDefaultCommand(
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
                 () -> driverController.getRightTriggerAxis() > 0.1,
-                () -> driverController.y().getAsBoolean(),
+                () -> driverController.rightBumper().getAsBoolean(),
                 () -> operatorController.b().getAsBoolean()
             );
         }
@@ -98,7 +99,7 @@ public class RobotContainer {
 
         driverController.start().onTrue(robot.forceResetOdometry());
         
-        driverController.rightBumper().whileTrue(robot.shoot());
+        operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
 
         operatorController.povUp()
@@ -111,14 +112,14 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addRoutine("LeftTB", () -> autos.tb(AutoStartingPosition.LEFT));
-        autoChooser.addRoutine("RightTB", () -> autos.tb(AutoStartingPosition.RIGHT));
+        // autoChooser.addRoutine("LeftTB", () -> autos.tb(AutoStartingPosition.LEFT));
+        // autoChooser.addRoutine("RightTB", () -> autos.tb(AutoStartingPosition.RIGHT));
 
         autoChooser.addRoutine("LeftTT", () -> autos.tt(AutoStartingPosition.LEFT));
         autoChooser.addRoutine("RightTT", () -> autos.tt(AutoStartingPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftMiddle", () -> autos.middle(AutoStartingPosition.LEFT));
-        autoChooser.addRoutine("RightMiddle", () -> autos.middle(AutoStartingPosition.RIGHT));
+        // autoChooser.addRoutine("LeftMiddle", () -> autos.middle(AutoStartingPosition.LEFT));
+        // autoChooser.addRoutine("RightMiddle", () -> autos.middle(AutoStartingPosition.RIGHT));
     } 
 
     /*

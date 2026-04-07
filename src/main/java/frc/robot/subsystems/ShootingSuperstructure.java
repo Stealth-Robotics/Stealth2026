@@ -18,11 +18,15 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator.SOTMResult;
@@ -45,7 +49,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double SECONDS_BEFORE_HOPPER_EMPTY = 4;
 
     //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
-    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {3.0, 3.0, Math.PI};
+    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {3.0, 3.0, 6.0};
 
     //Prevents us from shooting if we are accelerating too fast to track our target (m/s^2, m/s^2, rad/s^2)
     private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
@@ -183,6 +187,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         })
         .finallyDo(() -> {
             shooter.coastShooter();
+            
             transfer.stopSpinning();
             transfer.stopFeeding();
 
@@ -192,9 +197,6 @@ public class ShootingSuperstructure extends SubsystemBase {
             
             isShotRequested = false;
             isShooterActive = false;
-        })
-        .onlyWhile(() -> {
-            return state.equals(ShooterState.HUB) || state.equals(ShooterState.PASS);
         });
     }
 
@@ -206,6 +208,10 @@ public class ShootingSuperstructure extends SubsystemBase {
             transfer.stopFeeding();
             shooter.coastShooter();
         });
+    }
+
+    public Command coastShooterCommand() {
+        return runOnce(() -> coastShooter());
     }
 
     public void coastShooter() {
@@ -298,15 +304,23 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Makes sure we aren't shooting off the field or that we are going to definitely miss
      */
     private boolean safeToShoot() {
-        boolean isVelocityBelowThreshold =
-            Math.abs(robotVelocitySupplier.get().vxMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[0] &&
-            Math.abs(robotVelocitySupplier.get().vyMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[1] &&
-            Math.abs(robotVelocitySupplier.get().omegaRadiansPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[2];
+        if (DriverStation.isAutonomousEnabled())
+            return true;
 
-        boolean isAccelBelowThreshold =
-            Math.abs(currentRobotAccel[0]) < MAX_ROBOT_SHOOTING_ACCELERATION[0] &&
-            Math.abs(currentRobotAccel[1]) < MAX_ROBOT_SHOOTING_ACCELERATION[1] &&
-            Math.abs(currentRobotAccel[2]) < MAX_ROBOT_SHOOTING_ACCELERATION[2];
+        boolean isVelocityBelowThreshold = true;
+        boolean isAccelBelowThreshold = true;
+
+        if (state.equals(ShooterState.HUB)) {
+            isVelocityBelowThreshold =
+                Math.abs(robotVelocitySupplier.get().vxMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[0] &&
+                Math.abs(robotVelocitySupplier.get().vyMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[1] &&
+                Math.abs(robotVelocitySupplier.get().omegaRadiansPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[2];
+
+            isAccelBelowThreshold =
+                Math.abs(currentRobotAccel[0]) < MAX_ROBOT_SHOOTING_ACCELERATION[0] &&
+                Math.abs(currentRobotAccel[1]) < MAX_ROBOT_SHOOTING_ACCELERATION[1] &&
+                Math.abs(currentRobotAccel[2]) < MAX_ROBOT_SHOOTING_ACCELERATION[2];
+        }
 
         return isVelocityBelowThreshold && isAccelBelowThreshold && turret.isReady();
     }

@@ -264,11 +264,8 @@ public class RobotSystem extends SubsystemBase {
     private void updateOdometry() {
         var driveSpeeds = drive.getState().Speeds;
         double linearSpeed = Math.hypot(driveSpeeds.vxMetersPerSecond, driveSpeeds.vyMetersPerSecond);
-        boolean isSlow = 
-            linearSpeed < 3 &&
-            Math.abs(driveSpeeds.omegaRadiansPerSecond) < 2;
 
-        if (isSlow) {
+        if (linearSpeed < 3 && Math.abs(driveSpeeds.omegaRadiansPerSecond) < 2) {
             PoseEstimate bestEstimate = null;
 
             double robotYaw = drive.getState().Pose.getRotation().getDegrees();
@@ -277,9 +274,7 @@ public class RobotSystem extends SubsystemBase {
             for (String limelight : LimelightConstants.LIMELIGHTS) {
                 LimelightHelpers.SetRobotOrientation(limelight, robotYaw, robotYawRate, 0, 0, 0, 0);
 
-                // var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
-                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-
+                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
                 if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
                     bestEstimate = estimate;
             }
@@ -302,8 +297,9 @@ public class RobotSystem extends SubsystemBase {
         if (
             poseEstimate == null || poseEstimate.pose == null || poseEstimate.pose.equals(Pose2d.kZero) 
             || !AllianceUtility.isWithinField(poseEstimate.pose) ||
-            poseEstimate.tagCount <= LimelightConstants.MIN_TAG_COUNT_REJECTION ||
-            poseEstimate.avgTagDist >= LimelightConstants.MAX_TAG_DISTANCE
+            poseEstimate.tagCount <= LimelightConstants.MIN_TAG_COUNT ||
+           (poseEstimate.tagCount == 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_SINGLE_TAG_DISTANCE) ||
+           (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE)
         ) return false;
 
         if (poseEstimate.tagCount <= 1) {
