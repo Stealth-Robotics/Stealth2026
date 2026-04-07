@@ -7,7 +7,6 @@ import choreo.auto.AutoChooser;
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
 import edu.wpi.first.hal.simulation.RoboRioDataJNI;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -15,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
-import frc.robot.Autos.AutoPosition;
+import frc.robot.util.AutoStartingPosition;
 
 public class RobotContainer {
     private final Driver driver = Driver.MO;
@@ -37,6 +36,7 @@ public class RobotContainer {
 
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
+            .withNtPublish(true)
             .withCaptureDs(false)
             .withLogExtras(false)
             .withCaptureConsole(true)
@@ -130,22 +130,13 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
+        autoChooser.addRoutine("LeftBear", () -> autos.leftBear());
 
-        autoChooser.addRoutine("LeftDoubleBean", () -> autos.doubleBean(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightDoubleBean", () -> autos.doubleBean(AutoPosition.RIGHT));
-        //Newgen autos
-        // autoChooser.addRoutine("LeftTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.LEFT));
-        // autoChooser.addRoutine("RightTrench2Cycle", () -> autos.trench2Cycle(AutoPosition.RIGHT));
+        autoChooser.addRoutine("LeftBumpTrench", () -> autos.bumpTrench(AutoStartingPosition.LEFT));
+        autoChooser.addRoutine("RightBumpTrench", () -> autos.bumpTrench(AutoStartingPosition.RIGHT));
 
-        // autoChooser.addRoutine("LeftTrenchBump", () -> autos.trenchBump(AutoPosition.LEFT));
-        // autoChooser.addRoutine("RightTrenchBump", () -> autos.trenchBump(AutoPosition.RIGHT));
-
-        // autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
-        // autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
-        
-        //OG autos
-        autoChooser.addRoutine("Right1CyclePlusOutpost", () -> autos.right1CyclePlusOutpost());
-        autoChooser.addRoutine("Left1CyclePlusDepot", () -> autos.left1CyclePlusDepot());
+        autoChooser.addRoutine("LeftDoubleTrench", () -> autos.doubleTrench(AutoStartingPosition.LEFT));
+        autoChooser.addRoutine("RightDoubleTrench", () -> autos.doubleTrench(AutoStartingPosition.RIGHT));
     } 
 
     /*
@@ -166,12 +157,12 @@ public class RobotContainer {
         ShiftTracker.update();
     }
 
-    public void toggleDisabledLeds(boolean disable) {
-        robot.toggleDisabledLeds(disable);
+    public double getRobotYawDegrees() {
+        return robot.getRobotYawDegrees();
     }
 
-    public Rotation2d getRobotRotation() {
-        return robot.getRobotRotation();
+    public void toggleDisabledLeds(boolean disable) {
+        robot.toggleDisabledLeds(disable);
     }
 
     public void resetFuelCounter() {

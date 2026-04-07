@@ -40,7 +40,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final VoltageOut rollerController = new VoltageOut(0);
 
     private final double INTAKE_ROLLER_VOLTAGE = 12;
-    private final double MAX_ROLLER_SPEED = 0.75;
+    private final double MAX_ROLLER_SPEED = 1.0;
 
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.401123046875;
 
@@ -51,10 +51,12 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_POSITION_TOLERANCE = 0.02;
 
     private final double DEPLOYED_ROTATIONS = 0.0;
-    private final double RETRACTED_ROTATIONS = 0.308;
+    private final double SAFE_ROTATIONS = 0.1;
+    private final double RETRACTED_ROTATIONS = 0.305;
 
-    private final double DEPLOY_kP = 30;
-    private final double FAST_kP = 50;
+    private final double DEPLOY_kP = 25;
+    private final double RETRACT_kP = 30;
+    private final double FAST_kP = 40;
 
     private final double DEPLOY_kACCEL = 20;
     private final double DEPLOY_kVELO = 30;
@@ -71,6 +73,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_SUPPLY_LIMIT = 30;
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.35;
+    private boolean isRetracting = false;
 
     private long lastMs = 0;
  
@@ -120,7 +123,8 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.CurrentLimits.SupplyCurrentLimit = DEPLOY_SUPPLY_LIMIT;
 
         deployConfig.Slot0.kP = DEPLOY_kP;
-        deployConfig.Slot1.kP = FAST_kP;
+        deployConfig.Slot1.kP = RETRACT_kP;
+        deployConfig.Slot2.kP = FAST_kP;
         
         deployConfig.MotionMagic.MotionMagicAcceleration = DEPLOY_kACCEL;
         deployConfig.MotionMagic.MotionMagicCruiseVelocity = DEPLOY_kVELO;
@@ -136,15 +140,19 @@ public class IntakeSubsystem extends SubsystemBase {
      */
     public Command agitate() {
         double tossPercentage = RETRACTED_ROTATIONS * 0.75;
-        return new SequentialCommandGroup(
+        var agitateCommand = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
-            new InstantCommand(() -> moveFastTo(tossPercentage), this),
+            new InstantCommand(() -> moveFastTo(tossPercentage)),
             new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
-            new InstantCommand(() -> deploy(), this),
+            new InstantCommand(() -> deploy()),
             new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.25),
             new InstantCommand(() -> setRollerSpeed(0))
         );
+        
+        agitateCommand.addRequirements(this);
+
+        return agitateCommand;
     }
 
     public Command cheesyAgitate() {
@@ -157,14 +165,10 @@ public class IntakeSubsystem extends SubsystemBase {
             new InstantCommand(() -> setRollerSpeed(0))
         ).andThen(run(() -> {
             deployMotor.setControl(
-                deployController.withSlot(0).withPosition(deployController.getPositionMeasure().magnitude() + 0.006)
+                deployController.withSlot(1).withPosition(deployController.getPositionMeasure().magnitude() + 0.006)
             );
-        }));
+        })).finallyDo(() -> deploy());
     }
-
-    // public Command agitate() {
-    //     return runOnce(() -> deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS)));
-    // }
 
     public void setRollerSpeed(double speed) {
         leftRollerMotor.setControl(
@@ -174,7 +178,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     private void moveFastTo(double rotations) {
-        deployMotor.setControl(deployController.withPosition(rotations).withSlot(1));
+        deployMotor.setControl(deployController.withPosition(rotations).withSlot(2));
     }
 
     public boolean isAtPosition(double rotations) {
@@ -184,12 +188,31 @@ public class IntakeSubsystem extends SubsystemBase {
         return error <= DEPLOY_POSITION_TOLERANCE;
     }
 
+    public boolean isRetracting() {
+        return isRetracting;
+    }
+
+    public boolean isDeployed() {
+        return isAtPosition(DEPLOYED_ROTATIONS);
+    }
+
+    public boolean isSafe() {
+        return isAtPosition(SAFE_ROTATIONS);
+    }
+
+    public void safe() {
+        isRetracting = false;
+        deployMotor.setControl(deployController.withSlot(1).withPosition(SAFE_ROTATIONS));
+    }
+
     public void deploy() {
+        isRetracting = false;
         deployMotor.setControl(deployController.withSlot(0).withPosition(DEPLOYED_ROTATIONS));
     }
 
     public void retract() {
-        deployMotor.setControl(deployController.withSlot(0).withPosition(RETRACTED_ROTATIONS));
+        isRetracting = true;
+        deployMotor.setControl(deployController.withSlot(1).withPosition(RETRACTED_ROTATIONS));
     }
 
     // AUTO COMMANDS
@@ -206,12 +229,12 @@ public class IntakeSubsystem extends SubsystemBase {
         return runOnce(() -> deploy());
     }
 
-    public Command bumpRetract() {
-        return runOnce(() -> deployMotor.setControl(deployController.withSlot(0).withPosition(DEPLOYED_ROTATIONS * 0.25)));
-    }
-
     public Command retractCommand() {
         return runOnce(() -> retract());
+    }
+
+    public Command safeCommand() {
+        return runOnce(() -> safe());
     }
 
     @Override

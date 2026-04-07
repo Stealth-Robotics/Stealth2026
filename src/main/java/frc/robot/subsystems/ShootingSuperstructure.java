@@ -18,11 +18,16 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator.SOTMResult;
@@ -44,12 +49,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double SECONDS_BEFORE_HOPPER_AGITATE = 2;
     private final double SECONDS_BEFORE_HOPPER_EMPTY = 4;
 
-    //Prevents us from shooting if we are tiled enough to miss our target
-    private final double MAX_PITCH_RADIANS = Units.degreesToRadians(8);
-    private final double MAX_ROLL_RADIANS = Units.degreesToRadians(8);
-
     //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
-    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {3.0, 3.0, Math.PI};
+    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {3.0, 3.0, 6.0};
 
     //Prevents us from shooting if we are accelerating too fast to track our target (m/s^2, m/s^2, rad/s^2)
     private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
@@ -59,7 +60,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Supplier<Pose2d> robotPoseSupplier;
     private final Supplier<ChassisSpeeds> robotVelocitySupplier;
-    private final Supplier<Rotation3d> robotRotationSupplier;
 
     //Flag used to spin up for shooting and then forget checking rpms
     private boolean alreadySpinningAtTarget = false;
@@ -88,6 +88,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     private int hubShots = 0;
     private int passShots = 0;
 
+    private boolean interruptShooting = false;
+
     //Tracks how many fuel have been shot since we started trying. Resets after we stop shooting.
     private int recentShots = 0;
 
@@ -104,8 +106,8 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public enum ShooterState {
         IDLE,
-        PASSING,
-        HUB_TRACKING
+        PASS,
+        HUB
     }
 
     public enum PassingTarget {
@@ -113,7 +115,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         RIGHT
     }
 
-    public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier, Supplier<Rotation3d> robotRotationSupplier) {
+    public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier) {
         shooter = new ShooterSubsystem();
         turret = new TurretSubsystem();
         transfer = new TransferSubsystem();
@@ -122,7 +124,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         this.robotPoseSupplier = robotPoseSupplier;
         this.robotVelocitySupplier = robotVelocitySupplier;
-        this.robotRotationSupplier = robotRotationSupplier;
 
         //Configure CANRange sensor
         shotSensorConfig.FovParams.FOVRangeX = 6.75;
@@ -167,7 +168,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command spinUp(double rpm) {
-        return runOnce(() -> shooter.spinToRPM(rpm));
+        return new InstantCommand(() -> shooter.spinToRPM(rpm));
     }
 
     public Command dashboardHoodReset() {
@@ -175,11 +176,11 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command shoot() {
-        return run(() -> {
+        return new RunCommand(() -> {
             isShotRequested = true;
 
             shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
-            shooter.setHoodDegrees((state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle());
+            shooter.setHoodDegrees((state.equals(ShooterState.PASS)) ? shooter.getMaxHoodDegrees() : lastSOTMResult.hoodAngle());
 
             if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity())
                 alreadySpinningAtTarget = true;
@@ -202,6 +203,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         })
         .finallyDo(() -> {
             shooter.coastShooter();
+            
             transfer.stopSpinning();
             transfer.stopFeeding();
 
@@ -212,9 +214,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             isShotRequested = false;
             isShooterActive = false;
         })
-        .onlyWhile(() -> {
-            return state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING);
-        });
+        .onlyWhile(() -> state.equals(ShooterState.HUB) || state.equals(ShooterState.PASS));
     }
 
     public Command clearTransfer() {
@@ -225,6 +225,13 @@ public class ShootingSuperstructure extends SubsystemBase {
             transfer.stopFeeding();
             shooter.coastShooter();
         });
+    }
+
+    public Command stopShooting() {
+        return new SequentialCommandGroup(
+            new InstantCommand(() -> setState(ShooterState.IDLE)),
+            new InstantCommand(() -> coastShooter())
+        );
     }
 
     public void coastShooter() {
@@ -317,21 +324,26 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Makes sure we aren't shooting off the field or that we are going to definitely miss
      */
     private boolean safeToShoot() {
-        boolean isVelocityBelowThreshold =
-            Math.abs(robotVelocitySupplier.get().vxMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[0] &&
-            Math.abs(robotVelocitySupplier.get().vyMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[1] &&
-            Math.abs(robotVelocitySupplier.get().omegaRadiansPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[2];
+        boolean turretReady = turret.isReady();
+        if (DriverStation.isAutonomousEnabled() && turretReady)
+            return true;
 
-        boolean isAccelBelowThreshold =
-            Math.abs(currentRobotAccel[0]) < MAX_ROBOT_SHOOTING_ACCELERATION[0] &&
-            Math.abs(currentRobotAccel[1]) < MAX_ROBOT_SHOOTING_ACCELERATION[1] &&
-            Math.abs(currentRobotAccel[2]) < MAX_ROBOT_SHOOTING_ACCELERATION[2];
+        boolean isVelocityBelowThreshold = true;
+        boolean isAccelBelowThreshold = true;
 
-        boolean isRobotLevelEnough = 
-            Math.abs(robotRotationSupplier.get().getX()) < MAX_ROLL_RADIANS &&
-            Math.abs(robotRotationSupplier.get().getY()) < MAX_PITCH_RADIANS;
+        if (state.equals(ShooterState.HUB)) {
+            isVelocityBelowThreshold =
+                Math.abs(robotVelocitySupplier.get().vxMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[0] &&
+                Math.abs(robotVelocitySupplier.get().vyMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[1] &&
+                Math.abs(robotVelocitySupplier.get().omegaRadiansPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[2];
 
-        return isVelocityBelowThreshold && isAccelBelowThreshold && isRobotLevelEnough && turret.isReady();
+            isAccelBelowThreshold =
+                Math.abs(currentRobotAccel[0]) < MAX_ROBOT_SHOOTING_ACCELERATION[0] &&
+                Math.abs(currentRobotAccel[1]) < MAX_ROBOT_SHOOTING_ACCELERATION[1] &&
+                Math.abs(currentRobotAccel[2]) < MAX_ROBOT_SHOOTING_ACCELERATION[2];
+        }
+
+        return isVelocityBelowThreshold && isAccelBelowThreshold && turretReady;
     }
 
     public boolean isShooting() {
@@ -376,10 +388,10 @@ public class ShootingSuperstructure extends SubsystemBase {
             lastShotTimer.restart();
 
             switch (state) {
-                case HUB_TRACKING:
+                case HUB:
                     hubShots++;
                     break;
-                case PASSING:
+                case PASS:
                     passShots++;
                     break;
                 default:
@@ -419,12 +431,12 @@ public class ShootingSuperstructure extends SubsystemBase {
                 }
             }
 
-            case HUB_TRACKING -> {
+            case HUB -> {
                 trackHub();
                 applyIdle = true;
             }
 
-            case PASSING -> {
+            case PASS -> {
                 pass();
                 applyIdle = true;
             }

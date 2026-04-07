@@ -1,8 +1,8 @@
 import json
 import os
 
-field_width = 16.541
-field_height = 8.069
+field_width = 16.540988
+field_height = 8.069326
 
 choreoDirectory = os.path.join(os.path.dirname(__file__), "deploy/choreo")
 

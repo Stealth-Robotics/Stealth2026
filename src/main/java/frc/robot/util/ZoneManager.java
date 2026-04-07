@@ -9,9 +9,10 @@ public class ZoneManager {
      * and are automatically flipped to the Red Alliance if needed 
     */
 
-    private static final RectZone hub = new RectZone(-0.5, -0.5, 4, 8.07);
-
     private static final RectZone passing = new RectZone(5.2, 0, 16.5, 8.07);
+
+    private static final RectZone leftBump = new RectZone(3.6, 4.6, 5.5, 6.5);
+    private static final RectZone rightBump = new RectZone(3.6, 1.5, 5.5, 3.5);
 
     // private static final RectZone leftTrench = new RectZone(3.8, 6.87, 5.3, 8.07);
     // private static final RectZone rightTrench = new RectZone(3.8, 0, 5.3, 1.25);
@@ -20,6 +21,7 @@ public class ZoneManager {
         HUB,
         PASS,
         TRENCH,
+        BUMP,
         UNKNOWN
     }
     
@@ -36,6 +38,11 @@ public class ZoneManager {
 
     private static boolean inPassingZone() {
         return AllianceUtility.flipRectZone(passing).contains(robotPose.getTranslation());
+    }
+
+    public static boolean inBumpZone() {
+        return AllianceUtility.flipRectZone(leftBump).contains(robotPose.getTranslation()) ||
+        AllianceUtility.flipRectZone(rightBump).contains(robotPose.getTranslation());
     }
 
     //Currently unused because we don't care if we are inside the trench

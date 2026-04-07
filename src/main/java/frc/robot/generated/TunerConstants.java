@@ -80,9 +80,9 @@ public class TunerConstants {
     private static final Pigeon2Configuration pigeonConfigs = new Pigeon2Configuration()
         .withMountPose(
             new MountPoseConfigs()
-                .withMountPoseYaw(-90)
-                .withMountPosePitch(0)
-                .withMountPoseRoll(0)
+                .withMountPoseYaw(2.164)
+                .withMountPosePitch(0.15)
+                .withMountPoseRoll(-0.54)
         );
 
     // CAN bus that the devices are located on;

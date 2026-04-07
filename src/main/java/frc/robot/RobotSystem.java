@@ -11,6 +11,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
@@ -18,7 +19,6 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -37,6 +37,7 @@ import frc.robot.util.LimelightConstants;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.LimelightHelpers.PoseEstimate;
+import frc.robot.util.LimelightHelpers.RawFiducial;
 import frc.robot.util.ZoneManager.FieldZone;
 import frc.robot.util.ZoneManager;
 
@@ -78,8 +79,7 @@ public class RobotSystem extends SubsystemBase {
         intake = new IntakeSubsystem();
         shooter = new ShootingSuperstructure(
             () -> drive.getPose(), 
-            () -> drive.getFieldRelativeVelocity(),
-            () -> drive.getRotation3d()
+            () -> drive.getFieldRelativeVelocity()
         );
         led = new LEDSubsystem(() -> ShiftTracker.hubIsActive());
 
@@ -98,6 +98,14 @@ public class RobotSystem extends SubsystemBase {
             () -> {
                 double targetRollerSpeed = rollerSpeed.getAsDouble();
                 intake.setRollerSpeed(targetRollerSpeed);
+
+                if (ZoneManager.inBumpZone() && intake.isDeployed()
+                    && !deploy.getAsBoolean() && !agitate.getAsBoolean()) {
+                    intake.safe();
+                }
+                else if (!ZoneManager.inBumpZone() && intake.isSafe() && !intake.isRetracting()) {
+                    intake.deploy();
+                }
             }
         ).beforeStarting(
             () -> {
@@ -160,17 +168,13 @@ public class RobotSystem extends SubsystemBase {
         shooter.changeRPMOffset(delta);
     }
 
-    public Rotation2d getRobotRotation() {
-        return drive.getPose().getRotation();
-    }
-
     private void updateShootingState() {
         FieldZone zone = ZoneManager.getZone();
 
         if (zone.equals(FieldZone.HUB))
-            shooter.setState(ShooterState.HUB_TRACKING);
+            shooter.setState(ShooterState.HUB);
         else if (zone.equals(FieldZone.PASS))
-            shooter.setState(ShooterState.PASSING);
+            shooter.setState(ShooterState.PASS);
         else
             shooter.setState(ShooterState.IDLE);
     }
@@ -243,22 +247,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command seedFieldCentric() {
-        return new SequentialCommandGroup(
-            runOnce(() -> {
-                for (String ll : LimelightConstants.LIMELIGHTS) {
-                    LimelightHelpers.SetIMUMode(ll, 1); //Seeding mode
-                }
-            }),
-            runOnce(() -> drive.seedFieldCentric()),
-            runOnce(() -> {
-                double robotYaw = drive.getPigeon2().getYaw().getValueAsDouble();
-
-                for (String ll : LimelightConstants.LIMELIGHTS) {
-                    LimelightHelpers.SetRobotOrientation(ll, robotYaw, 0, 0, 0, 0, 0);
-                    LimelightHelpers.SetIMUMode(ll, LimelightConstants.TELEOP_IMU_MODE);
-                }
-            })
-        );
+        return runOnce(() -> drive.seedFieldCentric());
     }
 
     public Autos getAutos() {
@@ -269,53 +258,61 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
+    public double getRobotYawDegrees() {
+        return drive.getPose().getRotation().getDegrees();
+    }
+
     private void updateOdometry() {
-        double robotHeading = drive.getPose().getRotation().getDegrees();
+        var driveSpeeds = drive.getState().Speeds;
+        double linearSpeed = Math.hypot(driveSpeeds.vxMetersPerSecond, driveSpeeds.vyMetersPerSecond);
 
-        for (String limelight : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(limelight, robotHeading, 0, 0, 0, 0, 0);
-        }
-
-        if (Math.abs(drive.getFieldRelativeVelocity().omegaRadiansPerSecond) < LimelightConstants.MAX_VISION_ANGULAR_VELOCITY) {
+        if (linearSpeed < 3 && Math.abs(driveSpeeds.omegaRadiansPerSecond) < 2) {
             PoseEstimate bestEstimate = null;
 
+            double robotYaw = drive.getState().Pose.getRotation().getDegrees();
+            double robotYawRate = drive.getPigeon2().getAngularVelocityZWorld().getValueAsDouble();
+
             for (String limelight : LimelightConstants.LIMELIGHTS) {
-                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-                boolean goodPoseEstimate = isGoodPoseEstimate(estimate);
-                if (!LimelightConstants.COMBINE_POSE_ESTIMATES) {
-                    if (goodPoseEstimate && isBetterPoseEstimate(estimate, bestEstimate))
-                        bestEstimate = estimate;
-                }
-                else if (goodPoseEstimate) {
-                    drive.addVisionMeasurement(estimate.pose, estimate.timestampSeconds, LimelightConstants.STDDEVS);
-                }
+                LimelightHelpers.SetRobotOrientation(limelight, robotYaw, robotYawRate, 0, 0, 0, 0);
+
+                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+                if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
+                    bestEstimate = estimate;
             }
 
-            if (!LimelightConstants.COMBINE_POSE_ESTIMATES && bestEstimate != null && isGoodPoseEstimate(bestEstimate))
-                drive.addVisionMeasurement(bestEstimate.pose, bestEstimate.timestampSeconds, LimelightConstants.STDDEVS);
+            if (bestEstimate != null) {
+                drive.addVisionMeasurement(
+                    bestEstimate.pose,
+                    bestEstimate.timestampSeconds,
+                    LimelightConstants.STDDEVS
+                );
+            }
         }
     }
 
     private boolean isBetterPoseEstimate(PoseEstimate first, PoseEstimate second) {
-        return (second == null || first.tagCount > second.tagCount || first.avgTagArea > second.avgTagArea);
+        return second == null || first.tagCount > second.tagCount || first.avgTagArea > second.avgTagArea;
     }
 
-    private boolean isGoodPoseEstimate(PoseEstimate estimate) {
+    private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
+        if (
+            poseEstimate == null || poseEstimate.pose == null || poseEstimate.pose.equals(Pose2d.kZero) 
+            || !AllianceUtility.isWithinField(poseEstimate.pose) ||
+            poseEstimate.tagCount <= LimelightConstants.MIN_TAG_COUNT ||
+           (poseEstimate.tagCount == 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_SINGLE_TAG_DISTANCE) ||
+           (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE)
+        ) return false;
 
-        if (estimate == null || estimate.pose == null || estimate.pose.equals(Pose2d.kZero) ||
-            !AllianceUtility.isWithinField(estimate.pose) || 
-            estimate.tagCount <= LimelightConstants.MIN_TAG_COUNT_REJECTION ||
-            estimate.avgTagDist >= LimelightConstants.MAX_TAG_DISTANCE) {
-            return false;
-        }
-
-        if (estimate.tagCount == 1 && estimate.rawFiducials[0].ambiguity > LimelightConstants.MAX_TAG_AMBIGUITY) { 
-            return false;
+        if (poseEstimate.tagCount <= 1) {
+            for (RawFiducial tag : poseEstimate.rawFiducials) {
+                if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) {
+                    return false;
+                }
+            }
         }
 
         return true;
     }
-
 
     public void toggleDisabledLeds(boolean disable) {
         led.setIsDisabled(disable);

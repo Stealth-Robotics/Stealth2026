@@ -25,6 +25,8 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
 
+    private final double TURRET_LOOKAHEAD_SECONDS = 0.2;
+
     private final double kACCELERATION = 200.0;
     private final double kCRUISE_VELOCITY = 400.0;
     private final double kP = 100.0;
@@ -107,8 +109,17 @@ public class TurretSubsystem extends SubsystemBase {
             rawTargetDegrees < (MAX_TURRET_DEGREES + TURRET_ANGLE_TOLERANCE_DEGREES) &&
             rawTargetDegrees > (MIN_TURRET_DEGREES - TURRET_ANGLE_TOLERANCE_DEGREES);
 
-        return targetInRange &&
+        return targetInRange && !isApproachingLimit() &&
             Math.abs(getTurretAngleDegrees() - rawTargetDegrees) < TURRET_ANGLE_TOLERANCE_DEGREES;
+    }
+
+    public boolean isApproachingLimit() {
+        double futureAngle = getTurretAngleDegrees() + (getTurretVelocity() * TURRET_LOOKAHEAD_SECONDS);
+        return futureAngle <= MIN_TURRET_DEGREES || futureAngle >= MAX_TURRET_DEGREES;
+    }
+
+    private double getTurretVelocity() {
+        return Units.rotationsToDegrees(turretMotor.getVelocity().getValueAsDouble());
     }
 
     public double getTurretAngleDegrees() {

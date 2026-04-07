@@ -1,5 +1,6 @@
 package frc.robot.util;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -20,19 +21,27 @@ public class ShotCalculator {
     private static double lastMetersToGoal = 0.0;
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(1.96, 2600.0);
-        put(2.35, 2800.0);
-        put(2.5, 2800.0);
-        put(2.75, 2900.0);
-        put(3.0, 2950.0);
-        put(3.5, 3000.0);
-        put(4.0, 3100.0);
-        put(4.9, 3250.0);
+        // put(1.96, 2600.0);
+        // put(2.35, 2800.0);
+        // put(2.5, 2800.0);
+        // put(2.75, 2900.0);
+        // put(3.0, 2950.0);
+        // put(3.5, 3000.0);
+        // put(4.0, 3100.0);
+        // put(4.9, 3250.0);
+        put(2.0, 2600.0);
+        put(2.16, 2800.0);
+        put(2.54, 2800.0);
+        put(3.18, 2900.0);
+        put(3.25, 2900.0);
+        put(3.9, 3000.0);
+        put(4.6, 3220.0);
+        put(5.28, 3300.0);
     }};
 
     private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(3.0, 3000.0);
-        put(5.0, 3200.0);
+        put(3.0, 2800.0);
+        put(5.0, 3100.0);
         put(8.0, 3800.0);
         put(11.0, 4200.0);
         put(14.0, 6000.0);
@@ -119,7 +128,8 @@ public class ShotCalculator {
             fuelZVelo
         );
 
-        lastMetersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
+        double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
+        DogLog.log("MetersToTarget", metersToGoal);
 
         double baseRPM = (isPassShot) ? passingDistanceToRPM.get(lastMetersToGoal) : hubDistanceToRPM.get(lastMetersToGoal);
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();
@@ -128,7 +138,7 @@ public class ShotCalculator {
         double targetFlywheelRPM = baseRPM * veloScale;
 
         double targetTurretAngle = Units.radiansToDegrees(
-            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX())
+            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds * 1.5)
         );
         
         double horizontalSpeed = Math.hypot(movingShotVelocity.getX(), movingShotVelocity.getY());
