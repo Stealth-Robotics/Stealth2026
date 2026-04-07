@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -86,6 +87,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     private int totalShots = 0;
     private int hubShots = 0;
     private int passShots = 0;
+
+    private boolean interruptShooting = false;
 
     //Tracks how many fuel have been shot since we started trying. Resets after we stop shooting.
     private int recentShots = 0;
@@ -152,7 +155,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command spinUp(double rpm) {
-        return runOnce(() -> shooter.spinToRPM(rpm));
+        return new InstantCommand(() -> shooter.spinToRPM(rpm));
     }
 
     public Command dashboardHoodReset() {
@@ -160,7 +163,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command shoot() {
-        return run(() -> {
+        return new RunCommand(() -> {
             isShotRequested = true;
 
             shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
@@ -197,7 +200,8 @@ public class ShootingSuperstructure extends SubsystemBase {
             
             isShotRequested = false;
             isShooterActive = false;
-        });
+        })
+        .onlyWhile(() -> state.equals(ShooterState.HUB) || state.equals(ShooterState.PASS));
     }
 
     public Command clearTransfer() {
@@ -210,8 +214,11 @@ public class ShootingSuperstructure extends SubsystemBase {
         });
     }
 
-    public Command coastShooterCommand() {
-        return runOnce(() -> coastShooter());
+    public Command stopShooting() {
+        return new SequentialCommandGroup(
+            new InstantCommand(() -> setState(ShooterState.IDLE)),
+            new InstantCommand(() -> coastShooter())
+        );
     }
 
     public void coastShooter() {

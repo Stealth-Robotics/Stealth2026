@@ -118,6 +118,8 @@ public class RobotContainer {
         autoChooser.addRoutine("LeftTT", () -> autos.tt(AutoStartingPosition.LEFT));
         autoChooser.addRoutine("RightTT", () -> autos.tt(AutoStartingPosition.RIGHT));
 
+        autoChooser.addRoutine("TestAuto", () -> autos.testAuto());
+
         // autoChooser.addRoutine("LeftMiddle", () -> autos.middle(AutoStartingPosition.LEFT));
         // autoChooser.addRoutine("RightMiddle", () -> autos.middle(AutoStartingPosition.RIGHT));
     } 
