@@ -151,7 +151,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command spinUp(double rpm) {
-        return new InstantCommand(() -> shooter.spinToRPM(rpm));
+        return runOnce(() -> shooter.spinToRPM(rpm));
     }
 
     public Command dashboardHoodReset() {
@@ -159,7 +159,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command shoot() {
-        return new RunCommand(() -> {
+        return run(() -> {
             isShotRequested = true;
 
             shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
@@ -208,13 +208,6 @@ public class ShootingSuperstructure extends SubsystemBase {
             transfer.stopFeeding();
             shooter.coastShooter();
         });
-    }
-
-    public Command stopShooting() {
-        return new SequentialCommandGroup(
-            new InstantCommand(() -> setState(ShooterState.IDLE)),
-            new InstantCommand(() -> coastShooter())
-        );
     }
 
     public void coastShooter() {

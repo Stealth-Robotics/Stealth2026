@@ -36,7 +36,7 @@ public class LEDSubsystem extends SubsystemBase {
         .withColor(redColor);
 
     private final StrobeAnimation blinkAnimation = new StrobeAnimation(8, 18)
-        .withFrameRate(12);
+        .withFrameRate(10);
 
     private final SingleFadeAnimation disabledAnimation = new SingleFadeAnimation(8, 18)
         .withColor(redColor)

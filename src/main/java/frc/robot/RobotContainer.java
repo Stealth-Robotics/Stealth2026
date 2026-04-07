@@ -112,6 +112,8 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
+        autoChooser.addRoutine("Test", () -> autos.testAuto());
+
         autoChooser.addRoutine("LeftBear", () -> autos.leftBear());
 
         autoChooser.addRoutine("LeftBumpTrench", () -> autos.bumpTrench(AutoStartingPosition.LEFT));

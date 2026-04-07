@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
+import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AutoStartingPosition;
@@ -63,7 +64,31 @@ public class Autos {
     }
 
     private Command stopShooting() {
-        return shooter.stopShooting().andThen(stopAgitating());
+        return intake.stopCommand();
+    }
+
+    public AutoRoutine testAuto() {
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+        AutoTrajectory path = routine.trajectory("TestAuto");
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                path.resetOdometry(),
+                new ScheduleCommand(deployAndIntake()),
+                path.cmd()
+            )
+        );
+
+        path.done().onTrue(
+            new SequentialCommandGroup(
+                new ScheduleCommand(startShooting()),
+                new WaitCommand(5),
+                new ScheduleCommand(stopShooting()),
+                new ScheduleCommand(retractAndStopIntake())
+            )
+        );
+
+        return routine;
     }
 
     public AutoRoutine leftBear() {

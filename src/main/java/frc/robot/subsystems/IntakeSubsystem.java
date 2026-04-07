@@ -138,7 +138,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public Command agitate(DoubleSupplier magnitude) {
-        var agitateCommand = new SequentialCommandGroup(
+        var command = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
             new InstantCommand(() -> moveFastTo(magnitude.getAsDouble() * RETRACTED_ROTATIONS)),
             new WaitUntilCommand(()-> isAtPosition(magnitude.getAsDouble() * RETRACTED_ROTATIONS)).withTimeout(0.5),
@@ -148,14 +148,15 @@ public class IntakeSubsystem extends SubsystemBase {
             new InstantCommand(() -> setRollerSpeed(0))
         );
         
-        agitateCommand.addRequirements(this);
+        command.addRequirements(this);
 
-        return agitateCommand;
+        return command;
     }
 
     public Command cheesyAgitate() {
         double tossPercentage = RETRACTED_ROTATIONS * 0.5;
-        return new SequentialCommandGroup(
+        
+        var command = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
             new InstantCommand(() -> moveFastTo(tossPercentage), this),
             new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
@@ -166,6 +167,10 @@ public class IntakeSubsystem extends SubsystemBase {
                 deployController.withSlot(1).withPosition(deployController.getPositionMeasure().magnitude() + 0.006)
             );
         })).finallyDo(() -> deploy());
+
+        command.addRequirements(this);
+
+        return command;
     }
 
     public void setRollerSpeed(double speed) {
