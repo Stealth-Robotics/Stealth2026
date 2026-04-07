@@ -12,7 +12,7 @@ public class LimelightConstants {
     public static final int DISABLED_IMU_MODE = 1;
     public static final int ENABLED_IMU_MODE = 0;
 
-    public static final double IMU_ALPHA = 0.05; //0.05 old value
+    public static final double IMU_ALPHA = 0.05;
 
     public static final int LIMELIGHT_DISABLED_THROTTLE = 0;
 
