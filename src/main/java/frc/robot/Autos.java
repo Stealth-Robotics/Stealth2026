@@ -64,7 +64,7 @@ public class Autos {
     }
 
     private Command stopShooting() {
-        return intake.stopCommand();
+        return shooter.stopShooter();
     }
 
     public AutoRoutine testAuto() {

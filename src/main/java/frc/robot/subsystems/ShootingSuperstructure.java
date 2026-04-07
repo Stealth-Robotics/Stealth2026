@@ -210,6 +210,10 @@ public class ShootingSuperstructure extends SubsystemBase {
         });
     }
 
+    public Command stopShooter() {
+        return runOnce(() -> coastShooter());
+    }
+
     public void coastShooter() {
         shooter.coastShooter();
     }

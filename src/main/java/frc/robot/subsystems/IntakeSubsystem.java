@@ -20,6 +20,7 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -158,17 +159,15 @@ public class IntakeSubsystem extends SubsystemBase {
         
         var command = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
-            new InstantCommand(() -> moveFastTo(tossPercentage), this),
+            new InstantCommand(() -> moveFastTo(tossPercentage)),
             new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> setRollerSpeed(0))
         ).andThen(run(() -> {
             deployMotor.setControl(
-                deployController.withSlot(1).withPosition(deployController.getPositionMeasure().magnitude() + 0.006)
+                deployController.withSlot(0).withPosition(deployController.getPositionMeasure().magnitude() + 0.008)
             );
         })).finallyDo(() -> deploy());
-
-        command.addRequirements(this);
 
         return command;
     }
