@@ -176,4 +176,38 @@ public class Autos {
 
         return routine;
     }
+    public AutoRoutine bearAuto(AutoStartingPosition position) {
+        String pathName = switch (position) {
+            case LEFT -> "LeftBear";
+            case RIGHT -> "RightBear";
+            default -> "";
+        };
+        if (pathName.isBlank())
+            return nothingAuto;
+        
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+        AutoTrajectory path = routine.trajectory(pathName, 0);
+        path.atTime("Intake").onTrue(deployAndIntake());
+        path.atTime("Spinup").onTrue(spinupShooter());
+        path.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        AutoTrajectory path2 = routine.trajectory(pathName, 1);
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                path.resetOdometry(),
+                new WaitCommand(5),
+                path.cmd()
+            )
+        );
+
+        path.done().onTrue(
+            new SequentialCommandGroup(
+                new WaitCommand(4), //Shooting time after first cycle
+                path2.cmd()
+            )
+        );
+
+        return routine;    
+    }
 }
