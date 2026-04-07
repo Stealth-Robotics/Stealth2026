@@ -140,15 +140,19 @@ public class IntakeSubsystem extends SubsystemBase {
      */
     public Command agitate() {
         double tossPercentage = RETRACTED_ROTATIONS * 0.75;
-        return new SequentialCommandGroup(
+        var agitateCommand = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
-            new InstantCommand(() -> moveFastTo(tossPercentage), this),
+            new InstantCommand(() -> moveFastTo(tossPercentage)),
             new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
-            new InstantCommand(() -> deploy(), this),
+            new InstantCommand(() -> deploy()),
             new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.25),
             new InstantCommand(() -> setRollerSpeed(0))
         );
+        
+        agitateCommand.addRequirements(this);
+
+        return agitateCommand;
     }
 
     public Command cheesyAgitate() {

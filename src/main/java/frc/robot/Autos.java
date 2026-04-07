@@ -4,7 +4,9 @@ import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AutoStartingPosition;
@@ -34,29 +36,33 @@ public class Autos {
         autoFactory.cache().loadTrajectory(autoName);
     }
 
-    private Command stopShooting() {
-        return shooter.coastShooterCommand().andThen(stopAgitating());
-    }
-
-    private Command startAgitating() {
-        return new SequentialCommandGroup(
-            new WaitCommand(1),
-            intake.agitate().repeatedly()
-        );
-    }
-
     private Command stopAgitating() {
-        //Overrides the agitating using requirements
         return new InstantCommand(() -> intake.stopCommand());
     }
 
     private Command deployAndIntake() {
-        return intake.deployCommand()
-            .andThen(intake.intakeCommand());
+        return intake.deployCommand().andThen(intake.intakeCommand());
+    }
+
+    private Command retractAndStopIntake() {
+        return intake.retractCommand().andThen(intake.stopCommand());
     }
 
     private Command spinupShooter() {
         return shooter.spinUp(2500);
+    }
+
+    private Command startShooting() {
+        return shooter.shoot().alongWith(
+            new SequentialCommandGroup(
+                new WaitCommand(1.5),
+                intake.agitate().repeatedly()
+            )
+        );
+    }
+
+    private Command stopShooting() {
+        return shooter.stopShooting().andThen(stopAgitating());
     }
 
     /*
@@ -134,6 +140,24 @@ public class Autos {
     //     return routine;
     // }
 
+    public AutoRoutine testAuto() {
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                deployAndIntake(),
+                new WaitCommand(2),
+                spinupShooter(),
+                new WaitCommand(2),
+                startShooting().withTimeout(5),
+                stopShooting(),
+                retractAndStopIntake()
+            )
+        );
+
+        return routine;
+    }
+
     /*
      * Two cycle auto that goes bump then trench
      */
@@ -152,12 +176,12 @@ public class Autos {
         AutoTrajectory path = routine.trajectory(pathName, 0);
         path.atTime("Intake").onTrue(deployAndIntake());
         path.atTime("Spinup").onTrue(spinupShooter());
-        path.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
+        path.atTime("Shoot").onTrue(startShooting());
         
-        // AutoTrajectory path2 = routine.trajectory(pathName, 1);
-        // path2.atTime("Intake2").onTrue(deployAndIntake());
-        // path2.atTime("Spinup2").onTrue(spinupShooter());
-        // path2.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
+        AutoTrajectory path2 = routine.trajectory(pathName, 1);
+        path2.atTime("Intake2").onTrue(deployAndIntake());
+        path2.atTime("Spinup2").onTrue(spinupShooter());
+        path2.atTime("Shoot2").onTrue(startShooting());
 
         routine.active().onTrue(
             new SequentialCommandGroup(
@@ -169,8 +193,8 @@ public class Autos {
         path.done().onTrue(
             new SequentialCommandGroup(
                 new WaitCommand(5), //Shooting time after first cycle
-                stopShooting()
-                // path2.cmd()
+                stopShooting(),
+                path2.cmd()
             )
         );
 
