@@ -24,7 +24,7 @@ public class ShiftTracker {
             matchPhase != MatchPhase.AUTO &&
             matchPhase != MatchPhase.AUTO_TELE_TRANSITION &&
             matchPhase != MatchPhase.ENDGAME &&
-            getTimeLeftInShift() <= 5;
+            getTimeLeftInShift() <= 6;
     });
 
     public static void start() {
@@ -114,7 +114,7 @@ public class ShiftTracker {
     }
 
     private static boolean weWonAuto() {
-        if (allianceThatWonAuto == null)
+        if (allianceThatWonAuto == null || ourAlliance == null)
             return true;
         return ourAlliance == allianceThatWonAuto;
     }

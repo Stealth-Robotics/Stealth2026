@@ -2,6 +2,7 @@ package frc.robot.subsystems;
 
 import java.util.function.BooleanSupplier;
 import com.ctre.phoenix6.configs.CANdleConfiguration;
+import com.ctre.phoenix6.configs.LEDConfigs;
 import com.ctre.phoenix6.controls.ColorFlowAnimation;
 import com.ctre.phoenix6.controls.RainbowAnimation;
 import com.ctre.phoenix6.controls.SingleFadeAnimation;
@@ -35,10 +36,11 @@ public class LEDSubsystem extends SubsystemBase {
         .withColor(redColor);
 
     private final StrobeAnimation blinkAnimation = new StrobeAnimation(8, 18)
-        .withFrameRate(10);
+        .withFrameRate(12);
 
     private final SingleFadeAnimation disabledAnimation = new SingleFadeAnimation(8, 18)
-        .withColor(redColor);
+        .withColor(redColor)
+        .withFrameRate(50);
 
     private boolean blinking = false;
 
@@ -56,11 +58,15 @@ public class LEDSubsystem extends SubsystemBase {
         candle = new CANdle(CANDLE_ID);
         candleConfig = new CANdleConfiguration();
         
-        candleConfig.LED.BrightnessScalar = 0.4;
+        candleConfig.LED.BrightnessScalar = 0.05;
         candleConfig.LED.StripType = StripTypeValue.BRG;
         candleConfig.LED.LossOfSignalBehavior = LossOfSignalBehaviorValue.DisableLEDs;
 
         candle.getConfigurator().apply(candleConfig);
+    }
+
+    public void setLEDBrightness(double value) {
+        candle.getConfigurator().apply(candleConfig.LED.withBrightnessScalar(value));
     }
 
     public void setIsDisabled(boolean value) {
@@ -80,7 +86,7 @@ public class LEDSubsystem extends SubsystemBase {
                     hubActive.getAsBoolean() ? greenColor : redColor
                 ));
             }, this),
-            new WaitCommand(5) //Blink for this many seconds
+            new WaitCommand(6) //Blink for this many seconds
         ).beforeStarting(() -> blinking = true)
         .finallyDo(() -> blinking = false);
 

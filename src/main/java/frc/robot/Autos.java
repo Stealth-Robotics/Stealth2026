@@ -55,9 +55,9 @@ public class Autos {
     private Command startShooting() {
         return shooter.shoot().alongWith(
             new SequentialCommandGroup(
-                intake.agitate(), //One quick agitate to start the ball rolling (pun intended)
+                intake.agitate(() -> 0.5), //One quick agitate to start the ball rolling (pun intended)
                 new WaitCommand(1.5),
-                intake.agitate().repeatedly()
+                intake.agitate(() -> 0.75).repeatedly()
             )
         );
     }

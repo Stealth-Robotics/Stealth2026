@@ -147,6 +147,10 @@ public class RobotContainer {
         robot.toggleDisabledLeds(disable);
     }
 
+    public void setLEDBrightness(double value) {
+        robot.setLEDBrightness(value);
+    }
+
     public void resetFuelCounter() {
         robot.resetFuelShotCount();
     }

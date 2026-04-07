@@ -89,14 +89,6 @@ public class RobotSystem extends SubsystemBase {
         ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
     }
 
-    public Command agitateRepeatedly() {
-        return intake.agitate().repeatedly();
-    }   
-
-    public Command stopAgitating() {
-        return intake.stopCommand();
-    }
-
     public Command forceResetOdometry() {
         return new InstantCommand(() -> drive.resetPose(AllianceUtility.flipPose(ODOMETRY_RESET_POSE)));
     }
@@ -120,7 +112,7 @@ public class RobotSystem extends SubsystemBase {
                 Trigger deployTrigger = new Trigger(deploy);
                 deployTrigger
                     .onTrue(intake.deployCommand())
-                    .onFalse(intake.agitate().onlyIf(agitate));
+                    .onFalse(intake.cheesyAgitate().onlyIf(agitate));
 
                 Trigger retractTrigger = new Trigger(retract);
                 retractTrigger.onTrue(intake.retractCommand());
@@ -141,7 +133,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command shoot() {
-        return shooter.shoot();
+        return shooter.shoot().alongWith(intake.agitate(() -> 0.25));
     }
 
     public BooleanSupplier needsHopperAgitate() {
@@ -154,10 +146,6 @@ public class RobotSystem extends SubsystemBase {
 
     public void resetAfterAuto() {
         shooter.setState(ShooterState.IDLE);
-    }
-
-    public Command agitate() {
-        return intake.agitate();
     }
 
     public Command clearTransfer() {
@@ -316,6 +304,10 @@ public class RobotSystem extends SubsystemBase {
 
     public void toggleDisabledLeds(boolean disable) {
         led.setIsDisabled(disable);
+    }
+
+    public void setLEDBrightness(double value) {
+        led.setLEDBrightness(value);
     }
 
     public void resetFuelShotCount() {
