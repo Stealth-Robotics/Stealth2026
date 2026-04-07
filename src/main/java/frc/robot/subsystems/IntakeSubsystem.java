@@ -40,7 +40,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final VoltageOut rollerController = new VoltageOut(0);
 
     private final double INTAKE_ROLLER_VOLTAGE = 12;
-    private final double MAX_ROLLER_SPEED = 0.75;
+    private final double MAX_ROLLER_SPEED = 1.0;
 
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.401123046875;
 
@@ -54,7 +54,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double SAFE_ROTATIONS = 0.1;
     private final double RETRACTED_ROTATIONS = 0.305;
 
-    private final double DEPLOY_kP = 20;
+    private final double DEPLOY_kP = 25;
     private final double RETRACT_kP = 30;
     private final double FAST_kP = 40;
 
