@@ -16,7 +16,7 @@ public class LimelightConstants {
 
     public static final int LIMELIGHT_DISABLED_THROTTLE = 0;
 
-    public static final Vector<N3> STDDEVS = VecBuilder.fill(0.1, 0.1, 0.01);
+    public static final Vector<N3> STDDEVS = VecBuilder.fill(0.2, 0.2, 0.5);
 
     public static final double MAX_TAG_AMBIGUITY = 0.35;
 

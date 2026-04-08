@@ -2,6 +2,9 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -17,6 +20,7 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -72,7 +76,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int ROLLER_SUPPLY_LIMIT = 30;
     private final int DEPLOY_SUPPLY_LIMIT = 30;
 
-    private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.35;
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.3;
     private boolean isRetracting = false;
 
     private long lastMs = 0;
@@ -134,40 +138,38 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
     }
 
-    /**
-     * Moves the intake up to the desired percentage of the fully up position and
-     * then back down to toss the fuel into the spindexer.
-     */
-    public Command agitate() {
-        double tossPercentage = RETRACTED_ROTATIONS * 0.75;
-        var agitateCommand = new SequentialCommandGroup(
+    public Command agitate(DoubleSupplier magnitude) {
+        var command = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
-            new InstantCommand(() -> moveFastTo(tossPercentage)),
-            new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
+            new InstantCommand(() -> moveFastTo(magnitude.getAsDouble() * RETRACTED_ROTATIONS)),
+            new WaitUntilCommand(()-> isAtPosition(magnitude.getAsDouble() * RETRACTED_ROTATIONS)).withTimeout(0.5),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> deploy()),
-            new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.25),
+            new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.2),
             new InstantCommand(() -> setRollerSpeed(0))
         );
         
-        agitateCommand.addRequirements(this);
+        command.addRequirements(this);
 
-        return agitateCommand;
+        return command;
     }
 
     public Command cheesyAgitate() {
         double tossPercentage = RETRACTED_ROTATIONS * 0.5;
-        return new SequentialCommandGroup(
+        
+        var command = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
-            new InstantCommand(() -> moveFastTo(tossPercentage), this),
+            new InstantCommand(() -> moveFastTo(tossPercentage)),
             new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> setRollerSpeed(0))
         ).andThen(run(() -> {
             deployMotor.setControl(
-                deployController.withSlot(1).withPosition(deployController.getPositionMeasure().magnitude() + 0.006)
+                deployController.withSlot(0).withPosition(deployController.getPositionMeasure().magnitude() + 0.008)
             );
         })).finallyDo(() -> deploy());
+
+        return command;
     }
 
     public void setRollerSpeed(double speed) {

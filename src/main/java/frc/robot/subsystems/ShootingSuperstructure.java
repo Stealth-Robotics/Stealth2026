@@ -21,13 +21,11 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator.SOTMResult;
@@ -50,7 +48,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final double SECONDS_BEFORE_HOPPER_EMPTY = 4;
 
     //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
-    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {3.0, 3.0, 6.0};
+    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {3.5, 3.5, 6.0};
 
     //Prevents us from shooting if we are accelerating too fast to track our target (m/s^2, m/s^2, rad/s^2)
     private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
@@ -87,8 +85,6 @@ public class ShootingSuperstructure extends SubsystemBase {
     private int totalShots = 0;
     private int hubShots = 0;
     private int passShots = 0;
-
-    private boolean interruptShooting = false;
 
     //Tracks how many fuel have been shot since we started trying. Resets after we stop shooting.
     private int recentShots = 0;
@@ -168,7 +164,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command spinUp(double rpm) {
-        return new InstantCommand(() -> shooter.spinToRPM(rpm));
+        return runOnce(() -> shooter.spinToRPM(rpm));
     }
 
     public Command dashboardHoodReset() {
@@ -176,7 +172,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command shoot() {
-        return new RunCommand(() -> {
+        return run(() -> {
             isShotRequested = true;
 
             shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
@@ -227,11 +223,8 @@ public class ShootingSuperstructure extends SubsystemBase {
         });
     }
 
-    public Command stopShooting() {
-        return new SequentialCommandGroup(
-            new InstantCommand(() -> setState(ShooterState.IDLE)),
-            new InstantCommand(() -> coastShooter())
-        );
+    public Command stopShooter() {
+        return runOnce(() -> coastShooter());
     }
 
     public void coastShooter() {

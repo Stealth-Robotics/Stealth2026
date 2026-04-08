@@ -65,6 +65,8 @@ public class Robot extends TimedRobot {
         isDisabled = true;
 
         m_robotContainer.toggleDisabledLeds(true);
+        m_robotContainer.setLEDBrightness(0.05);
+
         Elastic.selectTab("Disabled");
     }
 
@@ -78,6 +80,8 @@ public class Robot extends TimedRobot {
         isDisabled = false;
 
         m_robotContainer.toggleDisabledLeds(false);
+        m_robotContainer.setLEDBrightness(0.5);
+
         m_robotContainer.resetFuelCounter();
 
         Elastic.selectTab("Teleoperated");

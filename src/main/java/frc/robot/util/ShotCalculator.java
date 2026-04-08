@@ -21,17 +21,10 @@ public class ShotCalculator {
     private static double lastMetersToGoal = 0.0;
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        // put(1.96, 2600.0);
-        // put(2.35, 2800.0);
-        // put(2.5, 2800.0);
-        // put(2.75, 2900.0);
-        // put(3.0, 2950.0);
-        // put(3.5, 3000.0);
-        // put(4.0, 3100.0);
-        // put(4.9, 3250.0);
         put(2.0, 2600.0);
         put(2.16, 2800.0);
         put(2.54, 2800.0);
+        put(2.85, 2900.0);
         put(3.18, 2900.0);
         put(3.25, 2900.0);
         put(3.9, 3000.0);

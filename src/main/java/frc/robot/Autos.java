@@ -4,9 +4,8 @@ import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.PrintCommand;
+import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.util.AutoStartingPosition;
@@ -55,15 +54,15 @@ public class Autos {
     private Command startShooting() {
         return shooter.shoot().alongWith(
             new SequentialCommandGroup(
-                intake.agitate(), //One quick agitate to start the ball rolling (pun intended)
+                intake.agitate(() -> 0.5), //One quick agitate to start the ball rolling (pun intended)
                 new WaitCommand(1.5),
-                intake.agitate().repeatedly()
+                intake.agitate(() -> 0.75).repeatedly()
             )
         );
     }
 
     private Command stopShooting() {
-        return shooter.stopShooting().andThen(stopAgitating());
+        return shooter.stopShooter();
     }
 
     public AutoRoutine leftBear() {
@@ -87,6 +86,49 @@ public class Autos {
 
         path.done().onTrue(
             startShooting()
+        );
+
+        return routine;
+    }
+
+    /*
+     * Two cycle auto that goes over the bump twice
+     */
+    public AutoRoutine doubleBump(AutoStartingPosition position) {
+        String pathName = switch (position) {
+            case LEFT -> "LeftBB";
+            case RIGHT -> "RightBB";
+            default -> "";
+        };
+
+        if (pathName.isBlank())
+            return nothingAuto;
+
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        AutoTrajectory path = routine.trajectory(pathName, 0);
+        path.atTime("Intake").onTrue(deployAndIntake());
+        path.atTime("Spinup").onTrue(spinupShooter());
+        path.atTime("Shoot").onTrue(startShooting());
+        
+        AutoTrajectory path2 = routine.trajectory(pathName, 1);
+        path2.atTime("Intake2").onTrue(deployAndIntake());
+        path2.atTime("Spinup2").onTrue(spinupShooter());
+        path2.atTime("Shoot2").onTrue(startShooting());
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                path.resetOdometry(),
+                path.cmd()
+            )
+        );
+
+        path.done().onTrue(
+            new SequentialCommandGroup(
+                new WaitCommand(4), //Shooting time after first cycle
+                stopShooting(),
+                path2.cmd()
+            )
         );
 
         return routine;

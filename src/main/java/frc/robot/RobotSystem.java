@@ -11,14 +11,17 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.DeferredCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ProxyCommand;
+import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -96,15 +99,21 @@ public class RobotSystem extends SubsystemBase {
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract, BooleanSupplier agitate) {
         Command intakeDefaultCommand = run(
             () -> {
-                double targetRollerSpeed = rollerSpeed.getAsDouble();
-                intake.setRollerSpeed(targetRollerSpeed);
-
-                if (ZoneManager.inBumpZone() && intake.isDeployed()
-                    && !deploy.getAsBoolean() && !agitate.getAsBoolean()) {
-                    intake.safe();
+                if (shooter.isShooting() && intake.isDeployed() && !deploy.getAsBoolean() && !agitate.getAsBoolean() && !retract.getAsBoolean()) {
+                    //Repeatably do a small bump while shooting (overriden by big bump and intaking)
+                    CommandScheduler.getInstance().schedule(intake.agitate(() -> 0.2));
                 }
-                else if (!ZoneManager.inBumpZone() && intake.isSafe() && !intake.isRetracting()) {
-                    intake.deploy();
+                else {
+                    double targetRollerSpeed = rollerSpeed.getAsDouble();
+                    intake.setRollerSpeed(targetRollerSpeed);
+
+                    if (ZoneManager.inBumpZone() && intake.isDeployed()
+                        && !deploy.getAsBoolean() && !agitate.getAsBoolean()) {
+                        intake.safe();
+                    }
+                    else if (!ZoneManager.inBumpZone() && intake.isSafe() && !intake.isRetracting()) {
+                        intake.deploy();
+                    }
                 }
             }
         ).beforeStarting(
@@ -112,7 +121,7 @@ public class RobotSystem extends SubsystemBase {
                 Trigger deployTrigger = new Trigger(deploy);
                 deployTrigger
                     .onTrue(intake.deployCommand())
-                    .onFalse(intake.agitate().onlyIf(agitate));
+                    .onFalse(intake.cheesyAgitate().onlyIf(agitate));
 
                 Trigger retractTrigger = new Trigger(retract);
                 retractTrigger.onTrue(intake.retractCommand());
@@ -148,13 +157,7 @@ public class RobotSystem extends SubsystemBase {
         shooter.setState(ShooterState.IDLE);
     }
 
-    public Command agitate() {
-        return intake.agitate();
-    }
 
-    public Command agitateRepeatedly() {
-        return intake.agitate().repeatedly();
-    }   
 
     public Command stopAgitating() {
         return intake.stopCommand();
@@ -320,6 +323,10 @@ public class RobotSystem extends SubsystemBase {
 
     public void toggleDisabledLeds(boolean disable) {
         led.setIsDisabled(disable);
+    }
+
+    public void setLEDBrightness(double value) {
+        led.setLEDBrightness(value);
     }
 
     public void resetFuelShotCount() {
