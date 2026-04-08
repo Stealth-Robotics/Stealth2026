@@ -157,7 +157,9 @@ public class RobotSystem extends SubsystemBase {
         shooter.setState(ShooterState.IDLE);
     }
 
-
+    public Command startAgitating() {
+        return intake.cheesyAgitate();
+    }
 
     public Command stopAgitating() {
         return intake.stopCommand();

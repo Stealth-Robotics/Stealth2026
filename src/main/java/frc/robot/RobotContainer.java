@@ -90,16 +90,15 @@ public class RobotContainer {
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
                 () -> driverController.getRightTriggerAxis() > 0.01,
                 () -> driverController.y().getAsBoolean(),
-                () -> operatorController.b().getAsBoolean()
+                () -> driverController.b().getAsBoolean()
             );
 
             driverController.rightBumper()
                 .whileTrue(robot.shoot())
                 .and(robot.needsHopperAgitate())
-                .onTrue(robot.agitateRepeatedly())
+                .onTrue(robot.startAgitating())
                 .onFalse(robot.stopAgitating());
 
-                driverController.a().onTrue(robot.agitate());
                 driverController.povUp().onTrue(robot.changeRpmMap(25));
                 driverController.povDown().onTrue(robot.changeRpmMap(-25));
         }
