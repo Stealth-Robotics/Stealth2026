@@ -17,7 +17,7 @@ import frc.robot.util.ShiftTracker;
 import frc.robot.util.AutoStartingPosition;
 
 public class RobotContainer {
-    private final Driver driver = Driver.MO;
+    private final Driver driver = Driver.CODE_MONKEY;
 
     private enum Driver {
         MATT, MO, COACH_BOGDANANOV, CODE_MONKEY

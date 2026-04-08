@@ -168,6 +168,10 @@ public class RobotSystem extends SubsystemBase {
         shooter.changeRPMOffset(delta);
     }
 
+    public Command changeRpmMap(int delta) {
+        return new InstantCommand(() -> shooter.changeRpmMap(delta));
+    }
+
     private void updateShootingState() {
         FieldZone zone = ZoneManager.getZone();
 
