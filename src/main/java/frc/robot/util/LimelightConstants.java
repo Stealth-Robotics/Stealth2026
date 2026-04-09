@@ -6,7 +6,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 
 public class LimelightConstants {
-    public static final TagFilterMode TAG_FILTER_MODE = TagFilterMode.ALL_EXCEPT_TRENCH;
+    public static final TagFilterMode TAG_FILTER_MODE = TagFilterMode.ALL;
 
     //0 = external, 1 = seed internal, 2 = external, 3 = mt1 + internal, 4 = internal + external
     public static final int DISABLED_IMU_MODE = 1;
@@ -16,7 +16,7 @@ public class LimelightConstants {
 
     public static final int LIMELIGHT_DISABLED_THROTTLE = 0;
 
-    public static final Vector<N3> STDDEVS = VecBuilder.fill(0.2, 0.2, 0.5);
+    public static final Vector<N3> STDDEVS = VecBuilder.fill(0.1, 0.1, 0.1);
 
     public static final double MAX_TAG_AMBIGUITY = 0.35;
 

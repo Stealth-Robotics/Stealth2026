@@ -11,6 +11,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
@@ -21,6 +22,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.DeferredCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ProxyCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -97,24 +99,10 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract, BooleanSupplier agitate) {
-        Command intakeDefaultCommand = run(
+        Command intakeDefaultCommand = new RunCommand(
             () -> {
-                if (shooter.isShooting() && intake.isDeployed() && !deploy.getAsBoolean() && !agitate.getAsBoolean() && !retract.getAsBoolean()) {
-                    //Repeatably do a small bump while shooting (overriden by big bump and intaking)
-                    CommandScheduler.getInstance().schedule(intake.agitate(() -> 0.2));
-                }
-                else {
-                    double targetRollerSpeed = rollerSpeed.getAsDouble();
-                    intake.setRollerSpeed(targetRollerSpeed);
-
-                    if (ZoneManager.inBumpZone() && intake.isDeployed()
-                        && !deploy.getAsBoolean() && !agitate.getAsBoolean()) {
-                        intake.safe();
-                    }
-                    else if (!ZoneManager.inBumpZone() && intake.isSafe() && !intake.isRetracting()) {
-                        intake.deploy();
-                    }
-                }
+                double targetRollerSpeed = rollerSpeed.getAsDouble();
+                intake.setRollerSpeed(targetRollerSpeed);
             }
         ).beforeStarting(
             () -> {
@@ -166,14 +154,18 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateShootingState() {
-        FieldZone zone = ZoneManager.getZone();
-
-        if (zone.equals(FieldZone.HUB))
+        if (DriverStation.isAutonomous())
             shooter.setState(ShooterState.HUB);
-        else if (zone.equals(FieldZone.PASS))
-            shooter.setState(ShooterState.PASS);
-        else
-            shooter.setState(ShooterState.IDLE);
+        else {
+            FieldZone zone = ZoneManager.getZone();
+        
+            if (zone.equals(FieldZone.HUB))
+                shooter.setState(ShooterState.HUB);
+            else if (zone.equals(FieldZone.PASS))
+                shooter.setState(ShooterState.PASS);
+            else
+                shooter.setState(ShooterState.IDLE);
+        }
     }
 
     /**

@@ -22,10 +22,12 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator.SOTMResult;
@@ -151,7 +153,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command spinUp(double rpm) {
-        return runOnce(() -> shooter.spinToRPM(rpm));
+        return new InstantCommand(() -> shooter.spinToRPM(rpm));
     }
 
     public Command dashboardHoodReset() {
@@ -159,7 +161,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     }
 
     public Command shoot() {
-        return run(() -> {
+        return new RunCommand(() -> {
             isShotRequested = true;
 
             shooter.spinToRPM(lastSOTMResult.rpm() + RPMOffset);
@@ -197,7 +199,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             isShotRequested = false;
             isShooterActive = false;
         })
-        .onlyWhile(() -> state.equals(ShooterState.HUB) || state.equals(ShooterState.PASS));
+        .onlyWhile(() -> DriverStation.isAutonomous() || state.equals(ShooterState.HUB) || state.equals(ShooterState.PASS));
     }
 
     public Command clearTransfer() {
@@ -421,5 +423,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         DogLog.forceNt.log("ShootingSuperstructure/state", state.name());
         DogLog.forceNt.log("ShootingSuperstructure/RPM_Offset", RPMOffset);
+
     }
 }

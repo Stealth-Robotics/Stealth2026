@@ -408,7 +408,7 @@
   "splits":[0,127]
  },
  "events":[
-   {"name":"Intake", "from":{"target":0, "targetTimestamp":0.0, "offset":{"exp":"0.2 s", "val":0.2}}, "event":null},
+   {"name":"Intake", "from":{"target":0, "targetTimestamp":0.0, "offset":{"exp":"0.5 s", "val":0.5}}, "event":null},
    {"name":"Spinup", "from":{"target":5, "targetTimestamp":3.70263, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
    {"name":"Shoot", "from":{"target":7, "targetTimestamp":4.92742, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
    {"name":"Intake2", "from":{"target":9, "targetTimestamp":5.76805, "offset":{"exp":"0 s", "val":0.0}}, "event":null},
