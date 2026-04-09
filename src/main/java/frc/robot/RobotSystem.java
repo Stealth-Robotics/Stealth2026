@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+
+import com.fasterxml.jackson.databind.ser.std.FileSerializer;
+
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -133,14 +136,6 @@ public class RobotSystem extends SubsystemBase {
         return shooter.shoot();
     }
 
-    public BooleanSupplier needsHopperAgitate() {
-        return () -> shooter.needsHopperAgitate();
-    }
-
-    public BooleanSupplier isHopperEmpty() {
-        return ()-> shooter.isHopperEmpty();
-    }
-
     public void resetAfterAuto() {
         shooter.setState(ShooterState.IDLE);
     }
@@ -154,18 +149,16 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateShootingState() {
-        if (DriverStation.isAutonomous())
-            shooter.setState(ShooterState.HUB);
-        else {
-            FieldZone zone = ZoneManager.getZone();
+        FieldZone zone = ZoneManager.getZone();
         
-            if (zone.equals(FieldZone.HUB))
-                shooter.setState(ShooterState.HUB);
-            else if (zone.equals(FieldZone.PASS))
-                shooter.setState(ShooterState.PASS);
-            else
-                shooter.setState(ShooterState.IDLE);
-        }
+        if (zone.equals(FieldZone.TRENCH))
+            shooter.setState(ShooterState.TRENCH);
+        else if (zone.equals(FieldZone.HUB))
+            shooter.setState(ShooterState.HUB_TRACKING);
+        else if (zone.equals(FieldZone.PASS))
+            shooter.setState(ShooterState.PASSING);
+        else
+            shooter.setState(ShooterState.IDLE);
     }
 
     /**

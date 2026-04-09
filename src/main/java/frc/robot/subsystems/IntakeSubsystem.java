@@ -59,7 +59,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double RETRACTED_ROTATIONS = 0.305;
 
     private final double DEPLOY_kP = 40;
-    private final double RETRACT_kP = 40;
+    private final double RETRACT_kP = 30;
     private final double FAST_kP = 40;
 
     private final double DEPLOY_kACCEL = 20;
@@ -138,20 +138,17 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
     }
 
-    public Command agitate(DoubleSupplier magnitude) {
-        var command = new SequentialCommandGroup(
+    public Command agitate() {
+        double tossPercentage = RETRACTED_ROTATIONS * 0.6;
+        return new SequentialCommandGroup(
+            new InstantCommand(() -> moveFastTo(tossPercentage), this),
+            new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.3),
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
-            new InstantCommand(() -> moveFastTo(magnitude.getAsDouble() * RETRACTED_ROTATIONS)),
-            new WaitUntilCommand(()-> isAtPosition(magnitude.getAsDouble() * RETRACTED_ROTATIONS)).withTimeout(0.5),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
-            new InstantCommand(() -> deploy()),
-            new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.2),
+            new InstantCommand(() -> deploy(), this),
+            new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.25),
             new InstantCommand(() -> setRollerSpeed(0))
         );
-        
-        command.addRequirements(this);
-
-        return command;
     }
 
     public Command cheesyAgitate() {

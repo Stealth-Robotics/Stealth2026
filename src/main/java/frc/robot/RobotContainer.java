@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.Autos.AutoPosition;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
 import frc.robot.util.AutoStartingPosition;
@@ -61,7 +62,7 @@ public class RobotContainer {
         addAutosToChooser();
 
         //Preload already selected auto
-        autos.preloadAuto(autoChooser.selectedCommand().getName());
+        // autos.preloadAuto(autoChooser.selectedCommand().getName());
     }
 
     public Command getAutonomousCommand() {
@@ -114,14 +115,16 @@ public class RobotContainer {
     private void addAutosToChooser() {
         // autoChooser.addRoutine("LeftBear", () -> autos.leftBear());
 
-        autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoStartingPosition.LEFT));
-        autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoStartingPosition.RIGHT));
+        autoChooser.addRoutine("MiddleDepot", () -> autos.middleDepot());
 
-        autoChooser.addRoutine("LeftBumpTrench", () -> autos.bumpTrench(AutoStartingPosition.LEFT));
-        autoChooser.addRoutine("RightBumpTrench", () -> autos.bumpTrench(AutoStartingPosition.RIGHT));
+        autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftDoubleTrench", () -> autos.doubleTrench(AutoStartingPosition.LEFT));
-        autoChooser.addRoutine("RightDoubleTrench", () -> autos.doubleTrench(AutoStartingPosition.RIGHT));
+        autoChooser.addRoutine("LeftBumpTrench", () -> autos.bumpTrench(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightBumpTrench", () -> autos.bumpTrench(AutoPosition.RIGHT));
+
+        autoChooser.addRoutine("LeftDoubleTrench", () -> autos.doubleTrench(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightDoubleTrench", () -> autos.doubleTrench(AutoPosition.RIGHT));
     } 
 
     /*
@@ -129,11 +132,11 @@ public class RobotContainer {
      * Used to preload the selected auto routine's trajectory file to prevent lag at the start of the match.
      */
     public void disabledPeriodic() {
-        String selectedName = autoChooser.selectedCommand().getName();
-        if (selectedName != null && !selectedName.equals(lastAutoName)) {
-            lastAutoName = selectedName;
-            autos.preloadAuto(selectedName);
-        }
+        // String selectedName = autoChooser.selectedCommand().getName();
+        // if (selectedName != null && !selectedName.equals(lastAutoName)) {
+        //     lastAutoName = selectedName;
+        //     autos.preloadAuto(selectedName);
+        // }
     }
 
     //Used mostly for telemetry and logging general match info
