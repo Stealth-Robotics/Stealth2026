@@ -2,9 +2,6 @@ package frc.robot.subsystems;
 
 import java.util.function.BooleanSupplier;
 import com.ctre.phoenix6.configs.CANdleConfiguration;
-import com.ctre.phoenix6.configs.LEDConfigs;
-import com.ctre.phoenix6.controls.ColorFlowAnimation;
-import com.ctre.phoenix6.controls.RainbowAnimation;
 import com.ctre.phoenix6.controls.SingleFadeAnimation;
 import com.ctre.phoenix6.controls.SolidColor;
 import com.ctre.phoenix6.controls.StrobeAnimation;
