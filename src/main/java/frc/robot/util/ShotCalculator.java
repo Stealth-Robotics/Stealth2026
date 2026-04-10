@@ -19,13 +19,11 @@ public class ShotCalculator {
     private static final double mechanismLatency = Units.millisecondsToSeconds(30);
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(2.0, 2700.0);
+        put(2.0, 2800.0);
         put(2.54, 2900.0);
         put(2.85, 2900.0);
-        put(3.0, 3000.0);
-        put(3.2, 3000.0);
+        put(3.0, 2900.0);
         put(3.25, 3000.0);
-        put(3.9, 3000.0);
         put(4.0, 3000.0);
         put(4.6, 3220.0);
         put(5.28, 3250.0);
