@@ -62,7 +62,7 @@ public class RobotContainer {
         addAutosToChooser();
 
         //Preload already selected auto
-        // autos.preloadAuto(autoChooser.selectedCommand().getName());
+        autos.preloadAuto(autoChooser.selectedCommand().getName());
     }
 
     public Command getAutonomousCommand() {
@@ -113,9 +113,10 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
-        // autoChooser.addRoutine("LeftBear", () -> autos.leftBear());
-
         autoChooser.addRoutine("MiddleDepot", () -> autos.middleDepot());
+
+        autoChooser.addRoutine("LeftSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.RIGHT));
 
         autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
         autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
@@ -132,11 +133,11 @@ public class RobotContainer {
      * Used to preload the selected auto routine's trajectory file to prevent lag at the start of the match.
      */
     public void disabledPeriodic() {
-        // String selectedName = autoChooser.selectedCommand().getName();
-        // if (selectedName != null && !selectedName.equals(lastAutoName)) {
-        //     lastAutoName = selectedName;
-        //     autos.preloadAuto(selectedName);
-        // }
+        String selectedName = autoChooser.selectedCommand().getName();
+        if (selectedName != null && !selectedName.equals(lastAutoName)) {
+            lastAutoName = selectedName;
+            autos.preloadAuto(selectedName);
+        }
     }
 
     //Used mostly for telemetry and logging general match info

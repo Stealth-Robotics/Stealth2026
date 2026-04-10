@@ -1,5 +1,6 @@
 package frc.robot;
 
+import choreo.Choreo;
 import choreo.auto.AutoFactory;
 import choreo.auto.AutoRoutine;
 import choreo.auto.AutoTrajectory;
@@ -9,7 +10,6 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
-import frc.robot.util.AutoStartingPosition;
 
 public class Autos {
     private final AutoFactory autoFactory;
@@ -34,9 +34,13 @@ public class Autos {
         RIGHT
     }
 
-    private Command stopShooting() {
-        return new InstantCommand(() -> shooter.shoot().cancel());
+    public void preloadAuto(String autoName) {
+        autoFactory.cache().loadTrajectory(autoName);
     }
+
+    // private Command stopShooting() {
+    //     return new InstantCommand(() -> shooter.shoot().cancel());
+    // }
 
     private Command startAgitating() {
         return new SequentialCommandGroup(
@@ -45,17 +49,17 @@ public class Autos {
         );
     }
 
-    private Command stopAgitating() {
-        //Overrides the agitating using requirements
-        return new InstantCommand(() -> intake.stopCommand());
-    }
+    // private Command stopAgitating() {
+    //     //Overrides the agitating using requirements
+    //     return new InstantCommand(() -> intake.stopCommand());
+    // }
 
     private Command deployAndIntake() {
         return intake.deployCommand().andThen(intake.intakeCommand());
     }
 
     private Command spinupShooter() {
-        return shooter.spinUp(2500);
+        return shooter.spinUp(2700);
     }
 
     public AutoRoutine middleDepot() {
@@ -70,6 +74,46 @@ public class Autos {
             new SequentialCommandGroup(
                 firstCycle.resetOdometry(),
                 firstCycle.cmd()
+            )
+        );
+
+        return routine;
+    }
+
+    public AutoRoutine safeDoubleBump(AutoPosition position) {
+        String pathName = switch (position) {
+            case LEFT -> "LeftSafeBB";
+            case RIGHT -> "RightSafeBB";
+            default -> "";
+        };
+
+        if (pathName.isBlank())
+            return nothingAuto;
+
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
+        firstCycle.atTime("Intake").onTrue(deployAndIntake());
+        firstCycle.atTime("Spinup").onTrue(spinupShooter());
+        firstCycle.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        AutoTrajectory secondCycle = routine.trajectory(pathName, 1);
+        secondCycle.atTime("Intake2").onTrue(deployAndIntake());
+        secondCycle.atTime("Spinup2").onTrue(spinupShooter());
+        secondCycle.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                firstCycle.resetOdometry(),
+                firstCycle.cmd()
+            )
+        );
+
+        firstCycle.done().onTrue(
+            new SequentialCommandGroup(
+                new WaitCommand(5), //Shooting time after first cycle
+                deployAndIntake(),
+                secondCycle.cmd()
             )
         );
 

@@ -1,14 +1,11 @@
 package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Inches;
-
 import java.util.function.Supplier;
-
 import com.ctre.phoenix6.configs.CANrangeConfiguration;
 import com.ctre.phoenix6.configs.ProximityParamsConfigs;
 import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.signals.UpdateModeValue;
-
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -18,10 +15,10 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -38,15 +35,22 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
-    private boolean isShooting = false;
-    
+    //Prevents us from shooting if we are moving/rotating too fast to hit our target (m/s, m/s, rad/s)
+    private final double[] MAX_ROBOT_SHOOTING_VELOCITY = {3.5, 3.5, 6.0};
+
+    //Prevents us from shooting if we are accelerating too fast to track our target (m/s^2, m/s^2, rad/s^2)
+    private final double[] MAX_ROBOT_SHOOTING_ACCELERATION = {2.0, 2.0, Math.PI};
+
+    private boolean isShootingRequested = false;
+    private boolean isShooterActive = false;
+
     private boolean wasShotDetectedBefore = false;
 
     private int totalShots = 0;
     private int hubShots = 0;
     private int passShots = 0;
 
-    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(0.5);
+    private final Distance FUEL_DETECTED_DISTANCE_THRESHOLD = Inches.of(3.8);
 
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
@@ -54,9 +58,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Supplier<Pose2d> robotPoseSupplier;
     private final Supplier<ChassisSpeeds> robotVelocitySupplier;
-
-    //The error of the turret if the target angle is beyond its limits
-    public double turretLockError = 0;
 
     //Flag used to spin up for shooting and then forget checking rpms
     private boolean alreadySpinningAtTarget = false;
@@ -82,6 +83,9 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private SOTMResult sotmResult = new SOTMResult(0, 0, 0);
     private Translation3d targetPose = new Translation3d();
+
+    private double[] currentRobotAccel = {0.0, 0.0, 0.0};
+    private ChassisSpeeds previousRobotVelo = new ChassisSpeeds();
 
     public enum ShooterState {
         IDLE,
@@ -111,16 +115,13 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensorConfig.withProximityParams(
             new ProximityParamsConfigs()
                 .withProximityThreshold(FUEL_DETECTED_DISTANCE_THRESHOLD)
-                .withProximityHysteresis(Inches.of(0.01))
           );
 
         shotSensorConfig.ToFParams.UpdateMode = UpdateModeValue.ShortRange100Hz;
 
         shotSensor.getConfigurator().apply(shotSensorConfig);
 
-        shotSensor.getIsDetected().setUpdateFrequency(100, 0.005);
-
-        // SmartDashboard.putNumber("rpm", 0);
+        shotSensor.getIsDetected().setUpdateFrequency(100, 0.02);
     }
 
     public void changeRPMOffset(int delta) {
@@ -147,8 +148,10 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public Command shoot() {
         return run(() -> {
+            isShootingRequested = true;
+
             shooter.spinToRPM(sotmResult.rpm() + RPMOffset);
-            // shooter.spinToRPM(SmartDashboard.getNumber("rpm", 0));
+
             shooter.setHoodDegrees(
                 (state.equals(ShooterState.PASSING)) ? shooter.getMaxHoodDegrees() : sotmResult.hoodAngle()
             );
@@ -159,6 +162,8 @@ public class ShootingSuperstructure extends SubsystemBase {
             
             if (alreadySpinningAtTarget) {
                 if (safeToShoot()) {
+                    isShooterActive = true;
+
                     double metersToTarget = robotPoseSupplier.get()
                         .getTranslation().getDistance(new Translation2d(targetPose.getX(), targetPose.getY()));
 
@@ -166,24 +171,23 @@ public class ShootingSuperstructure extends SubsystemBase {
                     transfer.feed(metersToTarget);
                 }
                 else {
+                    isShooterActive = false;
+
                     transfer.stopSpinning();
                     transfer.stopFeeding();
                 }
             }
-
-            isShooting = true;
         })
         .finallyDo(() -> {
             shooter.coastShooter();
             transfer.stopSpinning();
             transfer.stopFeeding();
 
-            isShooting = false;
+            isShootingRequested = false;
+            isShooterActive = false;
             alreadySpinningAtTarget = false;
         })
-        .onlyWhile(() -> {
-            return state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING);
-        });
+        .onlyWhile(() -> state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING));
     }
 
     public Command clearTransfer() {
@@ -224,9 +228,6 @@ public class ShootingSuperstructure extends SubsystemBase {
             false
         );
 
-        if (!isShooting)
-            shooter.setHoodDegrees(0);
-
         Rotation2d robotYaw = new Rotation2d(turretPose3d.getRotation().getZ());
         Rotation2d turretOffset = Rotation2d.fromDegrees(sotmResult.turretAngle());
 
@@ -261,9 +262,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         targetPose = params.target();
 
-        if (!isShooting)
-            shooter.setHoodDegrees(0);
-
         sotmResult = ShotCalculator.calculate(
             turretPose3d,
             robotVelocitySupplier.get(),
@@ -284,16 +282,54 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Makes sure we aren't shooting off the field or that we are going to definitely miss
      */
     private boolean safeToShoot() {
-        boolean rotatingSlowEnough = robotVelocitySupplier.get().omegaRadiansPerSecond < Math.PI;
-        return DriverStation.isAutonomous() || (rotatingSlowEnough && turret.isReady());
+        boolean turretReady = turret.isReady();
+        if (DriverStation.isAutonomous() && turretReady)
+            return true;
+
+        boolean isVelocityBelowThreshold = true;
+        boolean isAccelBelowThreshold = true;
+
+        if (state.equals(ShooterState.HUB_TRACKING)) {
+            isVelocityBelowThreshold =
+                Math.abs(robotVelocitySupplier.get().vxMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[0] &&
+                Math.abs(robotVelocitySupplier.get().vyMetersPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[1] &&
+                Math.abs(robotVelocitySupplier.get().omegaRadiansPerSecond) < MAX_ROBOT_SHOOTING_VELOCITY[2];
+
+            isAccelBelowThreshold =
+                Math.abs(currentRobotAccel[0]) < MAX_ROBOT_SHOOTING_ACCELERATION[0] &&
+                Math.abs(currentRobotAccel[1]) < MAX_ROBOT_SHOOTING_ACCELERATION[1] &&
+                Math.abs(currentRobotAccel[2]) < MAX_ROBOT_SHOOTING_ACCELERATION[2];
+        }
+
+        return isVelocityBelowThreshold && isAccelBelowThreshold && turretReady;
     }
 
     public boolean isShooting() {
-        return isShooting;
+        return isShooterActive;
+    }
+
+    private boolean isShotDetected() {
+        double dist = shotSensor.getDistance(true).getValue().in(Inches);
+        return dist < FUEL_DETECTED_DISTANCE_THRESHOLD.in(Inches);
+    }
+
+    private void calculateRobotAccel() {
+        var robotVelo = robotVelocitySupplier.get();
+
+        currentRobotAccel[0] = (robotVelo.vxMetersPerSecond - previousRobotVelo.vxMetersPerSecond) / Units.millisecondsToSeconds(20);
+        currentRobotAccel[1] = (robotVelo.vyMetersPerSecond - previousRobotVelo.vyMetersPerSecond) / Units.millisecondsToSeconds(20);
+        currentRobotAccel[2] = (robotVelo.omegaRadiansPerSecond - previousRobotVelo.omegaRadiansPerSecond) / Units.millisecondsToSeconds(20);
+
+        previousRobotVelo.vxMetersPerSecond = robotVelo.vxMetersPerSecond;
+        previousRobotVelo.vyMetersPerSecond = robotVelo.vyMetersPerSecond;
+        previousRobotVelo.omegaRadiansPerSecond = robotVelo.omegaRadiansPerSecond;
     }
 
     @Override
     public void periodic() {
+        //Keep the hood down unless we are shooting
+        if (!isShootingRequested) shooter.setHoodDegrees(0);
+
         switch (state) {
             case IDLE -> {
                 if (applyIdle) {
@@ -316,7 +352,9 @@ public class ShootingSuperstructure extends SubsystemBase {
             }
         }
 
-        boolean shotDetected = shotSensor.getIsDetected().getValue();
+        calculateRobotAccel();
+
+        boolean shotDetected = isShotDetected();
 
         if (shotDetected && !wasShotDetectedBefore) {
             switch (state) {
