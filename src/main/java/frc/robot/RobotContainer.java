@@ -115,6 +115,9 @@ public class RobotContainer {
     private void addAutosToChooser() {
         autoChooser.addRoutine("MiddleDepot", () -> autos.middleDepot());
 
+        autoChooser.addRoutine("LeftTotes", () -> autos.totesDoubleBump(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightTotes", () -> autos.totesDoubleBump(AutoPosition.RIGHT));
+
         autoChooser.addRoutine("LeftSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.LEFT));
         autoChooser.addRoutine("RightSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.RIGHT));
 

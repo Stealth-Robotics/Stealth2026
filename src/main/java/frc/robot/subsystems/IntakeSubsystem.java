@@ -44,7 +44,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final VoltageOut rollerController = new VoltageOut(0);
 
     private final double INTAKE_ROLLER_VOLTAGE = 12;
-    private final double MAX_ROLLER_SPEED = 0.75;
+    private final double MAX_ROLLER_SPEED = 0.85;
 
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.401123046875;
 
@@ -58,7 +58,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double SAFE_ROTATIONS = 0.1;
     private final double RETRACTED_ROTATIONS = 0.305;
 
-    private final double DEPLOY_kP = 40;
+    private final double DEPLOY_kP = 40; //originally 40
     private final double RETRACT_kP = 30;
     private final double FAST_kP = 40;
 
@@ -71,9 +71,9 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_ENCODER_ID = 18;
 
     private final int DEPLOY_STATOR_LIMIT = 50;
-    private final int ROLLER_STATOR_LIMIT = 60;
+    private final int ROLLER_STATOR_LIMIT = 80; // originally 60A
 
-    private final int ROLLER_SUPPLY_LIMIT = 30;
+    private final int ROLLER_SUPPLY_LIMIT = 35; // originally 30A
     private final int DEPLOY_SUPPLY_LIMIT = 30;
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.3;
@@ -249,15 +249,18 @@ public class IntakeSubsystem extends SubsystemBase {
         if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
             BaseStatusSignal.refreshAll(
                 leftRollerMotor.getSupplyCurrent(), leftRollerMotor.getStatorCurrent(), leftRollerMotor.getDeviceTemp(),
-                deployMotor.getSupplyCurrent(), deployMotor.getStatorCurrent(), deployMotor.getDeviceTemp()
+                rightRollerMotor.getSupplyCurrent(), rightRollerMotor.getStatorCurrent(), rightRollerMotor.getDeviceTemp(),
+                deployMotor.getSupplyCurrent(), deployMotor.getStatorCurrent(), deployMotor.getDeviceTemp(),
+                leftRollerMotor.getVelocity(), rightRollerMotor.getVelocity()
             );
 
             lastMs = currentMs;
-
+            DogLogUtil.logDouble("Intake/left_roller_rpm", leftRollerMotor.getVelocity(false).getValueAsDouble() * 60.0);
             DogLogUtil.logDouble("Intake/left_roller_supply_current", leftRollerMotor.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/left_roller_stator_current", leftRollerMotor.getStatorCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/left_roller_temperature_C", leftRollerMotor.getDeviceTemp(false).getValueAsDouble());
 
+            DogLogUtil.logDouble("Intake/right_roller_rmp", rightRollerMotor.getVelocity(false).getValueAsDouble() * 60.0);
             DogLogUtil.logDouble("Intake/right_roller_supply_current", rightRollerMotor.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/right_roller_stator_current", rightRollerMotor.getStatorCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/right_roller_temperature_C", rightRollerMotor.getDeviceTemp(false).getValueAsDouble());

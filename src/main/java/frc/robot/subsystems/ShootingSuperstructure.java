@@ -167,7 +167,7 @@ public class ShootingSuperstructure extends SubsystemBase {
                     double metersToTarget = robotPoseSupplier.get()
                         .getTranslation().getDistance(new Translation2d(targetPose.getX(), targetPose.getY()));
 
-                    transfer.spin();
+                    transfer.spin(metersToTarget);
                     transfer.feed(metersToTarget);
                 }
                 else {
@@ -187,7 +187,9 @@ public class ShootingSuperstructure extends SubsystemBase {
             isShooterActive = false;
             alreadySpinningAtTarget = false;
         })
-        .onlyWhile(() -> state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING));
+        .onlyWhile(() -> {
+            return state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING);
+        });
     }
 
     public Command clearTransfer() {
@@ -282,10 +284,11 @@ public class ShootingSuperstructure extends SubsystemBase {
      * Makes sure we aren't shooting off the field or that we are going to definitely miss
      */
     private boolean safeToShoot() {
-        boolean turretReady = turret.isReady();
-        if (DriverStation.isAutonomous() && turretReady)
+        if (DriverStation.isAutonomous())
             return true;
 
+        boolean turretReady = turret.isReady();
+        
         boolean isVelocityBelowThreshold = true;
         boolean isAccelBelowThreshold = true;
 
