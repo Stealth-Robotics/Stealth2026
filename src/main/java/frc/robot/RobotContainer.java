@@ -115,20 +115,23 @@ public class RobotContainer {
     private void addAutosToChooser() {
         autoChooser.addRoutine("MiddleDepot", () -> autos.middleDepot());
 
-        autoChooser.addRoutine("LeftTotes", () -> autos.totesDoubleBump(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightTotes", () -> autos.totesDoubleBump(AutoPosition.RIGHT));
+        // autoChooser.addRoutine("LeftShallowBB", () -> autos.shallowBB(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightShallowBB", () -> autos.shallowBB(AutoPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.RIGHT));
+        // autoChooser.addRoutine("LeftTotes", () -> autos.totesDoubleBump(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightTotes", () -> autos.totesDoubleBump(AutoPosition.RIGHT));
+
+        // autoChooser.addRoutine("LeftSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.RIGHT));
 
         autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
         autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftBumpTrench", () -> autos.bumpTrench(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightBumpTrench", () -> autos.bumpTrench(AutoPosition.RIGHT));
+        // autoChooser.addRoutine("LeftBumpTrench", () -> autos.bumpTrench(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightBumpTrench", () -> autos.bumpTrench(AutoPosition.RIGHT));
 
-        autoChooser.addRoutine("LeftDoubleTrench", () -> autos.doubleTrench(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightDoubleTrench", () -> autos.doubleTrench(AutoPosition.RIGHT));
+        // autoChooser.addRoutine("LeftDoubleTrench", () -> autos.doubleTrench(AutoPosition.LEFT));
+        // autoChooser.addRoutine("RightDoubleTrench", () -> autos.doubleTrench(AutoPosition.RIGHT));
     } 
 
     /*
