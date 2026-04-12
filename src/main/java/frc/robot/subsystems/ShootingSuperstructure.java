@@ -17,7 +17,9 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -45,6 +47,8 @@ public class ShootingSuperstructure extends SubsystemBase {
     private boolean isShooterActive = false;
 
     private boolean wasShotDetectedBefore = false;
+
+    private Timer shootingTime = new Timer();
 
     private int totalShots = 0;
     private int hubShots = 0;
@@ -159,6 +163,10 @@ public class ShootingSuperstructure extends SubsystemBase {
             if (!alreadySpinningAtTarget && shooter.isShooterAtVelocity()) {
                 alreadySpinningAtTarget = true;
             }
+            //Auto timeout failsafe
+            else if (!alreadySpinningAtTarget && shootingTime.hasElapsed(2)) {
+                alreadySpinningAtTarget = true;
+            }
             
             if (alreadySpinningAtTarget) {
                 if (safeToShoot()) {
@@ -178,6 +186,7 @@ public class ShootingSuperstructure extends SubsystemBase {
                 }
             }
         })
+        .beforeStarting(() -> shootingTime.restart())
         .finallyDo(() -> {
             shooter.coastShooter();
             transfer.stopSpinning();
@@ -186,6 +195,9 @@ public class ShootingSuperstructure extends SubsystemBase {
             isShootingRequested = false;
             isShooterActive = false;
             alreadySpinningAtTarget = false;
+
+            shootingTime.stop();
+            shootingTime.reset();
         })
         .onlyWhile(() -> {
             return state.equals(ShooterState.HUB_TRACKING) || state.equals(ShooterState.PASSING);
@@ -380,6 +392,9 @@ public class ShootingSuperstructure extends SubsystemBase {
         DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);
         DogLog.log("ShootingSuperstructure/Pass_Shots_Total", passShots);
         DogLog.log("ShootingSuperstructure/Shot_Total", totalShots);
+
+        DogLog.log("ShootingSuperstructure/IsShootingRequested", isShootingRequested);
+        DogLog.log("ShootingSuperstructure/IsShooerActive", isShooterActive);
 
         DogLog.forceNt.log("ShootingSuperstructure/state", state.name());
         DogLog.forceNt.log("ShootingSuperstructure/RPM_Offset", RPMOffset);

@@ -62,10 +62,10 @@ public class Autos {
         return shooter.spinUp(2700);
     }
 
-    public AutoRoutine shallowBB(AutoPosition position) {
+    public AutoRoutine playoff(AutoPosition position) {
         String pathName = switch (position) {
-            case LEFT -> "LeftShallowBB";
-            case RIGHT -> "RightShallowBB";
+            case LEFT -> "LeftPlayoff";
+            case RIGHT -> "RightPlayoff";
             default -> "";
         };
 
@@ -93,7 +93,7 @@ public class Autos {
 
         firstCycle.done().onTrue(
             new SequentialCommandGroup(
-                new WaitCommand(5), //Shooting time after first cycle
+                new WaitCommand(4), //Shooting time after first cycle
                 stopAgitating(),
                 stopShooting(),
                 secondCycle.cmd()
@@ -102,6 +102,90 @@ public class Autos {
 
         return routine;
     }
+
+    public AutoRoutine win(AutoPosition position) {
+        String pathName = switch (position) {
+            case LEFT -> "LeftWin";
+            case RIGHT -> "RightWin";
+            default -> "";
+        };
+
+        if (pathName.isBlank())
+            return nothingAuto;
+
+        AutoRoutine routine = autoFactory.newRoutine("routine");
+
+        AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
+        firstCycle.atTime("Intake").onTrue(deployAndIntake());
+        firstCycle.atTime("Spinup").onTrue(spinupShooter());
+        firstCycle.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        AutoTrajectory secondCycle = routine.trajectory(pathName, 1);
+        secondCycle.atTime("Intake2").onTrue(deployAndIntake());
+        secondCycle.atTime("Spinup2").onTrue(spinupShooter());
+        secondCycle.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+        routine.active().onTrue(
+            new SequentialCommandGroup(
+                firstCycle.resetOdometry(),
+                firstCycle.cmd()
+            )
+        );
+
+        firstCycle.done().onTrue(
+            new SequentialCommandGroup(
+                new WaitCommand(4), //Shooting time after first cycle
+                stopAgitating(),
+                stopShooting(),
+                secondCycle.cmd()
+            )
+        );
+
+        return routine;
+    }
+
+    // public AutoRoutine shallowBB(AutoPosition position) {
+    //     String pathName = switch (position) {
+    //         case LEFT -> "LeftShallowBB";
+    //         case RIGHT -> "RightShallowBB";
+    //         default -> "";
+    //     };
+
+    //     if (pathName.isBlank())
+    //         return nothingAuto;
+
+    //     AutoRoutine routine = autoFactory.newRoutine("routine");
+
+    //     AutoTrajectory firstCycle = routine.trajectory(pathName, 0);
+    //     firstCycle.atTime("Intake").onTrue(deployAndIntake());
+    //     firstCycle.atTime("Spinup").onTrue(spinupShooter());
+    //     firstCycle.atTime("Shoot").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+    //     AutoTrajectory secondCycle = routine.trajectory(pathName, 1);
+    //     secondCycle.atTime("Intake2").onTrue(deployAndIntake());
+    //     secondCycle.atTime("Spinup2").onTrue(spinupShooter());
+    //     secondCycle.atTime("Shoot2").onTrue(shooter.shoot().alongWith(startAgitating()));
+
+    //     routine.active().onTrue(
+    //         new SequentialCommandGroup(
+    //             firstCycle.resetOdometry(),
+    //             firstCycle.cmd()
+    //         )
+    //     );
+
+    //     // firstCycle.atPose(firstCycle.getFinalPose().get(), 0.25, Math.toRadians(90));
+
+    //     firstCycle.done().onTrue(
+    //         new SequentialCommandGroup(
+    //             new WaitCommand(5), //Shooting time after first cycle
+    //             stopAgitating(),
+    //             stopShooting(),
+    //             secondCycle.cmd()
+    //         )
+    //     );
+
+    //     return routine;
+    // }
 
     // public AutoRoutine best(AutoPosition position) {
     //     String pathName = switch (position) {

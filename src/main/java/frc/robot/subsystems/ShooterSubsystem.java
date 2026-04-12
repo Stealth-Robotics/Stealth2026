@@ -224,7 +224,9 @@ public class ShooterSubsystem extends SubsystemBase {
             }
         }
 
-        DogLog.forceNt.log("Shooter/shooter_rpm", (int) getRPM(false));
+        DogLog.forceNt.log("Shooter/shooter1_shooter_rpm", (int) shooterMotor1.getVelocity().getValueAsDouble() * 60.0);
+        DogLog.forceNt.log("Shooter/shooter2_shooter_rpm", (int) shooterMotor2.getVelocity().getValueAsDouble() * 60.0);
+
         DogLog.forceNt.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
         
         DogLogUtil.logDoubleForceNT("Shooter/hood_angle", hoodDegrees);

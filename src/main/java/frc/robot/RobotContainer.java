@@ -90,7 +90,7 @@ public class RobotContainer {
             robot.setIntakeDefaultCommand(
                 () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
                 () -> driverController.getRightTriggerAxis() > 0.1,
-                () -> driverController.rightBumper().getAsBoolean(),
+                () -> driverController.y().getAsBoolean(),
                 () -> operatorController.b().getAsBoolean()
             );
         }
@@ -99,6 +99,8 @@ public class RobotContainer {
         driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
 
         driverController.start().onTrue(robot.forceResetOdometry());
+
+        driverController.rightBumper().whileTrue(robot.shoot());
         
         operatorController.rightBumper().whileTrue(robot.shoot());
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
@@ -115,6 +117,15 @@ public class RobotContainer {
     private void addAutosToChooser() {
         autoChooser.addRoutine("MiddleDepot", () -> autos.middleDepot());
 
+        autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
+
+        autoChooser.addRoutine("LeftWin", () -> autos.win(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightWin", () -> autos.win(AutoPosition.RIGHT));
+
+        autoChooser.addRoutine("LeftPlayoff", () -> autos.playoff(AutoPosition.LEFT));
+        autoChooser.addRoutine("RightPlayoff", () -> autos.playoff(AutoPosition.RIGHT));
+
         // autoChooser.addRoutine("LeftShallowBB", () -> autos.shallowBB(AutoPosition.LEFT));
         // autoChooser.addRoutine("RightShallowBB", () -> autos.shallowBB(AutoPosition.RIGHT));
 
@@ -123,9 +134,6 @@ public class RobotContainer {
 
         // autoChooser.addRoutine("LeftSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.LEFT));
         // autoChooser.addRoutine("RightSafeDoubleBump", () -> autos.safeDoubleBump(AutoPosition.RIGHT));
-
-        autoChooser.addRoutine("LeftDoubleBump", () -> autos.doubleBump(AutoPosition.LEFT));
-        autoChooser.addRoutine("RightDoubleBump", () -> autos.doubleBump(AutoPosition.RIGHT));
 
         // autoChooser.addRoutine("LeftBumpTrench", () -> autos.bumpTrench(AutoPosition.LEFT));
         // autoChooser.addRoutine("RightBumpTrench", () -> autos.bumpTrench(AutoPosition.RIGHT));
