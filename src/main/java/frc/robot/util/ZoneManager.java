@@ -9,20 +9,21 @@ public class ZoneManager {
      * and are automatically flipped to the Red Alliance if needed 
     */
 
+    private static final RectZone hub = new RectZone(-0.5, -0.5, 4.3, 8.4);
+
     private static final RectZone passing = new RectZone(5.2, 0, 16.5, 8.07);
 
     private static final RectZone leftBump = new RectZone(3.6, 4.6, 5.5, 6.5);
     private static final RectZone rightBump = new RectZone(3.6, 1.5, 5.5, 3.5);
 
-    // private static final RectZone leftTrench = new RectZone(3.8, 6.87, 5.3, 8.07);
-    // private static final RectZone rightTrench = new RectZone(3.8, 0, 5.3, 1.25);
+    private static final RectZone leftTrench = new RectZone(3.8, 6.87, 5.3, 8.07);
+    private static final RectZone rightTrench = new RectZone(3.8, 0, 5.3, 1.25);
 
     public enum FieldZone {
         HUB,
         PASS,
         TRENCH,
-        BUMP,
-        UNKNOWN
+        BUMP
     }
     
     public static void updateRobotPose(Pose2d newRobotPose) {
@@ -30,10 +31,12 @@ public class ZoneManager {
     }
 
     public static FieldZone getZone() {
-        if (inPassingZone())
-            return FieldZone.PASS;
-        else
+        if (inLeftTrenchZone() || inRightTrenchZone())
+            return FieldZone.TRENCH;
+        else if (inHubZone())
             return FieldZone.HUB;
+        else
+            return FieldZone.PASS;
     }
 
     private static boolean inPassingZone() {
@@ -45,19 +48,17 @@ public class ZoneManager {
         AllianceUtility.flipRectZone(rightBump).contains(robotPose.getTranslation());
     }
 
-    //Currently unused because we don't care if we are inside the trench
+    private static boolean inHubZone() {
+        return AllianceUtility.flipRectZone(hub).contains(robotPose.getTranslation());
+    }
 
-    // private static boolean inHubZone() {
-    //     return AllianceUtility.flipRectZone(hub).contains(robotPose.getTranslation());
-    // }
+    private static boolean inLeftTrenchZone() {
+        return AllianceUtility.forceFlipRectZone(leftTrench).contains(robotPose.getTranslation()) ||
+            leftTrench.contains(robotPose.getTranslation());
+    }
 
-    // private static boolean inLeftTrenchZone() {
-    //     return AllianceUtility.forceFlipRectZone(leftTrench).contains(robotPose.getTranslation()) ||
-    //         leftTrench.contains(robotPose.getTranslation());
-    // }
-
-    // private static boolean inRightTrenchZone() {
-    //     return AllianceUtility.forceFlipRectZone(rightTrench).contains(robotPose.getTranslation()) ||
-    //         rightTrench.contains(robotPose.getTranslation());
-    // }
+    private static boolean inRightTrenchZone() {
+        return AllianceUtility.forceFlipRectZone(rightTrench).contains(robotPose.getTranslation()) ||
+            rightTrench.contains(robotPose.getTranslation());
+    }
 }

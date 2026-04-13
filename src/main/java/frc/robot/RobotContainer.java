@@ -12,17 +12,12 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.util.AllianceUtility;
+import frc.robot.util.AutoSide;
 import frc.robot.util.ShiftTracker;
-import frc.robot.util.AutoStartingPosition;
 
 public class RobotContainer {
-    private final Driver driver = Driver.MO;
-
-    private enum Driver {
-        MATT, MO, COACH_BOGDANANOV
-    }
-
     private final CommandXboxController driverController = new CommandXboxController(0);
     private final CommandXboxController operatorController = new CommandXboxController(1);
     
@@ -31,7 +26,6 @@ public class RobotContainer {
     private final Autos autos;
     private final AutoChooser autoChooser = new AutoChooser();
 
-    private boolean deployOverRetract = true;
     private String lastAutoName = "";
 
     public RobotContainer() {
@@ -75,33 +69,22 @@ public class RobotContainer {
             () -> driverController.getRightX()
         );
 
-        if (driver.equals(Driver.MATT)) {
-            robot.setIntakeDefaultCommand(
-                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-                () -> driverController.y().getAsBoolean() && deployOverRetract,
-                () -> driverController.y().getAsBoolean() && !deployOverRetract,
-                () -> operatorController.b().getAsBoolean()
-            );
+        robot.configureIntake(
+            () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
+            () -> driverController.getRightTriggerAxis() > 0.1,
+            () -> driverController.y().getAsBoolean(),
+            () -> operatorController.b().getAsBoolean() || driverController.b().getAsBoolean()
+        );
 
-            driverController.y().onTrue(new InstantCommand(() -> deployOverRetract = !deployOverRetract));
-        }
-        else {
-            robot.setIntakeDefaultCommand(
-                () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
-                () -> driverController.getRightTriggerAxis() > 0.1,
-                () -> driverController.rightBumper().getAsBoolean(),
-                () -> operatorController.b().getAsBoolean()
-            );
-        }
+        Trigger shootTrigger = new Trigger(driverController.rightBumper().or(operatorController.rightBumper()));
+        shootTrigger.whileTrue(robot.shoot());
 
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
-
         driverController.start().onTrue(robot.forceResetOdometry());
-        
-        operatorController.rightBumper().whileTrue(robot.shoot());
-        operatorController.leftBumper().whileTrue(robot.clearTransfer());
 
+        operatorController.leftBumper().whileTrue(robot.clearTransfer());
+ 
         operatorController.povUp()
             .onTrue(new InstantCommand(() -> robot.changeRPMOffset(25)));
         operatorController.povDown()
@@ -112,13 +95,7 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addRoutine("LeftBear", () -> autos.leftBear());
-
-        autoChooser.addRoutine("LeftBumpTrench", () -> autos.bumpTrench(AutoStartingPosition.LEFT));
-        autoChooser.addRoutine("RightBumpTrench", () -> autos.bumpTrench(AutoStartingPosition.RIGHT));
-
-        autoChooser.addRoutine("LeftDoubleTrench", () -> autos.doubleTrench(AutoStartingPosition.LEFT));
-        autoChooser.addRoutine("RightDoubleTrench", () -> autos.doubleTrench(AutoStartingPosition.RIGHT));
+        autoChooser.addRoutine("Debug", () -> autos.debugAuto());
     } 
 
     /*
@@ -139,10 +116,6 @@ public class RobotContainer {
         ShiftTracker.update();
     }
 
-    public double getRobotYawDegrees() {
-        return robot.getRobotYawDegrees();
-    }
-
     public void toggleDisabledLeds(boolean disable) {
         robot.toggleDisabledLeds(disable);
     }
@@ -153,9 +126,5 @@ public class RobotContainer {
 
     public void resetFuelCounter() {
         robot.resetFuelShotCount();
-    }
-
-    public void resetAfterAuto() {
-        robot.resetAfterAuto();
     }
 }

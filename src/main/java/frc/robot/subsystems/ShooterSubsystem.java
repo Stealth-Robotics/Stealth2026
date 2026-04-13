@@ -41,7 +41,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final PositionVoltage hoodController = new PositionVoltage(0);
     private final VelocityVoltage shooterController = new VelocityVoltage(0);
 
-    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.395;
+    private final double HOOD_ENCODER_MAGNET_OFFSET = -0.89;
     private final double HOOD_ENCODER_DISCONTINUTY_POINT = 1.0;
 
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
@@ -224,11 +224,13 @@ public class ShooterSubsystem extends SubsystemBase {
             }
         }
 
-        DogLog.forceNt.log("Shooter/shooter_rpm", (int) getRPM(false));
-        DogLog.forceNt.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
+        DogLog.log("Shooter/shooter1_shooter_rpm", (int) shooterMotor1.getVelocity().getValueAsDouble() * 60.0);
+        DogLog.log("Shooter/shooter2_shooter_rpm", (int) shooterMotor2.getVelocity().getValueAsDouble() * 60.0);
+
+        DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
         
         DogLogUtil.logDoubleForceNT("Shooter/hood_angle", hoodDegrees);
-        DogLogUtil.logDoubleForceNT("Shooter/hood_target_angle", requestedHoodDegrees);
+        DogLogUtil.logDouble("Shooter/hood_target_angle", requestedHoodDegrees);
 
         logMotorData();
     }

@@ -18,10 +18,8 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.DeferredCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.ProxyCommand;
-import edu.wpi.first.wpilibj2.command.ScheduleCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -62,14 +60,10 @@ public class RobotSystem extends SubsystemBase {
 
     private double filteredX, filteredY, filteredTheta, lastFilteredX, lastFilteredY, lastFilteredTheta;
 
-    private final SlewRateLimiter normalXLimiter = new SlewRateLimiter(5.0), normalYLimiter = new SlewRateLimiter(5.0);
-    private final SlewRateLimiter normalThetaLimiter = new SlewRateLimiter(10.0);
-
-    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(3.0), precisionYLimiter = new SlewRateLimiter(3.0);
+    private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(4.0), precisionYLimiter = new SlewRateLimiter(4.0);
     private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(10.0);
 
     private final AprilTagFieldLayout tagFieldLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltAndymark);
-
     private final PowerDistribution pdh = new PowerDistribution(63, ModuleType.kRev);
 
     //Pose centered on the front of the hub to reset to if our vision goes haywire
@@ -96,44 +90,35 @@ public class RobotSystem extends SubsystemBase {
         return new InstantCommand(() -> drive.resetPose(AllianceUtility.flipPose(ODOMETRY_RESET_POSE)));
     }
 
-    public void setIntakeDefaultCommand(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract, BooleanSupplier agitate) {
-        Command intakeDefaultCommand = run(
+    public void configureIntake(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract, 
+        BooleanSupplier fullAgitate) {
+
+        Trigger deployTrigger = new Trigger(deploy);
+        deployTrigger.onTrue(intake.deployCommand());
+
+        Trigger retractTrigger = new Trigger(retract);
+        retractTrigger.onTrue(intake.retractCommand());
+
+        Trigger automaticAgitateTrigger = new Trigger(() ->
+            shooter.isShooting() &&
+            intake.isDeployed() &&
+            !deploy.getAsBoolean() &&
+            !fullAgitate.getAsBoolean() &&
+            !intake.isRetracting()
+        );
+        automaticAgitateTrigger.onTrue(intake.partialAgitate(() -> 0.4));
+
+        Trigger fullAgitateTrigger = new Trigger(() -> fullAgitate.getAsBoolean() && !deploy.getAsBoolean());
+        fullAgitateTrigger.whileTrue(intake.fullAgitate());
+
+        Command intakeDefaultCommand = new RunCommand(
             () -> {
-                if (shooter.isShooting() && intake.isDeployed() && !deploy.getAsBoolean() && !agitate.getAsBoolean() && !retract.getAsBoolean()) {
-                    //Repeatably do a small bump while shooting (overriden by big bump and intaking)
-                    CommandScheduler.getInstance().schedule(intake.agitate(() -> 0.2));
-                }
-                else {
-                    double targetRollerSpeed = rollerSpeed.getAsDouble();
-                    intake.setRollerSpeed(targetRollerSpeed);
-
-                    if (ZoneManager.inBumpZone() && intake.isDeployed()
-                        && !deploy.getAsBoolean() && !agitate.getAsBoolean()) {
-                        intake.safe();
-                    }
-                    else if (!ZoneManager.inBumpZone() && intake.isSafe() && !intake.isRetracting()) {
-                        intake.deploy();
-                    }
-                }
-            }
-        ).beforeStarting(
-            () -> {
-                Trigger deployTrigger = new Trigger(deploy);
-                deployTrigger
-                    .onTrue(intake.deployCommand())
-                    .onFalse(intake.cheesyAgitate().onlyIf(agitate));
-
-                Trigger retractTrigger = new Trigger(retract);
-                retractTrigger.onTrue(intake.retractCommand());
-
-                Trigger agitateTrigger = new Trigger(agitate);
-                agitateTrigger
-                    .whileTrue(intake.cheesyAgitate().onlyIf(deployTrigger.negate()))
-                    .onFalse(intake.deployCommand());
-            }
+                double targetRollerSpeed = rollerSpeed.getAsDouble();
+                intake.setRollerSpeed(targetRollerSpeed);
+            }, 
+            intake
         );
 
-        intakeDefaultCommand.addRequirements(intake);
         intake.setDefaultCommand(intakeDefaultCommand);
     }
 
@@ -143,18 +128,6 @@ public class RobotSystem extends SubsystemBase {
 
     public Command shoot() {
         return shooter.shoot();
-    }
-
-    public BooleanSupplier needsHopperAgitate() {
-        return () -> shooter.needsHopperAgitate();
-    }
-
-    public BooleanSupplier isHopperEmpty() {
-        return ()-> shooter.isHopperEmpty();
-    }
-
-    public void resetAfterAuto() {
-        shooter.setState(ShooterState.IDLE);
     }
 
     public Command clearTransfer() {
@@ -168,12 +141,12 @@ public class RobotSystem extends SubsystemBase {
     private void updateShootingState() {
         FieldZone zone = ZoneManager.getZone();
 
-        if (zone.equals(FieldZone.HUB))
-            shooter.setState(ShooterState.HUB);
+        if (zone.equals(FieldZone.TRENCH))
+            shooter.setState(ShooterState.TRENCH);
         else if (zone.equals(FieldZone.PASS))
             shooter.setState(ShooterState.PASS);
         else
-            shooter.setState(ShooterState.IDLE);
+            shooter.setState(ShooterState.HUB);
     }
 
     /**
@@ -186,16 +159,13 @@ public class RobotSystem extends SubsystemBase {
             drive.applyRequest(() -> {
                 double xInput = x.getAsDouble(), yInput = y.getAsDouble(), thetaInput = theta.getAsDouble();
                 
-                //Square inputs for finer control around zero
-                xInput = Math.copySign(xInput * xInput, xInput);
-                yInput = Math.copySign(yInput * yInput, yInput);
-                thetaInput = Math.copySign(thetaInput * thetaInput, thetaInput);
+                //Change inputs for finer control around zero
+                //TODO: Change for liking
+                xInput = Math.copySign(Math.pow(xInput, 2), xInput);
+                yInput = Math.copySign(Math.pow(yInput, 2), yInput);
+                thetaInput = Math.copySign(Math.pow(thetaInput, 1.5), thetaInput);
 
                 if (currentDrivingMode != lastDrivingMode) {
-                    normalXLimiter.reset(lastFilteredX);
-                    normalYLimiter.reset(lastFilteredY);
-                    normalThetaLimiter.reset(lastFilteredTheta);
-
                     precisionXLimiter.reset(lastFilteredX);
                     precisionYLimiter.reset(lastFilteredY);
                     precisionThetaLimiter.reset(lastFilteredTheta);
@@ -209,9 +179,9 @@ public class RobotSystem extends SubsystemBase {
                     filteredTheta = precisionThetaLimiter.calculate(thetaInput);
                 }
                 else {
-                    filteredX = normalXLimiter.calculate(xInput);
-                    filteredY = normalYLimiter.calculate(yInput);
-                    filteredTheta = normalThetaLimiter.calculate(thetaInput);
+                    filteredX = xInput;
+                    filteredY = yInput;
+                    filteredTheta = thetaInput;
                 }
 
                 lastFilteredX = filteredX;

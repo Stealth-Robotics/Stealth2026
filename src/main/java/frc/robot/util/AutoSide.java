@@ -1,6 +1,6 @@
 package frc.robot.util;
 
-public enum AutoStartingPosition {
+public enum AutoSide {
     LEFT,
     RIGHT
 }

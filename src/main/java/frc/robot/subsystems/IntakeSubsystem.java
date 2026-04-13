@@ -43,8 +43,10 @@ public class IntakeSubsystem extends SubsystemBase {
     private final MotionMagicVoltage deployController = new MotionMagicVoltage(0);
     private final VoltageOut rollerController = new VoltageOut(0);
 
+    private double targetRollerSpeed = 0;
+
     private final double INTAKE_ROLLER_VOLTAGE = 12;
-    private final double MAX_ROLLER_SPEED = 1.0;
+    private final double MAX_ROLLER_SPEED = 0.8;
 
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.401123046875;
 
@@ -52,13 +54,13 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 52.0;
 
     private final double DEPLOY_ENCODER_DISCONTINUTY_POINT = 0.651;
-    private final double DEPLOY_POSITION_TOLERANCE = 0.02;
+    private final double DEPLOY_POSITION_TOLERANCE = 0.05;
 
     private final double DEPLOYED_ROTATIONS = 0.0;
     private final double SAFE_ROTATIONS = 0.1;
     private final double RETRACTED_ROTATIONS = 0.305;
 
-    private final double DEPLOY_kP = 25;
+    private final double DEPLOY_kP = 35;
     private final double RETRACT_kP = 30;
     private final double FAST_kP = 40;
 
@@ -71,9 +73,9 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int DEPLOY_ENCODER_ID = 18;
 
     private final int DEPLOY_STATOR_LIMIT = 50;
-    private final int ROLLER_STATOR_LIMIT = 60;
+    private final int ROLLER_STATOR_LIMIT = 80;
 
-    private final int ROLLER_SUPPLY_LIMIT = 30;
+    private final int ROLLER_SUPPLY_LIMIT = 35;
     private final int DEPLOY_SUPPLY_LIMIT = 30;
 
     private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.3;
@@ -134,49 +136,42 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.MotionMagic.MotionMagicCruiseVelocity = DEPLOY_kVELO;
 
         deployMotor.getConfigurator().apply(deployConfig);
-
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
     }
 
-    public Command agitate(DoubleSupplier magnitude) {
+    public Command partialAgitate(DoubleSupplier magnitude) {
         var command = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
             new InstantCommand(() -> moveFastTo(magnitude.getAsDouble() * RETRACTED_ROTATIONS)),
-            new WaitUntilCommand(()-> isAtPosition(magnitude.getAsDouble() * RETRACTED_ROTATIONS)).withTimeout(0.5),
+            new WaitUntilCommand(()-> isAtPosition(magnitude.getAsDouble() * RETRACTED_ROTATIONS)).withTimeout(0.2),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> deploy()),
-            new WaitUntilCommand(()-> isAtPosition(DEPLOYED_ROTATIONS)).withTimeout(0.2),
             new InstantCommand(() -> setRollerSpeed(0))
         );
         
         command.addRequirements(this);
-
         return command;
     }
 
-    public Command cheesyAgitate() {
-        double tossPercentage = RETRACTED_ROTATIONS * 0.5;
+    public Command fullAgitate() {
+        double tossPercentage = RETRACTED_ROTATIONS * 0.65;
         
         var command = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
             new InstantCommand(() -> moveFastTo(tossPercentage)),
-            new WaitUntilCommand(()-> isAtPosition(tossPercentage)).withTimeout(0.5),
+            new WaitUntilCommand(() -> isAtPosition(tossPercentage)).withTimeout(0.2),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
+            new InstantCommand(() -> deploy()),
             new InstantCommand(() -> setRollerSpeed(0))
-        ).andThen(run(() -> {
-            deployMotor.setControl(
-                deployController.withSlot(0).withPosition(deployController.getPositionMeasure().magnitude() + 0.008)
-            );
-        })).finallyDo(() -> deploy());
+        )
+        .andThen(new RunCommand(() -> moveFastTo(deployController.getPositionMeasure().magnitude() + 0.008)));
 
+        command.addRequirements(this);
         return command;
     }
 
     public void setRollerSpeed(double speed) {
-        leftRollerMotor.setControl(
-            rollerController.withOutput(
-                INTAKE_ROLLER_VOLTAGE * MathUtil.clamp(speed, -MAX_ROLLER_SPEED, MAX_ROLLER_SPEED))
-            );
+        targetRollerSpeed = speed;
     }
 
     private void moveFastTo(double rotations) {
@@ -219,12 +214,12 @@ public class IntakeSubsystem extends SubsystemBase {
 
     // AUTO COMMANDS
 
-    public Command intakeCommand() {
-        return run(() -> setRollerSpeed(MAX_ROLLER_SPEED));
+    public Command startRollers() {
+        return startEnd(() -> setRollerSpeed(MAX_ROLLER_SPEED), () -> setRollerSpeed(0));
     }
 
-    public Command stopCommand() {
-        return run(() -> setRollerSpeed(0));
+    public Command stopRollers() {
+        return runOnce(() -> setRollerSpeed(0));
     }
 
     public Command deployCommand() {
@@ -241,6 +236,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        leftRollerMotor.setControl(rollerController.withOutput(
+            INTAKE_ROLLER_VOLTAGE * MathUtil.clamp(targetRollerSpeed, -MAX_ROLLER_SPEED, MAX_ROLLER_SPEED)
+        ));
+
         DogLogUtil.logDoubleForceNT("Intake/deploy_rotations", deployMotor.getPosition().getValueAsDouble());
 
         logMotorData();
@@ -252,15 +251,19 @@ public class IntakeSubsystem extends SubsystemBase {
         if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
             BaseStatusSignal.refreshAll(
                 leftRollerMotor.getSupplyCurrent(), leftRollerMotor.getStatorCurrent(), leftRollerMotor.getDeviceTemp(),
-                deployMotor.getSupplyCurrent(), deployMotor.getStatorCurrent(), deployMotor.getDeviceTemp()
+                rightRollerMotor.getSupplyCurrent(), rightRollerMotor.getStatorCurrent(), rightRollerMotor.getDeviceTemp(),
+                deployMotor.getSupplyCurrent(), deployMotor.getStatorCurrent(), deployMotor.getDeviceTemp(),
+                leftRollerMotor.getVelocity(), rightRollerMotor.getVelocity()
             );
 
             lastMs = currentMs;
 
+            DogLogUtil.logDouble("Intake/left_roller_rpm", leftRollerMotor.getVelocity(false).getValueAsDouble() * 60.0);
             DogLogUtil.logDouble("Intake/left_roller_supply_current", leftRollerMotor.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/left_roller_stator_current", leftRollerMotor.getStatorCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/left_roller_temperature_C", leftRollerMotor.getDeviceTemp(false).getValueAsDouble());
 
+            DogLogUtil.logDouble("Intake/right_roller_rpm", rightRollerMotor.getVelocity(false).getValueAsDouble() * 60.0);
             DogLogUtil.logDouble("Intake/right_roller_supply_current", rightRollerMotor.getSupplyCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/right_roller_stator_current", rightRollerMotor.getStatorCurrent(false).getValueAsDouble());
             DogLogUtil.logDouble("Intake/right_roller_temperature_C", rightRollerMotor.getDeviceTemp(false).getValueAsDouble());
