@@ -86,6 +86,8 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
 
     /** Swerve request to apply during field-centric path following */
     private final SwerveRequest.ApplyFieldSpeeds m_pathApplyFieldSpeeds = new SwerveRequest.ApplyFieldSpeeds();
+    private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
+
     private final PIDController m_pathXController = new PIDController(8, 0, 0);
     private final PIDController m_pathYController = new PIDController(8, 0, 0);
     private final PIDController m_pathThetaController = new PIDController(10, 0, 0);
@@ -348,6 +350,10 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         boolean withinPosition = getPose().getTranslation().getDistance(targetPose.getTranslation()) < POSITION_TOLERANCE_METERS;
         boolean withinAngle = Math.abs(getPose().getRotation().getDegrees() - targetPose.getRotation().getDegrees()) < ANGLE_TOLERANCE_DEGREES;
         return withinPosition && withinAngle;
+    }
+
+    public void applyRobotRelativeSpeeds(ChassisSpeeds speeds) {
+        setControl(m_pathApplyRobotSpeeds.withSpeeds(speeds));
     }
 
     /*

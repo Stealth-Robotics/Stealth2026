@@ -219,7 +219,7 @@ public class RobotSystem extends SubsystemBase {
 
     public Autos getAutos() {
         return new Autos(
-            drive.createAutoFactory(),
+            drive,
             intake,
             shooter
         );
