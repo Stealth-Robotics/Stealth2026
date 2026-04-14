@@ -4,7 +4,6 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
-import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.lib.BLine.FollowPath;
@@ -57,9 +56,8 @@ public class Autos {
 
         Command autoRoutine = new SequentialCommandGroup(
             deployAndIntake(),
-            // path,
-            new ParallelDeadlineGroup(new WaitCommand(3), startShooting()),
-            stopShooting(),
+            path,
+            shootForTime(3),
             retractAndStopIntake()
         );
 
@@ -80,15 +78,21 @@ public class Autos {
         return shooter.spinUp(SHOOTER_SPINUP_RPMS);
     }
 
+    private Command shootForTime(double seconds) {
+        return new ParallelDeadlineGroup(
+            new WaitCommand(seconds), 
+            startShooting()
+        ).andThen(stopShooting());
+    }
+
     private Command startShooting() {
-        return shooter.shoot();
-        // .andThen(new ScheduleCommand(
-        //     new SequentialCommandGroup(
-        //         intake.partialAgitate(() -> 0.3),
-        //         new WaitCommand(1),
-        //         intake.partialAgitate(() -> 0.4).repeatedly()
-        //     )
-        // ));
+        return shooter.shoot().alongWith(
+            new SequentialCommandGroup(
+                intake.partialAgitate(() -> 0.5),
+                new WaitCommand(1),
+                intake.partialAgitate(() -> 0.4).repeatedly()
+            )
+        );
     }
 
     private Command stopShooting() {
