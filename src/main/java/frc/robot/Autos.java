@@ -1,69 +1,101 @@
 package frc.robot;
 
-import choreo.auto.AutoFactory;
-import choreo.auto.AutoRoutine;
-import choreo.auto.AutoTrajectory;
+import java.util.HashMap;
+
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import frc.robot.lib.BLine.FollowPath;
+import frc.robot.lib.BLine.FollowPath.Builder;
+import frc.robot.lib.BLine.Path;
+import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
+import frc.robot.util.AutoSide;
 
 public class Autos {
-    private final AutoFactory autoFactory;
+    private Builder pathBuilder;
+    private final HashMap<String, Command> autoCache = new HashMap<>();
 
     private final IntakeSubsystem intake;
     private final ShootingSuperstructure shooter;
 
-    private final AutoRoutine nothingAuto;
-
     private final double SHOOTER_SPINUP_RPMS = 2900;
 
-    public Autos(AutoFactory autoFactory, IntakeSubsystem intake, ShootingSuperstructure shooter) {
-        this.autoFactory = autoFactory;
-        
+    public Autos(DriveSubsystem drive, IntakeSubsystem intake, ShootingSuperstructure shooter) {
         this.intake = intake;
         this.shooter = shooter;
 
-        nothingAuto = autoFactory.newRoutine("nothing");
+        pathBuilder = new FollowPath.Builder(
+            drive,
+            drive::getPose,
+            drive::getRobotRelativeVelocity,
+            drive::applyRobotRelativeSpeeds,
+            new PIDController(5.0, 0.0, 0.0), // Translation PID
+            new PIDController(3.0, 0.0, 0.0), // Rotation PID
+            new PIDController(2.0, 0.0, 0.0)  // Cross-track PID
+        )
+        .withDefaultShouldFlip()
+        .withPoseReset(drive::resetPose);
+
+        //Register event triggers
+        FollowPath.registerEventTrigger("Intake", deployAndIntake());
+        FollowPath.registerEventTrigger("Spinup", spinupShooter());
+
+        //Cache paths
+        buildDebugAuto();
+
+        buildDoubleBump(AutoSide.LEFT);
+        buildDoubleBump(AutoSide.RIGHT);
     }
 
-    /**
-     * Schedules the call to preload trajectory for the selected auto routine to prevent lag
-     **/
-    public void preloadAuto(String autoName) {
-        var trajectory = autoFactory.cache().loadTrajectory(autoName).orElse(null);
-        if (trajectory != null) 
-            autoFactory.resetOdometry(trajectory);
+    public Command getAuto(String name) {
+        return autoCache.get(name);
     }
 
-    public AutoRoutine debugAuto() {
-        String pathName = "Debug";
+    public void buildDoubleBump(AutoSide side) {
+        String autoName = (side.equals(AutoSide.LEFT)) ? "LeftDoubleBump" : "RightDoubleBump";
 
-        AutoRoutine routine = autoFactory.newRoutine("routine");
+        Path path = new Path("DoubleBump_1");
+        Path path2 = new Path("DoubleBump_2");
 
-        AutoTrajectory path = routine.trajectory(pathName, 0);
-        path.atTime("Intake").onTrue(deployAndIntake());
-        path.atTime("Spinup").onTrue(spinupShooter());
-        path.atTime("Shoot").onTrue(startShooting());
-        
-        AutoTrajectory path2 = routine.trajectory(pathName, 1);
-        path2.atTime("Intake2").onTrue(deployAndIntake());
-        path2.atTime("Spinup2").onTrue(spinupShooter());
-        path2.atTime("Shoot2").onTrue(startShooting());
+        if (side.equals(AutoSide.LEFT)) {
+            path.mirror();
+            path2.mirror();
+        }
 
-        routine.active().onTrue(path.cmd());
+        FollowPath cycle1 = pathBuilder.build(path);
+        FollowPath cycle2 = pathBuilder.build(path2);
 
-        path.done().onTrue(
-            new SequentialCommandGroup(
-                new WaitCommand(3),
-                intake.fullAgitate().withTimeout(2),
-                stopShooting(),
-                path2.cmd()
-            )
+        Command autoRoutine = new SequentialCommandGroup(
+            deployAndIntake(),
+            cycle1,
+            shootForTime(5),
+            stopShooting(),
+            cycle2,
+            startShooting()
         );
 
-        return (pathName.isBlank()) ? nothingAuto : routine;
+        autoCache.put(autoName, autoRoutine);
+    }
+
+    public void buildDebugAuto() {
+        String autoName = "Debug";
+
+        FollowPath path = pathBuilder.build(new Path("Debug"));
+
+        Command autoRoutine = new SequentialCommandGroup(
+            deployAndIntake(),
+            path,
+            shootForTime(3),
+            stopShooting(),
+            retractAndStopIntake()
+        );
+
+        autoCache.put(autoName, autoRoutine);
     }
 
     // AUTO COMMAND HELPERS
@@ -80,12 +112,19 @@ public class Autos {
         return shooter.spinUp(SHOOTER_SPINUP_RPMS);
     }
 
+    private Command shootForTime(double seconds) {
+        return new ParallelDeadlineGroup(
+            new WaitCommand(seconds), 
+            startShooting()
+        ).andThen(stopShooting());
+    }
+
     private Command startShooting() {
         return shooter.shoot().alongWith(
             new SequentialCommandGroup(
-                intake.partialAgitate(() -> 0.5), //One quick agitate to start the ball rolling
-                new WaitCommand(1.5),
-                intake.partialAgitate(() -> 0.5).andThen(new WaitCommand(0.2)).repeatedly()
+                intake.partialAgitate(() -> 0.5),
+                new WaitCommand(1),
+                intake.partialAgitate(() -> 0.4).repeatedly()
             )
         );
     }
