@@ -47,7 +47,7 @@ public class ShooterSubsystem extends SubsystemBase {
     private final double HOOD_ROTOR_TO_SENSOR_RATIO = 5.0;
     private final double HOOD_SENSOR_TO_MECHANISM_RATIO = 8.0;
 
-    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 100;
+    private final double SHOOTER_VELOCITY_TOLERANCE_RPM = 50;
     private final double MAX_POSSIBLE_RPM = 5000;
 
     private final double MAX_HOOD_DEGREES = 33.5;
