@@ -163,7 +163,7 @@ public class RobotSystem extends SubsystemBase {
                 //TODO: Change for liking
                 xInput = Math.copySign(Math.pow(xInput, 2), xInput);
                 yInput = Math.copySign(Math.pow(yInput, 2), yInput);
-                thetaInput = Math.copySign(Math.pow(thetaInput, 1.5), thetaInput);
+                //thetaInput = Math.copySign(thetaInput * thetaInput, thetaInput);
 
                 if (currentDrivingMode != lastDrivingMode) {
                     precisionXLimiter.reset(lastFilteredX);
