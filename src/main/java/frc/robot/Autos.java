@@ -73,7 +73,7 @@ public class Autos {
         Command autoRoutine = new SequentialCommandGroup(
             deployAndIntake(),
             cycle1,
-            new ParallelDeadlineGroup(new WaitCommand(5), startShooting()),
+            shootForTime(5),
             stopShooting(),
             cycle2,
             startShooting()
@@ -90,7 +90,7 @@ public class Autos {
         Command autoRoutine = new SequentialCommandGroup(
             deployAndIntake(),
             path,
-            new ParallelDeadlineGroup(new WaitCommand(3), startShooting()),
+            shootForTime(3),
             stopShooting(),
             retractAndStopIntake()
         );
