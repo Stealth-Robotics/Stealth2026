@@ -162,7 +162,8 @@ public class IntakeSubsystem extends SubsystemBase {
             new WaitUntilCommand(() -> isAtPosition(tossPercentage)).withTimeout(0.5),
             new InstantCommand(() -> setRollerSpeed(0))
         )
-        .andThen(new RunCommand(() -> moveFastTo(deployController.getPositionMeasure().magnitude() + 0.008)));
+        .andThen(new RunCommand(() -> moveFastTo(deployController.getPositionMeasure().magnitude() + 0.008)))
+        .finallyDo(() -> deploy());
 
         command.addRequirements(this);
         return command;

@@ -269,11 +269,9 @@ public class RobotSystem extends SubsystemBase {
            (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE)
         ) return false;
 
-        if (poseEstimate.tagCount <= 1) {
-            for (RawFiducial tag : poseEstimate.rawFiducials) {
-                if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) {
-                    return false;
-                }
+        for (RawFiducial tag : poseEstimate.rawFiducials) {
+            if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) {
+                return false;
             }
         }
 

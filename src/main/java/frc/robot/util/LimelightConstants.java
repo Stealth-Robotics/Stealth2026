@@ -20,7 +20,7 @@ public class LimelightConstants {
 
     public static final double MAX_TAG_AMBIGUITY = 0.35; //Safer value = 0.35
 
-    public static final double MAX_SINGLE_TAG_DISTANCE = 4;
+    public static final double MAX_SINGLE_TAG_DISTANCE = 3;
     public static final double MAX_MULTI_TAG_DISTANCE = 5;
 
     public static final int MIN_TAG_COUNT = 0;
