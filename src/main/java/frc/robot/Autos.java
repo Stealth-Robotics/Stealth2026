@@ -112,15 +112,21 @@ public class Autos {
         return shooter.spinUp(SHOOTER_SPINUP_RPMS);
     }
 
+    private Command shootForTime(double seconds) {
+        return new ParallelDeadlineGroup(
+            new WaitCommand(seconds), 
+            startShooting()
+        ).andThen(stopShooting());
+    }
+
     private Command startShooting() {
-        return shooter.shoot();
-        // .andThen(new ScheduleCommand(
-        //     new SequentialCommandGroup(
-        //         intake.partialAgitate(() -> 0.3),
-        //         new WaitCommand(1),
-        //         intake.partialAgitate(() -> 0.4).repeatedly()
-        //     )
-        // ));
+        return shooter.shoot().alongWith(
+            new SequentialCommandGroup(
+                intake.partialAgitate(() -> 0.5),
+                new WaitCommand(1),
+                intake.partialAgitate(() -> 0.4).repeatedly()
+            )
+        );
     }
 
     private Command stopShooting() {
