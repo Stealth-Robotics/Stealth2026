@@ -60,7 +60,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double SAFE_ROTATIONS = 0.1;
     private final double RETRACTED_ROTATIONS = 0.305;
 
-    private final double DEPLOY_kP = 35;
+    private final double DEPLOY_kP = 30;
     private final double RETRACT_kP = 30;
     private final double FAST_kP = 40;
 
