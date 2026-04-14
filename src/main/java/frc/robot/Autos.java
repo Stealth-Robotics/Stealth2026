@@ -1,25 +1,27 @@
 package frc.robot;
 
+import java.util.HashMap;
+
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
-import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.lib.BLine.FollowPath;
+import frc.robot.lib.BLine.FollowPath.Builder;
 import frc.robot.lib.BLine.Path;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
+import frc.robot.util.AutoSide;
 
 public class Autos {
-    private FollowPath.Builder pathBuilder;
+    private Builder pathBuilder;
+    private final HashMap<String, Command> autoCache = new HashMap<>();
 
     private final IntakeSubsystem intake;
     private final ShootingSuperstructure shooter;
-
-    private final Command nothingAuto = new InstantCommand();
 
     private final double SHOOTER_SPINUP_RPMS = 2900;
 
@@ -42,28 +44,58 @@ public class Autos {
         //Register event triggers
         FollowPath.registerEventTrigger("Intake", deployAndIntake());
         FollowPath.registerEventTrigger("Spinup", spinupShooter());
+
+        //Cache paths
+        buildDebugAuto();
+
+        buildDoubleBump(AutoSide.LEFT);
+        buildDoubleBump(AutoSide.RIGHT);
     }
 
-    /**
-     * Schedules the call to preload trajectory for the selected auto routine to prevent lag
-     **/
-    public void preloadAuto(String autoName) {
+    public Command getAuto(String name) {
+        return autoCache.get(name);
     }
 
-    public Command debugAuto() {
-        String pathName = "Debug";
+    public void buildDoubleBump(AutoSide side) {
+        String autoName = (side.equals(AutoSide.LEFT)) ? "LeftDoubleBump" : "RightDoubleBump";
 
-        FollowPath path = pathBuilder.build(new Path(pathName));
+        Path path = new Path("DoubleBump_1");
+        Path path2 = new Path("DoubleBump_2");
+
+        if (side.equals(AutoSide.LEFT)) {
+            path.mirror();
+            path2.mirror();
+        }
+
+        FollowPath cycle1 = pathBuilder.build(path);
+        FollowPath cycle2 = pathBuilder.build(path2);
 
         Command autoRoutine = new SequentialCommandGroup(
             deployAndIntake(),
-            // path,
+            cycle1,
+            new ParallelDeadlineGroup(new WaitCommand(5), startShooting()),
+            stopShooting(),
+            cycle2,
+            startShooting()
+        );
+
+        autoCache.put(autoName, autoRoutine);
+    }
+
+    public void buildDebugAuto() {
+        String autoName = "Debug";
+
+        FollowPath path = pathBuilder.build(new Path("Debug"));
+
+        Command autoRoutine = new SequentialCommandGroup(
+            deployAndIntake(),
+            path,
             new ParallelDeadlineGroup(new WaitCommand(3), startShooting()),
             stopShooting(),
             retractAndStopIntake()
         );
 
-        return (pathName.isBlank()) ? nothingAuto : autoRoutine;
+        autoCache.put(autoName, autoRoutine);
     }
 
     // AUTO COMMAND HELPERS

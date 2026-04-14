@@ -25,8 +25,6 @@ public class RobotContainer {
     private final Autos autos;
     private final SendableChooser<Command> autoChooser = new SendableChooser<>();
 
-    // private String lastAutoName = "";
-
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
             .withNtPublish(true)
@@ -42,8 +40,6 @@ public class RobotContainer {
 
         //Add the auto chooser to our dashboard
         autos = robot.getAutos();
-
-        autoChooser.setDefaultOption("Nothing", new InstantCommand());
         SmartDashboard.putData("Auto Chooser", autoChooser);
 
         //Hood encoder resetting
@@ -93,19 +89,9 @@ public class RobotContainer {
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
     private void addAutosToChooser() {
-        autoChooser.addOption("Debug", autos.debugAuto());
-    } 
-
-    /*
-     * Called repeatedly while the robot is disabled. 
-     * Used to preload the selected auto routine's trajectory file to prevent lag at the start of the match.
-     */
-    public void disabledPeriodic() {
-        // String selectedName = autoChooser.getSelected().getName();
-        // if (selectedName != null && !selectedName.equals(lastAutoName)) {
-        //     lastAutoName = selectedName;
-        //     autos.preloadAuto(selectedName);
-        // }
+        autoChooser.addOption("Debug", autos.getAuto("Debug"));
+        autoChooser.addOption("LeftDoubleBump", autos.getAuto("LeftDoubleBump"));
+        autoChooser.addOption("RightDoubleBump", autos.getAuto("RightDoubleBump"));
     }
 
     //Used mostly for telemetry and logging general match info
