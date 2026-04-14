@@ -106,7 +106,7 @@ public class RobotSystem extends SubsystemBase {
             !fullAgitate.getAsBoolean() &&
             !intake.isRetracting()
         );
-        automaticAgitateTrigger.onTrue(intake.partialAgitate(() -> 0.4));
+        automaticAgitateTrigger.onTrue(intake.partialAgitate(() -> 0.25));
 
         Trigger fullAgitateTrigger = new Trigger(() -> fullAgitate.getAsBoolean() && !deploy.getAsBoolean());
         fullAgitateTrigger.whileTrue(intake.fullAgitate());
@@ -160,10 +160,9 @@ public class RobotSystem extends SubsystemBase {
                 double xInput = x.getAsDouble(), yInput = y.getAsDouble(), thetaInput = theta.getAsDouble();
                 
                 //Change inputs for finer control around zero
-                //TODO: Change for liking
                 xInput = Math.copySign(Math.pow(xInput, 2), xInput);
                 yInput = Math.copySign(Math.pow(yInput, 2), yInput);
-                //thetaInput = Math.copySign(thetaInput * thetaInput, thetaInput);
+                thetaInput = Math.copySign(Math.pow(thetaInput, 2), thetaInput);
 
                 if (currentDrivingMode != lastDrivingMode) {
                     precisionXLimiter.reset(lastFilteredX);

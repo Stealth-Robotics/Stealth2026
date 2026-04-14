@@ -159,9 +159,7 @@ public class IntakeSubsystem extends SubsystemBase {
         var command = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
             new InstantCommand(() -> moveFastTo(tossPercentage)),
-            new WaitUntilCommand(() -> isAtPosition(tossPercentage)).withTimeout(0.2),
-            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
-            new InstantCommand(() -> deploy()),
+            new WaitUntilCommand(() -> isAtPosition(tossPercentage)).withTimeout(0.5),
             new InstantCommand(() -> setRollerSpeed(0))
         )
         .andThen(new RunCommand(() -> moveFastTo(deployController.getPositionMeasure().magnitude() + 0.008)));
@@ -175,7 +173,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     private void moveFastTo(double rotations) {
-        deployMotor.setControl(deployController.withPosition(rotations).withSlot(2));
+        deployMotor.setControl(deployController.withPosition(MathUtil.clamp(rotations, DEPLOYED_ROTATIONS, RETRACTED_ROTATIONS)).withSlot(2));
     }
 
     public boolean isAtPosition(double rotations) {

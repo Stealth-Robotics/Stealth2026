@@ -61,7 +61,8 @@ public class TunerConstants {
                 .withSupplyCurrentLimit(45)
                 .withSupplyCurrentLimitEnable(true)
 
-                .withStatorCurrentLimit(80)
+                // .withStatorCurrentLimit(80)
+                .withStatorCurrentLimit(Amps.of(120))
                 .withStatorCurrentLimitEnable(true)
         );
 
@@ -71,7 +72,8 @@ public class TunerConstants {
                 .withSupplyCurrentLimit(30)
                 .withSupplyCurrentLimitEnable(true)
 
-                .withStatorCurrentLimit(Amps.of(30))
+                // .withStatorCurrentLimit(Amps.of(30))
+                .withStatorCurrentLimit(Amps.of(60))
                 .withStatorCurrentLimitEnable(true)
         );
 

@@ -16,9 +16,9 @@ public class LimelightConstants {
 
     public static final int LIMELIGHT_DISABLED_THROTTLE = 200;
 
-    public static final Vector<N3> STDDEVS = VecBuilder.fill(0.1, 0.1, 0.1);
+    public static final Vector<N3> STDDEVS = VecBuilder.fill(0.7, 0.7, Math.toRadians(8));
 
-    public static final double MAX_TAG_AMBIGUITY = 0.5; //Safer value = 0.35
+    public static final double MAX_TAG_AMBIGUITY = 0.35; //Safer value = 0.35
 
     public static final double MAX_SINGLE_TAG_DISTANCE = 4;
     public static final double MAX_MULTI_TAG_DISTANCE = 5;
@@ -47,6 +47,11 @@ public class LimelightConstants {
         HUB_ONLY(
             new int[] {
                 2, 3, 4, 5, 8, 9, 10, 11, 18, 19, 20, 21, 24, 25, 26, 27
+            }
+        ),
+        NONE(
+            new int[] {
+                0
             }
         );
 
