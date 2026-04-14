@@ -215,7 +215,7 @@ public class IntakeSubsystem extends SubsystemBase {
     // AUTO COMMANDS
 
     public Command startRollers() {
-        return startEnd(() -> setRollerSpeed(MAX_ROLLER_SPEED), () -> setRollerSpeed(0));
+        return runOnce(() -> setRollerSpeed(MAX_ROLLER_SPEED));
     }
 
     public Command stopRollers() {

@@ -4,6 +4,7 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
+import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.lib.BLine.FollowPath;
@@ -55,12 +56,11 @@ public class Autos {
         FollowPath path = pathBuilder.build(new Path(pathName));
 
         Command autoRoutine = new SequentialCommandGroup(
-            path,
-            new ParallelDeadlineGroup(
-                new WaitCommand(4),
-                startShooting()
-            ),
-            stopShooting()
+            deployAndIntake(),
+            // path,
+            new ParallelDeadlineGroup(new WaitCommand(3), startShooting()),
+            stopShooting(),
+            retractAndStopIntake()
         );
 
         return (pathName.isBlank()) ? nothingAuto : autoRoutine;
@@ -81,13 +81,14 @@ public class Autos {
     }
 
     private Command startShooting() {
-        return shooter.shoot().alongWith(
-            new SequentialCommandGroup(
-                intake.partialAgitate(() -> 0.5), //One quick agitate to start the ball rolling
-                new WaitCommand(1.5),
-                intake.partialAgitate(() -> 0.5).andThen(new WaitCommand(0.2)).repeatedly()
-            )
-        );
+        return shooter.shoot();
+        // .andThen(new ScheduleCommand(
+        //     new SequentialCommandGroup(
+        //         intake.partialAgitate(() -> 0.3),
+        //         new WaitCommand(1),
+        //         intake.partialAgitate(() -> 0.4).repeatedly()
+        //     )
+        // ));
     }
 
     private Command stopShooting() {

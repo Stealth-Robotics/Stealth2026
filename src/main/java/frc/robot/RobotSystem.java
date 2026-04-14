@@ -11,6 +11,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
@@ -100,6 +101,7 @@ public class RobotSystem extends SubsystemBase {
         retractTrigger.onTrue(intake.retractCommand());
 
         Trigger automaticAgitateTrigger = new Trigger(() ->
+            DriverStation.isTeleop() &&
             shooter.isShooting() &&
             intake.isDeployed() &&
             !deploy.getAsBoolean() &&
@@ -113,8 +115,10 @@ public class RobotSystem extends SubsystemBase {
 
         Command intakeDefaultCommand = new RunCommand(
             () -> {
-                double targetRollerSpeed = rollerSpeed.getAsDouble();
-                intake.setRollerSpeed(targetRollerSpeed);
+                if (!DriverStation.isAutonomous()) {
+                    double targetRollerSpeed = rollerSpeed.getAsDouble();
+                    intake.setRollerSpeed(targetRollerSpeed);
+                }
             }, 
             intake
         );
@@ -160,10 +164,9 @@ public class RobotSystem extends SubsystemBase {
                 double xInput = x.getAsDouble(), yInput = y.getAsDouble(), thetaInput = theta.getAsDouble();
                 
                 //Change inputs for finer control around zero
-                //TODO: Change for liking
                 xInput = Math.copySign(Math.pow(xInput, 2), xInput);
                 yInput = Math.copySign(Math.pow(yInput, 2), yInput);
-                thetaInput = Math.copySign(Math.pow(thetaInput, 1.5), thetaInput);
+                thetaInput = Math.copySign(Math.pow(thetaInput, 2), thetaInput);
 
                 if (currentDrivingMode != lastDrivingMode) {
                     precisionXLimiter.reset(lastFilteredX);
