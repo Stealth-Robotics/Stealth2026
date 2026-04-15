@@ -60,7 +60,9 @@ public class RobotContainer {
         robot.setDriveDefaultCommand(
             () -> driverController.getLeftX(),
             () -> driverController.getLeftY(),
-            () -> driverController.getRightX()
+            () -> driverController.getRightX(),
+            () -> driverController.getRightY(),
+            () -> driverController.leftStick().getAsBoolean()
         );
 
         robot.configureIntake(

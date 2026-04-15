@@ -7,6 +7,8 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -71,8 +73,11 @@ public class RobotSystem extends SubsystemBase {
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
 
     private long lastMs = 0;
+    private final PIDController headingPID = new PIDController(5.0, 0.0, 0.2);
+    private double lastDesiredHeading = 0.0;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
+        headingPID.enableContinuousInput(-Math.PI, Math.PI);
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
         shooter = new ShootingSuperstructure(
@@ -161,49 +166,96 @@ public class RobotSystem extends SubsystemBase {
      * @param y The supplier for driving the robot sideways (field centric)
      * @param theta The supplier for rotating the robot
      */
-    public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta) {
-        drive.setDefaultCommand(
-            drive.applyRequest(() -> {
-                double xInput = x.getAsDouble(), yInput = y.getAsDouble(), thetaInput = theta.getAsDouble();
-                
-                //Change inputs for finer control around zero
-                xInput = Math.copySign(Math.pow(xInput, 2), xInput);
-                yInput = Math.copySign(Math.pow(yInput, 2), yInput);
-                thetaInput = Math.copySign(Math.pow(thetaInput, 2), thetaInput);
+public void setDriveDefaultCommand(
+    DoubleSupplier x,
+    DoubleSupplier y,
+    DoubleSupplier rotX,
+    DoubleSupplier rotY,
+    BooleanSupplier useFieldCentricRotation
+) {
+    drive.setDefaultCommand(
+        drive.applyRequest(() -> {
 
-                if (currentDrivingMode != lastDrivingMode) {
-                    precisionXLimiter.reset(lastFilteredX);
-                    precisionYLimiter.reset(lastFilteredY);
-                    precisionThetaLimiter.reset(lastFilteredTheta);
+            double xInput = x.getAsDouble();
+            double yInput = y.getAsDouble();
 
-                    lastDrivingMode = currentDrivingMode;
+            double rx = rotX.getAsDouble(); // right stick X
+            double ry = rotY.getAsDouble(); // right stick Y
+
+            // Square inputs for finer control
+            xInput = Math.copySign(xInput * xInput, xInput);
+            yInput = Math.copySign(yInput * yInput, yInput);
+            rx = Math.copySign(rx * rx, rx);
+            ry = Math.copySign(ry * ry, ry);
+
+            if (currentDrivingMode != lastDrivingMode) {
+                precisionXLimiter.reset(lastFilteredX);
+                precisionYLimiter.reset(lastFilteredY);
+                precisionThetaLimiter.reset(lastFilteredTheta);
+                lastDrivingMode = currentDrivingMode;
+            }
+
+            if (currentDrivingMode.equals(DrivingMode.PRECISION)) {
+                filteredX = precisionXLimiter.calculate(xInput);
+                filteredY = precisionYLimiter.calculate(yInput);
+            } else {
+                filteredX = xInput;
+                filteredY = yInput;
+            }
+
+            lastFilteredX = filteredX;
+            lastFilteredY = filteredY;
+
+            double speed = currentDrivingMode.getSlowingFactor();
+
+            double omega;
+
+            if (useFieldCentricRotation.getAsBoolean()) {
+                // --- FIELD-CENTRIC HEADING CONTROL ---
+
+                double magnitude = Math.hypot(rx, ry);
+                double currentHeading = drive.getPose().getRotation().getRadians();
+
+                if (magnitude > 0.1) {
+                    double desiredHeading = Math.atan2(rx, -ry);
+                    lastDesiredHeading = desiredHeading;
                 }
+
+                omega = headingPID.calculate(currentHeading, lastDesiredHeading);
+
+                // Scale rotation speed by stick magnitude
+                omega *= Math.min(1.0, Math.hypot(rx, ry));
+
+                // Clamp to max angular rate
+                omega = MathUtil.clamp(
+                    omega,
+                    -drive.MAX_ANGULAR_RATE,
+                    drive.MAX_ANGULAR_RATE
+                );
+
+            } else {
+                // --- NORMAL ROTATION (EXISTING BEHAVIOR) ---
+
+                double thetaInput = Math.copySign(rx * rx, rx);
 
                 if (currentDrivingMode.equals(DrivingMode.PRECISION)) {
-                    filteredX = precisionXLimiter.calculate(xInput);
-                    filteredY = precisionYLimiter.calculate(yInput);
                     filteredTheta = precisionThetaLimiter.calculate(thetaInput);
-                }
-                else {
-                    filteredX = xInput;
-                    filteredY = yInput;
+                } else {
                     filteredTheta = thetaInput;
                 }
 
-                lastFilteredX = filteredX;
-                lastFilteredY = filteredY;
                 lastFilteredTheta = filteredTheta;
 
-                double speed = currentDrivingMode.getSlowingFactor();
+                omega = -filteredTheta * drive.MAX_ANGULAR_RATE * speed;
+            }
 
-                return drive.fieldCentric
-                    .withVelocityX(-filteredY * drive.MAX_SPEED * speed)
-                    .withVelocityY(-filteredX * drive.MAX_SPEED * speed)
-                    .withRotationalRate(-filteredTheta * drive.MAX_ANGULAR_RATE * speed);
-            })
-        );
-    }
-
+            return drive.fieldCentric
+                .withVelocityX(-filteredY * drive.MAX_SPEED * speed)
+                .withVelocityY(-filteredX * drive.MAX_SPEED * speed)
+                .withRotationalRate(omega);
+        })
+    );
+}
     public Command driveToPose(FieldPose targetPose) {
         return drive.goToPose(() -> targetPose);
     }
