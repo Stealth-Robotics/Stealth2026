@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import frc.robot.lib.BLine.FollowPath;
 import frc.robot.lib.BLine.FollowPath.Builder;
 import frc.robot.lib.BLine.Path;
@@ -42,18 +43,47 @@ public class Autos {
         .withPoseReset(drive::resetPose);
 
         //Register event triggers
-        FollowPath.registerEventTrigger("Intake", deployAndIntake());
-        FollowPath.registerEventTrigger("Spinup", spinupShooter());
+        FollowPath.registerEventTrigger("Intake", new ScheduleCommand(deployAndIntake()));
+        FollowPath.registerEventTrigger("Spinup", new ScheduleCommand(spinupShooter()));
 
         //Cache paths
         buildDebugAuto();
 
         buildDoubleBump(AutoSide.LEFT);
         buildDoubleBump(AutoSide.RIGHT);
+        
+        buildDoubleTrench(AutoSide.LEFT);
+        buildDoubleTrench(AutoSide.RIGHT);
     }
 
     public Command getAuto(String name) {
         return autoCache.get(name);
+    }
+
+    public void buildDoubleTrench(AutoSide side) {
+        String autoName = (side.equals(AutoSide.LEFT)) ? "LeftDoubleTrench" : "RightDoubleTrench";
+
+        Path path = new Path("DoubleTrench_1");
+        Path path2 = new Path("DoubleTrench_2");
+
+        if (side.equals(AutoSide.LEFT)) {
+            path.mirror();
+            path2.mirror();
+        }
+
+        FollowPath cycle1 = pathBuilder.build(path);
+        FollowPath cycle2 = pathBuilder.build(path2);
+
+        Command autoRoutine = new SequentialCommandGroup(
+            cycle1.alongWith(new WaitCommand(0.5).andThen(deployAndIntake())),
+            shootForTime(5),
+            stopShooting(),
+            deployAndIntake(),
+            cycle2,
+            startShooting()
+        );
+
+        autoCache.put(autoName, autoRoutine);
     }
 
     public void buildDoubleBump(AutoSide side) {
@@ -71,10 +101,11 @@ public class Autos {
         FollowPath cycle2 = pathBuilder.build(path2);
 
         Command autoRoutine = new SequentialCommandGroup(
-            deployAndIntake(),
-            cycle1,
+            cycle1.alongWith(new WaitCommand(0.5).andThen(deployAndIntake())),
+            // cycle1,
             shootForTime(5),
             stopShooting(),
+            deployAndIntake(),
             cycle2,
             startShooting()
         );

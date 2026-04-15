@@ -92,6 +92,9 @@ public class RobotContainer {
         autoChooser.addOption("Debug", autos.getAuto("Debug"));
         autoChooser.addOption("LeftDoubleBump", autos.getAuto("LeftDoubleBump"));
         autoChooser.addOption("RightDoubleBump", autos.getAuto("RightDoubleBump"));
+
+        autoChooser.addOption("LeftDoubleTrench", autos.getAuto("LeftDoubleTrench"));
+        autoChooser.addOption("RightDoubleTrench", autos.getAuto("RightDoubleTrench"));
     }
 
     //Used mostly for telemetry and logging general match info

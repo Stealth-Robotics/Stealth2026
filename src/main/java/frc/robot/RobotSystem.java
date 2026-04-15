@@ -113,6 +113,9 @@ public class RobotSystem extends SubsystemBase {
         Trigger fullAgitateTrigger = new Trigger(() -> fullAgitate.getAsBoolean() && !deploy.getAsBoolean());
         fullAgitateTrigger.whileTrue(intake.fullAgitate());
 
+        Trigger safeTrigger = new Trigger(() -> intake.isDeployed() && ZoneManager.inBumpZone());
+        safeTrigger.onTrue(intake.safeCommand());
+
         Command intakeDefaultCommand = new RunCommand(
             () -> {
                 if (!DriverStation.isAutonomous()) {

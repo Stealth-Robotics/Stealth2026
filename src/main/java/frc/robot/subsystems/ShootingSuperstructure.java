@@ -173,8 +173,9 @@ public class ShootingSuperstructure extends SubsystemBase {
                 if (safeToShoot()) {
                     isShooterActive = true;
 
-                    transfer.spin(calculateDistanceToTarget());
-                    transfer.feed();
+                    double metersToGoal = calculateDistanceToTarget();
+                    transfer.spin(metersToGoal);
+                    transfer.feed(metersToGoal);
                 }
                 else {
                     isShooterActive = false;

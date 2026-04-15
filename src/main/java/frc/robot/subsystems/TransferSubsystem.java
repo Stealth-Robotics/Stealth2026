@@ -33,7 +33,8 @@ public class TransferSubsystem extends SubsystemBase {
     private final int FEEDER_STATOR_LIMIT = 60;
 
     private static final InterpolatingDoubleTreeMap distanceToVoltageMap = new InterpolatingDoubleTreeMap() {{
-        put(2.0, 7.0);
+        put(2.0, 3.0);
+        put(3.0, 6.0);
         put(3.5, 12.0);
     }};
     
@@ -87,9 +88,9 @@ public class TransferSubsystem extends SubsystemBase {
         feederMotor.setControl(feederController.withOutput(-FEEDING_VOLTAGE));
     }
 
-    public void feed() {
+    public void feed(double metersToGoal) {
         feederMotor.setControl(
-            feederController.withOutput(FEEDING_VOLTAGE)
+            feederController.withOutput(distanceToVoltageMap.get(metersToGoal))
         );
     }
 
