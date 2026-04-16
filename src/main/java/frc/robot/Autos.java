@@ -35,8 +35,8 @@ public class Autos {
             drive::getPose,
             drive::getRobotRelativeVelocity,
             drive::applyRobotRelativeSpeeds,
-            new PIDController(5.0, 0.0, 0.0), // Translation PID
-            new PIDController(3.0, 0.0, 0.0), // Rotation PID
+            new PIDController(10.0, 0.0, 0.0), // Translation PID
+            new PIDController(5.0, 0.0, 0.0), // Rotation PID
             new PIDController(2.0, 0.0, 0.0)  // Cross-track PID
         )
         .withDefaultShouldFlip()
@@ -44,6 +44,8 @@ public class Autos {
 
         //Cache paths
         buildDebugAuto();
+
+        buildBumpTest();
 
         buildDoubleBump(AutoSide.LEFT);
         buildDoubleBump(AutoSide.RIGHT);
@@ -54,6 +56,20 @@ public class Autos {
 
     public Command getAuto(String name) {
         return autoCache.get(name);
+    }
+
+    public void buildBumpTest() {
+        String autoName = "BumpTest";
+
+        Path path = new Path("BumpTest");
+
+        FollowPath cycle1 = pathBuilder.build(path);
+
+        Command autoRoutine = new SequentialCommandGroup(
+            cycle1
+        );
+
+        autoCache.put(autoName, autoRoutine);
     }
 
     public void buildDoubleTrench(AutoSide side) {

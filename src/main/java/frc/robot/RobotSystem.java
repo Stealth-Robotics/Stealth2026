@@ -100,21 +100,18 @@ public class RobotSystem extends SubsystemBase {
         Trigger retractTrigger = new Trigger(retract);
         retractTrigger.onTrue(intake.retractCommand());
 
-        Trigger automaticAgitateTrigger = new Trigger(() ->
-            DriverStation.isTeleop() &&
-            shooter.isShooting() &&
-            intake.isDeployed() &&
-            !deploy.getAsBoolean() &&
-            !fullAgitate.getAsBoolean() &&
-            !intake.isRetracting()
-        );
-        automaticAgitateTrigger.onTrue(intake.partialAgitate(() -> 0.25));
+        // Trigger automaticAgitateTrigger = new Trigger(() ->
+        //     DriverStation.isTeleop() &&
+        //     shooter.isShooting() &&
+        //     intake.isDeployed() &&
+        //     !deploy.getAsBoolean() &&
+        //     !fullAgitate.getAsBoolean() &&
+        //     !intake.isRetracting()
+        // );
+        // automaticAgitateTrigger.onTrue(intake.partialAgitate(() -> 0.25));
 
         Trigger fullAgitateTrigger = new Trigger(() -> fullAgitate.getAsBoolean() && !deploy.getAsBoolean());
         fullAgitateTrigger.whileTrue(intake.fullAgitate());
-
-        Trigger safeTrigger = new Trigger(() -> intake.isDeployed() && ZoneManager.inBumpZone());
-        safeTrigger.onTrue(intake.safeCommand());
 
         Command intakeDefaultCommand = new RunCommand(
             () -> {
@@ -275,7 +272,7 @@ public class RobotSystem extends SubsystemBase {
            (poseEstimate.tagCount == 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_SINGLE_TAG_DISTANCE) ||
            (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE)
         ) return false;
-
+        
         for (RawFiducial tag : poseEstimate.rawFiducials) {
             if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) {
                 return false;

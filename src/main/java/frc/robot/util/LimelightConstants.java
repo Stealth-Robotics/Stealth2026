@@ -18,7 +18,7 @@ public class LimelightConstants {
 
     public static final Vector<N3> STDDEVS = VecBuilder.fill(0.1, 0.1, Math.toRadians(5));
 
-    public static final double MAX_TAG_AMBIGUITY = 0.35; //Safer value = 0.35
+    public static final double MAX_TAG_AMBIGUITY = 0.5; //Safer value = 0.35
 
     public static final double MAX_SINGLE_TAG_DISTANCE = 4;
     public static final double MAX_MULTI_TAG_DISTANCE = 5;

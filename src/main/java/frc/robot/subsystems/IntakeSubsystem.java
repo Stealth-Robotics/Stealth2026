@@ -57,8 +57,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_POSITION_TOLERANCE = 0.05;
 
     private final double DEPLOYED_ROTATIONS = 0.0;
-    private final double SAFE_ROTATIONS = 0.08;
-    private final double RETRACTED_ROTATIONS = 0.305;
+    private final double RETRACTED_ROTATIONS = 0.3;
 
     private final double DEPLOY_kP = 35;
     private final double RETRACT_kP = 30;
@@ -192,15 +191,6 @@ public class IntakeSubsystem extends SubsystemBase {
         return isAtPosition(DEPLOYED_ROTATIONS);
     }
 
-    public boolean isSafe() {
-        return isAtPosition(SAFE_ROTATIONS);
-    }
-
-    public void safe() {
-        isRetracting = false;
-        deployMotor.setControl(deployController.withSlot(1).withPosition(SAFE_ROTATIONS));
-    }
-
     public void deploy() {
         isRetracting = false;
         deployMotor.setControl(deployController.withSlot(0).withPosition(DEPLOYED_ROTATIONS));
@@ -227,10 +217,6 @@ public class IntakeSubsystem extends SubsystemBase {
 
     public Command retractCommand() {
         return runOnce(() -> retract());
-    }
-
-    public Command safeCommand() {
-        return runOnce(() -> safe());
     }
 
     @Override
