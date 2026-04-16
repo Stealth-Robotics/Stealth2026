@@ -42,10 +42,6 @@ public class Autos {
         .withDefaultShouldFlip()
         .withPoseReset(drive::resetPose);
 
-        //Register event triggers
-        FollowPath.registerEventTrigger("Intake", new ScheduleCommand(deployAndIntake()));
-        FollowPath.registerEventTrigger("Spinup", new ScheduleCommand(spinupShooter()));
-
         //Cache paths
         buildDebugAuto();
 
@@ -75,10 +71,11 @@ public class Autos {
         FollowPath cycle2 = pathBuilder.build(path2);
 
         Command autoRoutine = new SequentialCommandGroup(
-            cycle1.alongWith(new WaitCommand(0.5).andThen(deployAndIntake())),
+            cycle1,
             shootForTime(5),
             stopShooting(),
-            deployAndIntake(),
+            // deployAndIntake(),
+            retractAndStopIntake(),
             cycle2,
             startShooting()
         );
