@@ -78,7 +78,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int ROLLER_SUPPLY_LIMIT = 35;
     private final int DEPLOY_SUPPLY_LIMIT = 30;
 
-    private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.3;
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = .5;
     private boolean isRetracting = false;
 
     private long lastMs = 0;
@@ -143,7 +143,7 @@ public class IntakeSubsystem extends SubsystemBase {
         var command = new SequentialCommandGroup(
             new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
             new InstantCommand(() -> moveFastTo(magnitude.getAsDouble() * RETRACTED_ROTATIONS)),
-            new WaitUntilCommand(()-> isAtPosition(magnitude.getAsDouble() * RETRACTED_ROTATIONS)).withTimeout(0.2),
+            new WaitUntilCommand(()-> isAtPosition(magnitude.getAsDouble() * RETRACTED_ROTATIONS)).withTimeout(0.3),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> deploy()),
             new InstantCommand(() -> setRollerSpeed(0))
