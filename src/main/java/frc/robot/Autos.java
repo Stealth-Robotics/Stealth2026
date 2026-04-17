@@ -2,13 +2,11 @@ package frc.robot;
 
 import java.util.HashMap;
 
-import choreo.auto.AutoFactory;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import frc.robot.lib.BLine.FollowPath;
 import frc.robot.lib.BLine.FollowPath.Builder;
 import frc.robot.lib.BLine.Path;
@@ -43,33 +41,16 @@ public class Autos {
         .withPoseReset(drive::resetPose);
 
         //Cache paths
-        buildDebugAuto();
-
-        buildBumpTest();
-
         buildDoubleBump(AutoSide.LEFT);
         buildDoubleBump(AutoSide.RIGHT);
-        
         buildDoubleTrench(AutoSide.LEFT);
         buildDoubleTrench(AutoSide.RIGHT);
+
+        FollowPath.registerEventTrigger("", startShooting());
     }
 
     public Command getAuto(String name) {
         return autoCache.get(name);
-    }
-
-    public void buildBumpTest() {
-        String autoName = "BumpTest";
-
-        Path path = new Path("BumpTest");
-
-        FollowPath cycle1 = pathBuilder.build(path);
-
-        Command autoRoutine = new SequentialCommandGroup(
-            cycle1
-        );
-
-        autoCache.put(autoName, autoRoutine);
     }
 
     public void buildDoubleTrench(AutoSide side) {
@@ -89,9 +70,7 @@ public class Autos {
         Command autoRoutine = new SequentialCommandGroup(
             cycle1,
             shootForTime(5),
-            stopShooting(),
-            // deployAndIntake(),
-            retractAndStopIntake(),
+            deployAndIntake(),
             cycle2,
             startShooting()
         );
@@ -115,28 +94,10 @@ public class Autos {
 
         Command autoRoutine = new SequentialCommandGroup(
             cycle1.alongWith(new WaitCommand(0.5).andThen(deployAndIntake())),
-            // cycle1,
             shootForTime(5),
-            stopShooting(),
             deployAndIntake(),
             cycle2,
             startShooting()
-        );
-
-        autoCache.put(autoName, autoRoutine);
-    }
-
-    public void buildDebugAuto() {
-        String autoName = "Debug";
-
-        FollowPath path = pathBuilder.build(new Path("Debug"));
-
-        Command autoRoutine = new SequentialCommandGroup(
-            deployAndIntake(),
-            path,
-            shootForTime(3),
-            stopShooting(),
-            retractAndStopIntake()
         );
 
         autoCache.put(autoName, autoRoutine);
