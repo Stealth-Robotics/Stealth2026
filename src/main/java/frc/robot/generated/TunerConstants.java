@@ -85,7 +85,7 @@ public class TunerConstants {
             new GyroTrimConfigs()
                 .withGyroScalarX(0)
                 .withGyroScalarY(0)
-                .withGyroScalarZ(0)
+                .withGyroScalarZ(-5)
         )
         .withMountPose(
             new MountPoseConfigs()

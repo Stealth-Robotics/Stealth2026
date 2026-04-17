@@ -71,7 +71,7 @@ public class TransferSubsystem extends SubsystemBase {
     }
 
     public void spin(double metersToTarget) {
-        spinAtVoltage(12);
+        spinAtVoltage(distanceToVoltageMap.get(metersToTarget));
     }
 
     private void spinAtVoltage(double voltage) {
@@ -90,7 +90,7 @@ public class TransferSubsystem extends SubsystemBase {
 
     public void feed(double metersToGoal) {
         feederMotor.setControl(
-            feederController.withOutput(12)
+            feederController.withOutput(distanceToVoltageMap.get(metersToGoal))
         );
     }
 

@@ -99,6 +99,8 @@ public class RobotSystem extends SubsystemBase {
 
         Trigger retractTrigger = new Trigger(retract);
         retractTrigger.onTrue(intake.retractCommand());
+        
+        //Disabled automatic bumping for now
 
         // Trigger automaticAgitateTrigger = new Trigger(() ->
         //     DriverStation.isTeleop() &&
@@ -245,7 +247,7 @@ public class RobotSystem extends SubsystemBase {
             for (String limelight : LimelightConstants.LIMELIGHTS) {
                 LimelightHelpers.SetRobotOrientation(limelight, robotYaw, robotYawRate, 0, 0, 0, 0);
 
-                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
                 if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
                     bestEstimate = estimate;
             }
@@ -273,12 +275,14 @@ public class RobotSystem extends SubsystemBase {
            (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE)
         ) return false;
         
-        for (RawFiducial tag : poseEstimate.rawFiducials) {
-            if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) {
-                return false;
+        if (poseEstimate.tagCount <= 1) {
+            for (RawFiducial tag : poseEstimate.rawFiducials) {
+                if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) {
+                    return false;
+                }
             }
         }
-
+        
         return true;
     }
 
