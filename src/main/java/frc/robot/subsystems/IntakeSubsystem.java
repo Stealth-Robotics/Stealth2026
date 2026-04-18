@@ -46,7 +46,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private double targetRollerSpeed = 0;
 
     private final double INTAKE_ROLLER_VOLTAGE = 12;
-    private final double MAX_ROLLER_SPEED = 0.8;
+    private final double MAX_ROLLER_SPEED = 1.0;
 
     private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.401123046875;
 

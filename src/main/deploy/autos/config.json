@@ -8,7 +8,7 @@
       "enabled": true,
       "distance_meters": 0.35,
       "side": "back",
-      "default_state": "hidden",
+      "default_state": "shown",
       "show_on_event_keys": [
         "Intake"
       ],
@@ -21,7 +21,7 @@
     "default_intermediate_handoff_radius_meters": 0.2,
     "default_max_velocity_deg_per_sec": 641.0,
     "default_max_acceleration_deg_per_sec2": 5987.0,
-    "default_end_translation_tolerance_meters": 0.08,
+    "default_end_translation_tolerance_meters": 0.1,
     "default_end_rotation_tolerance_deg": 2.0
   }
 }

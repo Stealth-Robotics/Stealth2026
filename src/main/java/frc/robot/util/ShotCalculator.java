@@ -1,6 +1,5 @@
 package frc.robot.util;
 
-import dev.doglog.DogLog;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -16,17 +15,17 @@ public class ShotCalculator {
     private static final double systemPeriod = Units.millisecondsToSeconds(20);
 
     //Time needed for ball to travel through feeder towards the flywheel
-    private static final double mechanismLatency = Units.millisecondsToSeconds(30);
+    private static final double mechanismLatency = Units.millisecondsToSeconds(45);
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(2.0, 2700.0);
-        put(2.54, 2800.0);
-        put(2.85, 2800.0);
-        put(3.0, 2900.0);
-        put(3.25, 3000.0);
-        put(4.0, 3000.0);
-        put(4.6, 3200.0);
-        put(5.28, 3250.0);
+        put(5.14, 3315.0);
+        put(4.2, 3239.0);
+        put(4.0, 3090.0);
+        put(3.64, 3114.0);
+        put(3.36, 3082.0);
+        put(3.22, 2980.0);
+        put(2.18, 2750.0);
+        put(2.0, 2664.0);
     }};
 
     private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
@@ -42,7 +41,7 @@ public class ShotCalculator {
     private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
     private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
 
-    public record SOTMResult(double rpm, double turretAngle, double hoodAngle) {}
+    public record SOTMResult(double rpm, double turretAngle, double hoodAngle, double distance) {}
 
     public static void resetFilters() {
         vxFilter.reset();
@@ -99,7 +98,7 @@ public class ShotCalculator {
         );
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
-        DogLog.log("MetersToTarget", metersToGoal);
+        DogLogUtil.logDouble("MetersToTarget", metersToGoal);
 
         double baseRPM = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToRPM.get(metersToGoal);
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();
@@ -114,6 +113,6 @@ public class ShotCalculator {
         double horizontalSpeed = Math.hypot(movingShotVelocity.getX(), movingShotVelocity.getY());
         double targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
 
-        return new SOTMResult(targetFlywheelRPM, targetTurretAngle, targetHoodAngle);
+        return new SOTMResult(targetFlywheelRPM, targetTurretAngle, targetHoodAngle, metersToGoal);
     }
 }

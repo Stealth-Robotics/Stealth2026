@@ -8,22 +8,22 @@ import edu.wpi.first.math.util.Units;
 public class LimelightConstants {
     public static final TagFilterMode TAG_FILTER_MODE = TagFilterMode.ALL;
 
-    //0 = external, 1 = seed internal, 2 = external, 3 = mt1 + internal, 4 = internal + external
-    public static final int DISABLED_IMU_MODE = 0;
+    //0 = external, 1 = seed internal, 2 = internal, 3 = mt1 + internal, 4 = internal + external
+    public static final int DISABLED_IMU_MODE = 1;
     public static final int ENABLED_IMU_MODE = 0;
 
     public static final double IMU_ALPHA = 0.05;
 
-    public static final int LIMELIGHT_DISABLED_THROTTLE = 200;
+    public static final int LIMELIGHT_DISABLED_THROTTLE = 0;
 
-    public static final Vector<N3> STDDEVS = VecBuilder.fill(0.7, 0.7, 99999.0);
+    public static final Vector<N3> STDDEVS = VecBuilder.fill(0.1, 0.1, 0.5);
 
-    public static final double MAX_TAG_AMBIGUITY = 0.5; //Safer value = 0.35
+    public static final double MAX_TAG_AMBIGUITY = 0.2; //Safer value = 0.35
 
-    public static final double MAX_SINGLE_TAG_DISTANCE = 4;
-    public static final double MAX_MULTI_TAG_DISTANCE = 5;
+    public static final double MAX_SINGLE_TAG_DISTANCE = 3;
+    public static final double MAX_MULTI_TAG_DISTANCE = 4;
 
-    public static final int MIN_TAG_COUNT = 0;
+    public static final int MIN_TAG_COUNT = 1;
 
     public static final String[] LIMELIGHTS = {
         "limelight-front",

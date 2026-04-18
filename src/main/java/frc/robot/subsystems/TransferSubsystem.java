@@ -7,6 +7,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.DogLogUtil;
@@ -31,11 +32,12 @@ public class TransferSubsystem extends SubsystemBase {
 
     private final int SPINDEXER_STATOR_LIMIT = 45;
     private final int FEEDER_STATOR_LIMIT = 50;
-
-    private static final InterpolatingDoubleTreeMap distanceToVoltageMap = new InterpolatingDoubleTreeMap() {{
-        put(2.0, 3.0);
-        put(3.0, 6.0);
-        put(3.5, 12.0);
+    
+    private final InterpolatingDoubleTreeMap distanceToVoltageMap = new InterpolatingDoubleTreeMap() {{
+        put(2.0, 5.0);
+        put(3.5, 5.0);
+        put(4.0, 12.0);
+        put(6.0, 12.0);
     }};
     
     private long lastMs = 0;
@@ -88,9 +90,9 @@ public class TransferSubsystem extends SubsystemBase {
         feederMotor.setControl(feederController.withOutput(-FEEDING_VOLTAGE));
     }
 
-    public void feed(double metersToGoal) {
+    public void feed() {
         feederMotor.setControl(
-            feederController.withOutput(distanceToVoltageMap.get(metersToGoal))
+            feederController.withOutput(FEEDING_VOLTAGE)
         );
     }
 

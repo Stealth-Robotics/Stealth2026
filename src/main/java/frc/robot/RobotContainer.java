@@ -73,7 +73,7 @@ public class RobotContainer {
         Trigger shootTrigger = new Trigger(driverController.rightBumper().or(operatorController.rightBumper()));
         shootTrigger.whileTrue(robot.shoot());
 
-        driverController.rightStick().onTrue(robot.seedFieldCentric());
+        driverController.a().onTrue(robot.seedFieldCentric());
         driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
         driverController.start().onTrue(robot.forceResetOdometry());
 

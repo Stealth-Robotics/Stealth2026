@@ -4,7 +4,9 @@ import java.util.HashMap;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.lib.BLine.FollowPath;
@@ -14,6 +16,8 @@ import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.util.AutoSide;
+import frc.robot.util.Elastic;
+import frc.robot.util.Elastic.Notification;
 
 public class Autos {
     private Builder pathBuilder;
@@ -33,8 +37,8 @@ public class Autos {
             drive::getPose,
             drive::getRobotRelativeVelocity,
             drive::applyRobotRelativeSpeeds,
-            new PIDController(10.0, 0.0, 0.0), // Translation PID
-            new PIDController(5.0, 0.0, 0.0), // Rotation PID
+            new PIDController(4.0, 0.0, 0.0), // Translation PID
+            new PIDController(3.0, 0.0, 0.0), // Rotation PID
             new PIDController(2.0, 0.0, 0.0)  // Cross-track PID
         )
         .withDefaultShouldFlip()
@@ -45,8 +49,6 @@ public class Autos {
         buildDoubleBump(AutoSide.RIGHT);
         buildDoubleTrench(AutoSide.LEFT);
         buildDoubleTrench(AutoSide.RIGHT);
-
-        FollowPath.registerEventTrigger("", startShooting());
     }
 
     public Command getAuto(String name) {
@@ -93,8 +95,8 @@ public class Autos {
         FollowPath cycle2 = pathBuilder.build(path2);
 
         Command autoRoutine = new SequentialCommandGroup(
-            cycle1.alongWith(new WaitCommand(0.5).andThen(deployAndIntake())),
-            shootForTime(5),
+            cycle1.alongWith(new WaitCommand(0.55).andThen(deployAndIntake())),
+            shootForTime(4),
             deployAndIntake(),
             cycle2,
             startShooting()
@@ -127,9 +129,8 @@ public class Autos {
     private Command startShooting() {
         return shooter.shoot().alongWith(
             new SequentialCommandGroup(
-                intake.partialAgitate(() -> 0.5),
-                new WaitCommand(1),
-                intake.partialAgitate(() -> 0.4).repeatedly()
+                new WaitCommand(2),
+                (intake.partialAgitate(() -> 0.5).andThen(new WaitCommand(0.5))).repeatedly()
             )
         );
     }

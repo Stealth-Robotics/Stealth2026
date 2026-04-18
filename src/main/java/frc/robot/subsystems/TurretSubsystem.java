@@ -25,18 +25,18 @@ public class TurretSubsystem extends SubsystemBase {
 
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
 
-    private final double TURRET_LOOKAHEAD_SECONDS = 0.2;
+    private final double TURRET_LOOKAHEAD_SECONDS = 0.1;
 
     private final double kACCELERATION = 200.0;
     private final double kCRUISE_VELOCITY = 400.0;
-    private final double kP = 100.0;
-    private final double kI = 60.0;
+    private final double kP = 120.0;
+    private final double kI = 80.0;
     private final double kD = 0.0;
 
     //The unclamped value that the turret is commanded to go to (used to see if it is at the target)
     private double rawTargetDegrees = 0;
 
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 8.0;
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 4.0;
 
     public final double MAX_TURRET_DEGREES = 120;
     private final double TURRET_HOME_DEGREES = 0;

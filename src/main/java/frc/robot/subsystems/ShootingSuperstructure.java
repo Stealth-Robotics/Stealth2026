@@ -21,7 +21,6 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
@@ -36,7 +35,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
-    private SOTMResult latestSOTMParameters = new SOTMResult(0, 0, 0);
+    private SOTMResult latestSOTMParameters = new SOTMResult(0, 0, 0, 0);
 
     //Allows us to manually offset the set RPMs during a match
     private int RPMOffset = 0;
@@ -173,9 +172,8 @@ public class ShootingSuperstructure extends SubsystemBase {
                 if (safeToShoot()) {
                     isShooterActive = true;
 
-                    double metersToGoal = calculateDistanceToTarget();
-                    transfer.spin(metersToGoal);
-                    transfer.feed(metersToGoal);
+                    transfer.spin(latestSOTMParameters.distance());
+                    transfer.feed();
                 }
                 else {
                     isShooterActive = false;
