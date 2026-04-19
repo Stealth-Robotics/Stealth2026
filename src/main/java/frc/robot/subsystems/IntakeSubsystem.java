@@ -57,6 +57,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_POSITION_TOLERANCE = 0.05;
 
     private final double DEPLOYED_ROTATIONS = 0.0;
+    private final double FULL_AGITATE_ROTATIONS = 0.25; //TODO: Tune value
     private final double RETRACTED_ROTATIONS = 0.315;
 
     private final double DEPLOY_kP = 28;
@@ -77,7 +78,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final int ROLLER_SUPPLY_LIMIT = 35;
     private final int DEPLOY_SUPPLY_LIMIT = 30;
 
-    private final double INTAKE_TOSS_INTERVAL_SECONDS = .5;
+    private final double INTAKE_TOSS_INTERVAL_SECONDS = 0.25;
     private boolean isRetracting = false;
 
     private long lastMs = 0;
@@ -138,11 +139,10 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
     }
 
-    public Command partialAgitate(DoubleSupplier magnitude) {
+    public Command quickAgitate(DoubleSupplier magnitude) {
         var command = new SequentialCommandGroup(
-            new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
+            new InstantCommand(() -> setRollerSpeed(0.25)),
             new InstantCommand(() -> moveFastTo(magnitude.getAsDouble() * RETRACTED_ROTATIONS)),
-            new WaitUntilCommand(()-> isAtPosition(magnitude.getAsDouble() * RETRACTED_ROTATIONS)).withTimeout(0.3),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
             new InstantCommand(() -> deploy()),
             new InstantCommand(() -> setRollerSpeed(0))
@@ -153,16 +153,20 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public Command fullAgitate() {
-        double tossPercentage = RETRACTED_ROTATIONS * 0.65;
-        
-        var command = new SequentialCommandGroup(
-            new InstantCommand(() -> setRollerSpeed(MAX_ROLLER_SPEED * 0.5)),
-            new InstantCommand(() -> moveFastTo(tossPercentage)),
-            new WaitUntilCommand(() -> isAtPosition(tossPercentage)).withTimeout(0.5),
-            new InstantCommand(() -> setRollerSpeed(0))
-        )
-        .andThen(new RunCommand(() -> moveFastTo(deployController.getPositionMeasure().magnitude() + 0.008)))
-        .finallyDo(() -> deploy());
+        final double ROTATION_INCREMENT = 0.005;
+
+        var command = new InstantCommand(() -> setRollerSpeed(0.25))
+            .andThen(new RunCommand(() -> {
+                deployMotor.setControl(deployController.withSlot(1).withPosition(MathUtil.clamp(
+                    deployController.getPositionMeasure().magnitude() + ROTATION_INCREMENT,
+                    DEPLOYED_ROTATIONS,
+                    FULL_AGITATE_ROTATIONS
+                )));
+            }))
+            .finallyDo(() -> {
+                deploy();
+                setRollerSpeed(0);
+            });
 
         command.addRequirements(this);
         return command;

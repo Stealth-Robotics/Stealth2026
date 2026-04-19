@@ -67,15 +67,16 @@ public class RobotContainer {
             () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
             () -> driverController.getRightTriggerAxis() > 0.1,
             () -> driverController.y().getAsBoolean(),
+            () -> operatorController.a().getAsBoolean() || driverController.a().getAsBoolean(),
             () -> operatorController.b().getAsBoolean() || driverController.b().getAsBoolean()
         );
 
         Trigger shootTrigger = new Trigger(driverController.rightBumper().or(operatorController.rightBumper()));
         shootTrigger.whileTrue(robot.shoot());
 
-        driverController.a().onTrue(robot.seedFieldCentric());
-        driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
         driverController.start().onTrue(robot.forceResetOdometry());
+        driverController.rightStick().onTrue(robot.seedFieldCentric());
+        driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
 
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
  
@@ -88,30 +89,18 @@ public class RobotContainer {
     /*
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
-    private void addAutosToChooser() {
-        autoChooser.addOption("Debug", autos.getAuto("Debug"));
-        
+    private void addAutosToChooser() {        
         autoChooser.addOption("LeftDoubleBump", autos.getAuto("LeftDoubleBump"));
         autoChooser.addOption("RightDoubleBump", autos.getAuto("RightDoubleBump"));
 
         autoChooser.addOption("LeftDoubleTrench", autos.getAuto("LeftDoubleTrench"));
         autoChooser.addOption("RightDoubleTrench", autos.getAuto("RightDoubleTrench"));
-
-        autoChooser.addOption("BumpTest", autos.getAuto("BumpTest"));
     }
 
     //Used mostly for telemetry and logging general match info
     public void periodic() {
         AllianceUtility.update();
         ShiftTracker.update();
-    }
-
-    public void toggleDisabledLeds(boolean disable) {
-        robot.toggleDisabledLeds(disable);
-    }
-
-    public void setLEDBrightness(double value) {
-        robot.setLEDBrightness(value);
     }
 
     public void resetFuelCounter() {

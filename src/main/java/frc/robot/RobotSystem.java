@@ -7,7 +7,11 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -15,14 +19,16 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
@@ -47,7 +53,6 @@ public class RobotSystem extends SubsystemBase {
     private final DriveSubsystem drive;
     private final IntakeSubsystem intake;
     private final ShootingSuperstructure shooter;
-    private final LEDSubsystem led;
     
     private final Field2d elasticField = new Field2d();
 
@@ -70,6 +75,8 @@ public class RobotSystem extends SubsystemBase {
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
 
+    private final Debouncer odometryDivergenceDebouncer = new Debouncer(0.25, DebounceType.kRising);
+
     private long lastMs = 0;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
@@ -79,12 +86,18 @@ public class RobotSystem extends SubsystemBase {
             () -> drive.getPose(), 
             () -> drive.getFieldRelativeVelocity()
         );
-        led = new LEDSubsystem(() -> ShiftTracker.hubIsActive());
 
         //Log the field + robot pose to Elastic
         SmartDashboard.putData("ElasticField", elasticField);
 
-        ShiftTracker.shiftWarningTrigger.onTrue(led.blink());
+        //Warning for the operator to start/stop shooting
+        ShiftTracker.shiftWarningTrigger.onTrue(
+            new SequentialCommandGroup(
+                new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 1.0)),
+                new WaitCommand(0.25),
+                new InstantCommand(() -> operatorController.getHID().setRumble(RumbleType.kBothRumble, 0.0))
+            ).ignoringDisable(true)
+        );
     }
 
     public Command forceResetOdometry() {
@@ -92,25 +105,16 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public void configureIntake(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract, 
-        BooleanSupplier fullAgitate) {
+        BooleanSupplier quickAgitate, BooleanSupplier fullAgitate) {
 
         Trigger deployTrigger = new Trigger(deploy);
         deployTrigger.onTrue(intake.deployCommand());
 
         Trigger retractTrigger = new Trigger(retract);
         retractTrigger.onTrue(intake.retractCommand());
-        
-        //Disabled automatic bumping for now
 
-        // Trigger automaticAgitateTrigger = new Trigger(() ->
-        //     DriverStation.isTeleop() &&
-        //     shooter.isShooting() &&
-        //     intake.isDeployed() &&
-        //     !deploy.getAsBoolean() &&
-        //     !fullAgitate.getAsBoolean() &&
-        //     !intake.isRetracting()
-        // );
-        // automaticAgitateTrigger.onTrue(intake.partialAgitate(() -> 0.25));
+        Trigger quickAgitateTrigger = new Trigger(() -> quickAgitate.getAsBoolean() && !deploy.getAsBoolean());
+        quickAgitateTrigger.whileTrue(intake.quickAgitate(() -> 0.25));
 
         Trigger fullAgitateTrigger = new Trigger(() -> fullAgitate.getAsBoolean() && !deploy.getAsBoolean());
         fullAgitateTrigger.whileTrue(intake.fullAgitate());
@@ -235,36 +239,44 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateOdometry() {
-        // PoseEstimate bestEstimate = null;
+        var robotSpeed = drive.getFieldRelativeVelocity();
 
-        double robotYaw = drive.getState().Pose.getRotation().getDegrees();
+        boolean rotatingSlowEnough = Math.abs(robotSpeed.omegaRadiansPerSecond) < LimelightConstants.MAX_ANGULAR_VELO_RADIANS_PER_SECOND;
+        boolean drivingSlowEnough = Math.hypot(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond) < LimelightConstants.MAX_VELO_METERS_PER_SECOND;
 
-        for (String limelight : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(limelight, robotYaw, 0, 0, 0, 0, 0);
+        if (rotatingSlowEnough && drivingSlowEnough) {
+            var robotRotation = drive.getPose().getRotation();
 
-            var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-            if (isGoodPoseEstimate(estimate)) {
-                drive.addVisionMeasurement(
-                    estimate.pose,
-                    estimate.timestampSeconds,
-                    LimelightConstants.STDDEVS
+            for (String limelight : LimelightConstants.LIMELIGHTS) {
+                LimelightHelpers.SetRobotOrientation(limelight, robotRotation.getDegrees(), 0, 0, 0, 0, 0);
+                
+                var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+
+                boolean isHeadingDiverged = odometryDivergenceDebouncer.calculate(
+                    isGoodPoseEstimate(mt1) && 
+                    mt1.tagCount > 1 &&
+                    Math.abs(robotRotation.minus(mt1.pose.getRotation()).getDegrees()) > LimelightConstants.MAX_HEADING_DIVERGENCE_DEGREES
                 );
+
+                if (isHeadingDiverged) {
+                    drive.addVisionMeasurement(
+                        mt1.pose,
+                        mt1.timestampSeconds,
+                        VecBuilder.fill(0.7, 0.7, Math.toRadians(10)) //Trust vision theta a lot
+                    );
+                }
+                else {
+                    var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+                    if (isGoodPoseEstimate(mt2)) {
+                        drive.addVisionMeasurement(
+                            mt2.pose,
+                            mt2.timestampSeconds,
+                            LimelightConstants.STDDEVS
+                        );
+                    }
+                }
             }
-            // if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
-            //     bestEstimate = estimate;
-        }
-
-        // if (bestEstimate != null) {
-        //     drive.addVisionMeasurement(
-        //         bestEstimate.pose,
-        //         bestEstimate.timestampSeconds,
-        //         LimelightConstants.STDDEVS
-        //     );
-        // }
-    }
-
-    private boolean isBetterPoseEstimate(PoseEstimate first, PoseEstimate second) {
-        return second == null || first.tagCount > second.tagCount || first.avgTagArea > second.avgTagArea;
+        }        
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
@@ -285,14 +297,6 @@ public class RobotSystem extends SubsystemBase {
         }
         
         return true;
-    }
-
-    public void toggleDisabledLeds(boolean disable) {
-        led.setIsDisabled(disable);
-    }
-
-    public void setLEDBrightness(double value) {
-        led.setLEDBrightness(value);
     }
 
     public void resetFuelShotCount() {
