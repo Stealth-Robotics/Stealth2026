@@ -67,15 +67,16 @@ public class RobotContainer {
             () -> driverController.getRightTriggerAxis() - driverController.getLeftTriggerAxis(),
             () -> driverController.getRightTriggerAxis() > 0.1,
             () -> driverController.y().getAsBoolean(),
+            () -> operatorController.a().getAsBoolean() || driverController.a().getAsBoolean(),
             () -> operatorController.b().getAsBoolean() || driverController.b().getAsBoolean()
         );
 
         Trigger shootTrigger = new Trigger(driverController.rightBumper().or(operatorController.rightBumper()));
         shootTrigger.whileTrue(robot.shoot());
 
-        driverController.a().onTrue(robot.seedFieldCentric());
-        driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
         driverController.start().onTrue(robot.forceResetOdometry());
+        driverController.rightStick().onTrue(robot.seedFieldCentric());
+        driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
 
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
  

@@ -40,7 +40,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     //Allows us to manually offset the set RPMs during a match
     private int RPMOffset = 0;
 
-    private final double SECONDS_BEFORE_HOPPER_AGITATE = 2;
+    private final double SECONDS_BEFORE_HOPPER_AGITATE = 1;
     private final double SECONDS_BEFORE_HOPPER_EMPTY = 4;
 
     //The amount of time to wait before allowing shooting if the rpm tolerance code malfunctions

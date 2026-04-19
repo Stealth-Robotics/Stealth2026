@@ -92,25 +92,16 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public void configureIntake(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract, 
-        BooleanSupplier fullAgitate) {
+        BooleanSupplier quickAgitate, BooleanSupplier fullAgitate) {
 
         Trigger deployTrigger = new Trigger(deploy);
         deployTrigger.onTrue(intake.deployCommand());
 
         Trigger retractTrigger = new Trigger(retract);
         retractTrigger.onTrue(intake.retractCommand());
-        
-        //Disabled automatic bumping for now
 
-        // Trigger automaticAgitateTrigger = new Trigger(() ->
-        //     DriverStation.isTeleop() &&
-        //     shooter.isShooting() &&
-        //     intake.isDeployed() &&
-        //     !deploy.getAsBoolean() &&
-        //     !fullAgitate.getAsBoolean() &&
-        //     !intake.isRetracting()
-        // );
-        // automaticAgitateTrigger.onTrue(intake.partialAgitate(() -> 0.25));
+        Trigger quickAgitateTrigger = new Trigger(() -> quickAgitate.getAsBoolean() && !deploy.getAsBoolean());
+        quickAgitateTrigger.whileTrue(intake.quickAgitate(() -> 0.25));
 
         Trigger fullAgitateTrigger = new Trigger(() -> fullAgitate.getAsBoolean() && !deploy.getAsBoolean());
         fullAgitateTrigger.whileTrue(intake.fullAgitate());
