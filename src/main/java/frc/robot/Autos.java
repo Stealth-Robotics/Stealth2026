@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -97,6 +98,31 @@ public class Autos {
             shootForTime(5),
             deployAndIntake(),
             cycle2,
+            startShooting()
+        );
+
+        autoCache.put(autoName, autoRoutine);
+    }
+
+    public void buildMiddleBump(AutoSide side) {
+        String autoName = (side.equals(AutoSide.LEFT)) ? "LeftDoubleBump" : "RightDoubleBump";
+
+        Path path = new Path("MiddleBump");
+
+        if (side.equals(AutoSide.LEFT)) {
+            path.mirror();
+        }
+
+        FollowPath cycle = pathBuilder.build(path);
+
+        FollowPath.registerEventTrigger("Shoot", startShooting().asProxy());
+        FollowPath.registerEventTrigger("StopShooting", stopShooting().asProxy());
+        FollowPath.registerEventTrigger("Deploy", deployAndIntake().asProxy());
+        FollowPath.registerEventTrigger("Retract", retractAndStopIntake().asProxy());
+        FollowPath.registerEventTrigger("SpinUp", spinupShooter().asProxy());
+
+        Command autoRoutine = new SequentialCommandGroup(
+            cycle,
             startShooting()
         );
 
