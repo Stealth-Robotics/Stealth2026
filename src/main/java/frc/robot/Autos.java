@@ -49,6 +49,10 @@ public class Autos {
         buildMiddleBump(AutoSide.LEFT);
         buildMiddleBump(AutoSide.RIGHT);
         buildDepotSweep();
+        buildCenterDepot();
+        buildCenterDepotPlusPass();
+        build1729BurnsFinalsTiebreaker(AutoSide.LEFT);
+        build1729BurnsFinalsTiebreaker(AutoSide.RIGHT);
 
         FollowPath.registerEventTrigger("", startShooting());
     }
@@ -107,6 +111,9 @@ public class Autos {
         autoCache.put(autoName, autoRoutine);
     }
 
+    // Risky steal auto. Drives from the hub to the side trench, before sweeping opposing alliance's hub
+    // around 6-7 seconds (generally the most safe). Returns on the left side to clear the depot.
+    // EXTREMELY RISKY!!
     public void buildMiddleBump(AutoSide side) {
         String autoName = (side.equals(AutoSide.LEFT)) ? "LeftMiddleBump" : "RightMiddleBump";
 
@@ -131,6 +138,7 @@ public class Autos {
         autoCache.put(autoName, autoRoutine);
     }
 
+    // Depot auto that begins by the left bump. Compatible with 2 generic side sweepers.
     public void buildDepotSweep() {
         String autoName = "DepotSweep";
 
@@ -148,6 +156,7 @@ public class Autos {
         autoCache.put(autoName, autoRoutine);
     }
 
+    // A generic center depot auto with hub start. Compatible with 2 generic side sweepers.
     public void buildCenterDepot() {
         String autoName = "CenterDepot";
         
@@ -165,7 +174,9 @@ public class Autos {
         autoCache.put(autoName, autoRoutine);
     }
 
-    public void buildCenterDepotPlusPass(AutoSide side) {
+    // A compatible auto to 2 generic side 2-sweeps. Initially runs a center depot sweep path,
+    // then uses final seconds of auto to pass along the center and steal the opposing team's fuel.
+    public void buildCenterDepotPlusPass() {
         double PASSTHROGH_TIME = 10; // Time for robot to pass through the trench
         double CYCLE_1_TIME = 3.83; // Time of the first pass, in seconds
         double REACH_TRENCH_TIME = 1.00; // Time from the end of the first pass to reaching the trench, in seconds
@@ -190,22 +201,32 @@ public class Autos {
         autoCache.put(autoName, autoRoutine);
     }
 
-    public void build1729NewEnglandFinalsTiebreaker(AutoSide side) {
+    // From 1729's New England Burns Finals tiebreaker auto. Sweeps around 2 bots with generic
+    // side paths. Uses depot in the left version.
+    public void build1729BurnsFinalsTiebreaker(AutoSide side) {
+        int shootTime = 15;
+
         String autoName = "CompatibleBump";
 
         Path path = new Path("CompatibleBump");
+        Path path2 = new Path();
 
         if (side.equals(AutoSide.LEFT)) {
             path.mirror();
+            shootTime = 6;
+            path2 = new Path("CompatibleBumpExtension");
         }
 
         FollowPath compatibleBump = pathBuilder.build(path);
+        FollowPath depotSweep = pathBuilder.build(path2);
 
         FollowPath.registerEventTrigger("Deploy", deployAndIntake().asProxy());
         FollowPath.registerEventTrigger("Retract", retractAndStopIntake().asProxy());
 
         Command autoRoutine = new SequentialCommandGroup(
             compatibleBump,
+            shootForTime(shootTime),
+            depotSweep.alongWith(deployAndIntake().asProxy()),
             startShooting()
         );
 
