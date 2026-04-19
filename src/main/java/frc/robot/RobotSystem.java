@@ -235,30 +235,32 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void updateOdometry() {
-        var driveSpeeds = drive.getState().Speeds;
-        double linearSpeed = Math.hypot(driveSpeeds.vxMetersPerSecond, driveSpeeds.vyMetersPerSecond);
+        // PoseEstimate bestEstimate = null;
 
-        if (linearSpeed < 5 && Math.abs(driveSpeeds.omegaRadiansPerSecond) < 5) {
-            PoseEstimate bestEstimate = null;
+        double robotYaw = drive.getState().Pose.getRotation().getDegrees();
 
-            double robotYaw = drive.getState().Pose.getRotation().getDegrees();
+        for (String limelight : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetRobotOrientation(limelight, robotYaw, 0, 0, 0, 0, 0);
 
-            for (String limelight : LimelightConstants.LIMELIGHTS) {
-                LimelightHelpers.SetRobotOrientation(limelight, robotYaw, 0, 0, 0, 0, 0);
-
-                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
-                if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
-                    bestEstimate = estimate;
-            }
-
-            if (bestEstimate != null) {
+            var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+            if (isGoodPoseEstimate(estimate)) {
                 drive.addVisionMeasurement(
-                    bestEstimate.pose,
-                    bestEstimate.timestampSeconds,
+                    estimate.pose,
+                    estimate.timestampSeconds,
                     LimelightConstants.STDDEVS
                 );
             }
+            // if (isGoodPoseEstimate(estimate) && isBetterPoseEstimate(estimate, bestEstimate))
+            //     bestEstimate = estimate;
         }
+
+        // if (bestEstimate != null) {
+        //     drive.addVisionMeasurement(
+        //         bestEstimate.pose,
+        //         bestEstimate.timestampSeconds,
+        //         LimelightConstants.STDDEVS
+        //     );
+        // }
     }
 
     private boolean isBetterPoseEstimate(PoseEstimate first, PoseEstimate second) {
