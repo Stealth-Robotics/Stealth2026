@@ -20,8 +20,6 @@ public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
     private final RobotContainer m_robotContainer;
 
-    private boolean isDisabled = true;
-
     public Robot() {
         m_robotContainer = new RobotContainer();
 
@@ -30,12 +28,6 @@ public class Robot extends TimedRobot {
 
         //Stop hoot replay logging
         SignalLogger.enableAutoLogging(false);
-
-        //Set the limelight's tag filter & IMU alpha
-        for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetFiducialIDFiltersOverride(ll, LimelightConstants.TAG_FILTER_MODE.getTags());
-            LimelightHelpers.SetIMUAssistAlpha(ll, LimelightConstants.IMU_ALPHA);
-        }
     }
 
     @Override
@@ -44,28 +36,14 @@ public class Robot extends TimedRobot {
 
         //Run the robot container's periodic
         m_robotContainer.periodic();
-
-        //Limelight IMU
-        if (isDisabled) {
-            for (String ll : LimelightConstants.LIMELIGHTS) {
-                LimelightHelpers.SetThrottle(ll, LimelightConstants.LIMELIGHT_DISABLED_THROTTLE);
-                LimelightHelpers.SetIMUMode(ll, LimelightConstants.DISABLED_IMU_MODE);
-            }
-        }
-        else {
-            for (String ll : LimelightConstants.LIMELIGHTS) {
-                LimelightHelpers.SetThrottle(ll, 0);
-                LimelightHelpers.SetIMUMode(ll, LimelightConstants.ENABLED_IMU_MODE);
-            }
-        }
     }
 
     @Override
     public void disabledInit() {
-        isDisabled = true;
-
-        m_robotContainer.toggleDisabledLeds(true);
-        m_robotContainer.setLEDBrightness(0.05);
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetThrottle(ll, LimelightConstants.LIMELIGHT_DISABLED_THROTTLE);
+            LimelightHelpers.SetIMUMode(ll, LimelightConstants.DISABLED_IMU_MODE);
+        }
 
         Elastic.selectTab("Disabled");
     }
@@ -76,12 +54,16 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledExit() {
-        isDisabled = false;
-
-        m_robotContainer.toggleDisabledLeds(false);
-        m_robotContainer.setLEDBrightness(0.5);
-
         m_robotContainer.resetFuelCounter();
+
+        //Set the limelight's tag filter & IMU alpha
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetFiducialIDFiltersOverride(ll, LimelightConstants.TAG_FILTER_MODE.getTags());
+            LimelightHelpers.SetIMUAssistAlpha(ll, LimelightConstants.IMU_ALPHA);
+
+            LimelightHelpers.SetThrottle(ll, 0);
+            LimelightHelpers.SetIMUMode(ll, LimelightConstants.ENABLED_IMU_MODE);
+        }
 
         Elastic.selectTab("Teleoperated");
 

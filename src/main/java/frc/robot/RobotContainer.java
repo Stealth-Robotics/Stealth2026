@@ -89,30 +89,18 @@ public class RobotContainer {
     /*
      * Add all our working autonomous routines to the chooser for selection on Elastic
      */
-    private void addAutosToChooser() {
-        autoChooser.addOption("Debug", autos.getAuto("Debug"));
-        
+    private void addAutosToChooser() {        
         autoChooser.addOption("LeftDoubleBump", autos.getAuto("LeftDoubleBump"));
         autoChooser.addOption("RightDoubleBump", autos.getAuto("RightDoubleBump"));
 
         autoChooser.addOption("LeftDoubleTrench", autos.getAuto("LeftDoubleTrench"));
         autoChooser.addOption("RightDoubleTrench", autos.getAuto("RightDoubleTrench"));
-
-        autoChooser.addOption("BumpTest", autos.getAuto("BumpTest"));
     }
 
     //Used mostly for telemetry and logging general match info
     public void periodic() {
         AllianceUtility.update();
         ShiftTracker.update();
-    }
-
-    public void toggleDisabledLeds(boolean disable) {
-        robot.toggleDisabledLeds(disable);
-    }
-
-    public void setLEDBrightness(double value) {
-        robot.setLEDBrightness(value);
     }
 
     public void resetFuelCounter() {

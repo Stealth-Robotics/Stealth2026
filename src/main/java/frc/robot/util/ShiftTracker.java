@@ -24,7 +24,7 @@ public class ShiftTracker {
             matchPhase != MatchPhase.AUTO &&
             matchPhase != MatchPhase.AUTO_TELE_TRANSITION &&
             matchPhase != MatchPhase.ENDGAME &&
-            getTimeLeftInShift() <= 6;
+            getTimeLeftInShift() <= 2; //Time for balls to reach hub and start counting (likewise for stopping)
     });
 
     public static void start() {
