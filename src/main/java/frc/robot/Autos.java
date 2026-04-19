@@ -46,6 +46,8 @@ public class Autos {
         buildDoubleBump(AutoSide.RIGHT);
         buildDoubleTrench(AutoSide.LEFT);
         buildDoubleTrench(AutoSide.RIGHT);
+        buildMiddleBump(AutoSide.LEFT);
+        buildMiddleBump(AutoSide.RIGHT);
 
         FollowPath.registerEventTrigger("", startShooting());
     }
