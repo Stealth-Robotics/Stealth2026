@@ -55,6 +55,11 @@ public class Autos {
         build1729BurnsFinalsTiebreaker(AutoSide.RIGHT);
 
         FollowPath.registerEventTrigger("", startShooting());
+        FollowPath.registerEventTrigger("Deploy", deployAndIntake().asProxy());
+        FollowPath.registerEventTrigger("Retract", retractAndStopIntake().asProxy());
+        FollowPath.registerEventTrigger("Shoot", startShooting().asProxy());
+        FollowPath.registerEventTrigger("StopShooting", stopShooting().asProxy());
+        FollowPath.registerEventTrigger("SpinUp", spinupShooter().asProxy());
     }
 
     public Command getAuto(String name) {
@@ -123,11 +128,6 @@ public class Autos {
         FollowPath preDepot = pathBuilder.build(path);
         FollowPath depotSweep = pathBuilder.build(path2);
 
-        FollowPath.registerEventTrigger("Shoot", startShooting().asProxy());
-        FollowPath.registerEventTrigger("StopShooting", stopShooting().asProxy());
-        FollowPath.registerEventTrigger("Deploy", deployAndIntake().asProxy());
-        FollowPath.registerEventTrigger("Retract", retractAndStopIntake().asProxy());
-        FollowPath.registerEventTrigger("SpinUp", spinupShooter().asProxy());
 
         Command autoRoutine = new SequentialCommandGroup(
             preDepot,
@@ -146,8 +146,6 @@ public class Autos {
 
         FollowPath depotSweep = pathBuilder.build(path);
 
-        FollowPath.registerEventTrigger("SpinUp", spinupShooter().asProxy());
-
         Command autoRoutine = new SequentialCommandGroup(
             depotSweep.alongWith(deployAndIntake().asProxy()),
             startShooting()
@@ -163,8 +161,6 @@ public class Autos {
         Path path = new Path("CenterDepot");
 
         FollowPath centerDepot = pathBuilder.build(path);
-
-        FollowPath.registerEventTrigger("SpinUp", spinupShooter().asProxy());
 
         Command autoRoutine = new SequentialCommandGroup(
             centerDepot.alongWith(deployAndIntake().asProxy()),
@@ -187,10 +183,6 @@ public class Autos {
 
         FollowPath centerDepot = pathBuilder.build(new Path("CenterDepot"));
         FollowPath centerDepotExtension = pathBuilder.build(new Path("CenterDepotExtension"));
-
-        FollowPath.registerEventTrigger("SpinUp", spinupShooter().asProxy());
-        FollowPath.registerEventTrigger("Deploy", deployAndIntake().asProxy());
-        FollowPath.registerEventTrigger("StartPassing", startShooting().asProxy());
 
         Command autoRoutine = new SequentialCommandGroup(
             centerDepot.alongWith(deployAndIntake().asProxy()),
@@ -219,9 +211,6 @@ public class Autos {
 
         FollowPath compatibleBump = pathBuilder.build(path);
         FollowPath depotSweep = pathBuilder.build(path2);
-
-        FollowPath.registerEventTrigger("Deploy", deployAndIntake().asProxy());
-        FollowPath.registerEventTrigger("Retract", retractAndStopIntake().asProxy());
 
         Command autoRoutine = new SequentialCommandGroup(
             compatibleBump,
