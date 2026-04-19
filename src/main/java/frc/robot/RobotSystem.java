@@ -7,7 +7,11 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -70,6 +74,8 @@ public class RobotSystem extends SubsystemBase {
 
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
+
+    private final Debouncer odometryDivergenceDebouncer = new Debouncer(0.25, DebounceType.kRising);
 
     private long lastMs = 0;
 
@@ -234,20 +240,40 @@ public class RobotSystem extends SubsystemBase {
 
     private void updateOdometry() {
         var robotSpeed = drive.getFieldRelativeVelocity();
+
         boolean rotatingSlowEnough = Math.abs(robotSpeed.omegaRadiansPerSecond) < LimelightConstants.MAX_ANGULAR_VELO_RADIANS_PER_SECOND;
         boolean drivingSlowEnough = Math.hypot(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond) < LimelightConstants.MAX_VELO_METERS_PER_SECOND;
 
         if (rotatingSlowEnough && drivingSlowEnough) {
-            for (String limelight : LimelightConstants.LIMELIGHTS) {
-                LimelightHelpers.SetRobotOrientation(limelight, drive.getPose().getRotation().getDegrees(), 0, 0, 0, 0, 0);
+            var robotRotation = drive.getPose().getRotation();
 
-                var estimate = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-                if (isGoodPoseEstimate(estimate)) {
+            for (String limelight : LimelightConstants.LIMELIGHTS) {
+                LimelightHelpers.SetRobotOrientation(limelight, robotRotation.getDegrees(), 0, 0, 0, 0, 0);
+                
+                var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+
+                boolean isHeadingDiverged = odometryDivergenceDebouncer.calculate(
+                    isGoodPoseEstimate(mt1) && 
+                    mt1.tagCount > 1 &&
+                    Math.abs(robotRotation.minus(mt1.pose.getRotation()).getDegrees()) > LimelightConstants.MAX_HEADING_DIVERGENCE_DEGREES
+                );
+
+                if (isHeadingDiverged) {
                     drive.addVisionMeasurement(
-                        estimate.pose,
-                        estimate.timestampSeconds,
-                        LimelightConstants.STDDEVS
+                        mt1.pose,
+                        mt1.timestampSeconds,
+                        VecBuilder.fill(0.7, 0.7, Math.toRadians(10)) //Trust vision theta a lot
                     );
+                }
+                else {
+                    var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+                    if (isGoodPoseEstimate(mt2)) {
+                        drive.addVisionMeasurement(
+                            mt2.pose,
+                            mt2.timestampSeconds,
+                            LimelightConstants.STDDEVS
+                        );
+                    }
                 }
             }
         }        

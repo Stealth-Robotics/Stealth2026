@@ -18,7 +18,9 @@ public class LimelightConstants {
 
     public static final Vector<N3> STDDEVS = VecBuilder.fill(0.7, 0.7, 99999.0);
 
-    public static final double MAX_VELO_METERS_PER_SECOND = 3.0;
+    public static final double MAX_HEADING_DIVERGENCE_DEGREES = 15;
+
+    public static final double MAX_VELO_METERS_PER_SECOND = 3.5;
     public static final double MAX_ANGULAR_VELO_RADIANS_PER_SECOND = 2.0;
 
     public static final double MAX_TAG_AMBIGUITY = 0.35; //Safer value = 0.35
