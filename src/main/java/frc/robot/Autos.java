@@ -48,6 +48,7 @@ public class Autos {
         buildDoubleTrench(AutoSide.RIGHT);
         buildMiddleBump(AutoSide.LEFT);
         buildMiddleBump(AutoSide.RIGHT);
+        buildDepotSweep();
 
         FollowPath.registerEventTrigger("", startShooting());
     }
@@ -110,8 +111,10 @@ public class Autos {
         String autoName = (side.equals(AutoSide.LEFT)) ? "LeftMiddleBump" : "RightMiddleBump";
 
         Path path = (side.equals(AutoSide.LEFT)) ? new Path("CenterBumpAutoLeft") : new Path("CenterBumpAutoRight");
+        Path path2 = new Path("DepotSweep");
 
-        FollowPath cycle = pathBuilder.build(path);
+        FollowPath preDepot = pathBuilder.build(path);
+        FollowPath depotSweep = pathBuilder.build(path2);
 
         FollowPath.registerEventTrigger("Shoot", startShooting().asProxy());
         FollowPath.registerEventTrigger("StopShooting", stopShooting().asProxy());
@@ -120,7 +123,25 @@ public class Autos {
         FollowPath.registerEventTrigger("SpinUp", spinupShooter().asProxy());
 
         Command autoRoutine = new SequentialCommandGroup(
-            cycle,
+            preDepot,
+            depotSweep.alongWith(deployAndIntake().asProxy()),
+            startShooting()
+        );
+
+        autoCache.put(autoName, autoRoutine);
+    }
+
+    public void buildDepotSweep() {
+        String autoName = "DepotSweep";
+
+        Path path = new Path("DepotSweep");
+
+        FollowPath depotSweep = pathBuilder.build(path);
+
+        FollowPath.registerEventTrigger("SpinUp", spinupShooter().asProxy());
+
+        Command autoRoutine = new SequentialCommandGroup(
+            depotSweep.alongWith(deployAndIntake().asProxy()),
             startShooting()
         );
 
