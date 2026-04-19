@@ -107,13 +107,9 @@ public class Autos {
     }
 
     public void buildMiddleBump(AutoSide side) {
-        String autoName = (side.equals(AutoSide.LEFT)) ? "LeftDoubleBump" : "RightDoubleBump";
+        String autoName = (side.equals(AutoSide.LEFT)) ? "LeftMiddleBump" : "RightMiddleBump";
 
-        Path path = new Path("MiddleBump");
-
-        if (side.equals(AutoSide.LEFT)) {
-            path.mirror();
-        }
+        Path path = (side.equals(AutoSide.LEFT)) ? new Path("CenterBumpAutoLeft") : new Path("CenterBumpAutoRight");
 
         FollowPath cycle = pathBuilder.build(path);
 
