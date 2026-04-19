@@ -148,6 +148,70 @@ public class Autos {
         autoCache.put(autoName, autoRoutine);
     }
 
+    public void buildCenterDepot() {
+        String autoName = "CenterDepot";
+        
+        Path path = new Path("CenterDepot");
+
+        FollowPath centerDepot = pathBuilder.build(path);
+
+        FollowPath.registerEventTrigger("SpinUp", spinupShooter().asProxy());
+
+        Command autoRoutine = new SequentialCommandGroup(
+            centerDepot.alongWith(deployAndIntake().asProxy()),
+            startShooting()
+        );
+
+        autoCache.put(autoName, autoRoutine);
+    }
+
+    public void buildCenterDepotPlusPass(AutoSide side) {
+        double PASSTHROGH_TIME = 10; // Time for robot to pass through the trench
+        double CYCLE_1_TIME = 3.83; // Time of the first pass, in seconds
+        double REACH_TRENCH_TIME = 1.00; // Time from the end of the first pass to reaching the trench, in seconds
+
+        double shootingTime = PASSTHROGH_TIME - CYCLE_1_TIME - REACH_TRENCH_TIME; // Time to shoot during the first pass, in seconds
+
+        String autoName = "CenterDepotPlus";
+
+        FollowPath centerDepot = pathBuilder.build(new Path("CenterDepot"));
+        FollowPath centerDepotExtension = pathBuilder.build(new Path("CenterDepotExtension"));
+
+        FollowPath.registerEventTrigger("SpinUp", spinupShooter().asProxy());
+        FollowPath.registerEventTrigger("Deploy", deployAndIntake().asProxy());
+        FollowPath.registerEventTrigger("StartPassing", startShooting().asProxy());
+
+        Command autoRoutine = new SequentialCommandGroup(
+            centerDepot.alongWith(deployAndIntake().asProxy()),
+            shootForTime(shootingTime),
+            centerDepotExtension.alongWith(stopShooting().asProxy())
+        );
+
+        autoCache.put(autoName, autoRoutine);
+    }
+
+    public void build1729NewEnglandFinalsTiebreaker(AutoSide side) {
+        String autoName = "CompatibleBump";
+
+        Path path = new Path("CompatibleBump");
+
+        if (side.equals(AutoSide.LEFT)) {
+            path.mirror();
+        }
+
+        FollowPath compatibleBump = pathBuilder.build(path);
+
+        FollowPath.registerEventTrigger("Deploy", deployAndIntake().asProxy());
+        FollowPath.registerEventTrigger("Retract", retractAndStopIntake().asProxy());
+
+        Command autoRoutine = new SequentialCommandGroup(
+            compatibleBump,
+            startShooting()
+        );
+
+        autoCache.put(autoName, autoRoutine);
+    }
+
     // AUTO COMMAND HELPERS
 
     private Command deployAndIntake() {
