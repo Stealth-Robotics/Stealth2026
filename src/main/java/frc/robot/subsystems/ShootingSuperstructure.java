@@ -9,6 +9,7 @@ import com.ctre.phoenix6.hardware.CANrange;
 import com.ctre.phoenix6.signals.UpdateModeValue;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -16,6 +17,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
@@ -26,11 +28,15 @@ import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
 import frc.robot.util.ShotCalculator.SOTMResult;
 import frc.robot.util.ShotCalculator;
+import frc.robot.util.DogLogUtil;
 
 public class ShootingSuperstructure extends SubsystemBase {
     private final ShooterSubsystem shooter;
     private final TurretSubsystem turret;
     private final TransferSubsystem transfer;
+
+    private final LinearFilter bpsFilter = LinearFilter.singlePoleIIR(0.1, Units.millisecondsToSeconds(20));
+    private double lastShotTimestamp = 0.0;
 
     private ShooterState state = ShooterState.IDLE;
     private PassingTarget passingTarget = PassingTarget.RIGHT;
@@ -39,9 +45,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     //Allows us to manually offset the set RPMs during a match
     private int RPMOffset = 0;
-
-    private final double SECONDS_BEFORE_HOPPER_AGITATE = 1;
-    private final double SECONDS_BEFORE_HOPPER_EMPTY = 4;
 
     //The amount of time to wait before allowing shooting if the rpm tolerance code malfunctions
     private final double SECONDS_BEFORE_RPM_TOLERANCE_OVERRIDE = 1.5;
@@ -71,8 +74,6 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final ShotParams leftPass = new ShotParams(new Translation3d(1, 7.0, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams rightPass = new ShotParams(new Translation3d(1, 1.16, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
 
-    private ShotParams currentShotParams = hub;
-
     private final Transform3d TURRET_TRANSFORM_METERS = new Transform3d(0.19, -0.2, 0.5, Rotation3d.kZero);
 
     private final Timer timeWeHaveBeenShooting = new Timer();
@@ -80,9 +81,6 @@ public class ShootingSuperstructure extends SubsystemBase {
     private int totalShots = 0;
     private int hubShots = 0;
     private int passShots = 0;
-
-    //Tracks how many fuel have been shot since we started trying. Resets after we stop shooting.
-    private int recentShots = 0;
 
     private boolean applyIdle = true;
     private boolean isShotRequested = false;
@@ -183,7 +181,9 @@ public class ShootingSuperstructure extends SubsystemBase {
                 }
             }
         })
-        .beforeStarting(() -> timeWeHaveBeenShooting.restart())
+        .beforeStarting(() -> {
+            timeWeHaveBeenShooting.restart();
+        })
         .finallyDo(() -> {
             shooter.coastShooter();
             
@@ -215,14 +215,6 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     public Command stopShooting() {
         return runOnce(() -> shooter.coastShooter());
-    }
-
-    public boolean needsHopperAgitate() {
-        return lastShotTimer.hasElapsed(SECONDS_BEFORE_HOPPER_AGITATE);
-    }
-
-    public boolean isHopperEmpty() {
-        return recentShots > 0 && lastShotTimer.hasElapsed(SECONDS_BEFORE_HOPPER_EMPTY);
     }
 
     /**
@@ -311,11 +303,6 @@ public class ShootingSuperstructure extends SubsystemBase {
         return dist < FUEL_DETECTED_DISTANCE_THRESHOLD.in(Inches);
     }
 
-    private double calculateDistanceToTarget() {
-        Translation3d robotTranslation = new Translation3d(robotPoseSupplier.get().getTranslation());
-        return currentShotParams.target().getDistance(robotTranslation);
-    }
-
     private void updateShotCounting() {
         // Only run the timer when we are actively shooting.
         if (isShooting() && !lastShotTimer.isRunning()) {
@@ -333,7 +320,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
             switch (state) {
                 case HUB:
-                    hubShots++;
+                    hubShots++; 
                     break;
                 case PASS:
                     passShots++;
@@ -342,12 +329,18 @@ public class ShootingSuperstructure extends SubsystemBase {
                     break;
             }
 
-            if (isShooterActive) recentShots++;
-
             totalShots++;
-        }
 
-        if (!isShooterActive) recentShots = 0;
+            //Calculate BPS
+            double now = Timer.getFPGATimestamp();
+            double timeSinceLastShot = now - lastShotTimestamp;
+
+            if (timeSinceLastShot > 0) {
+                bpsFilter.calculate(1.0 / timeSinceLastShot);
+            }
+
+            lastShotTimestamp = now;
+        }
 
         wasShotDetectedBefore = shotDetected;
     }
@@ -367,7 +360,6 @@ public class ShootingSuperstructure extends SubsystemBase {
             case TRENCH -> {
                 //Keep hood down while in the trench
                 shooter.setHoodDegrees(0);
-
                 trackHub();
             }
 
@@ -383,6 +375,8 @@ public class ShootingSuperstructure extends SubsystemBase {
         }
 
         updateShotCounting();
+
+        DogLogUtil.logDouble("ShootingSuperstructure/BPS", bpsFilter.lastValue());
 
         //Log our shooting counts
         DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);

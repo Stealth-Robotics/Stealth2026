@@ -15,17 +15,25 @@ public class ShotCalculator {
     private static final double systemPeriod = Units.millisecondsToSeconds(20);
 
     //Time needed for ball to travel through feeder towards the flywheel
-    private static final double mechanismLatency = Units.millisecondsToSeconds(45);
+    private static final double mechanismLatency = Units.millisecondsToSeconds(10);
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(5.14, 3315.0);
-        put(4.2, 3239.0);
-        put(4.0, 3090.0);
-        put(3.64, 3114.0);
-        put(3.36, 3082.0);
-        put(3.22, 2980.0);
-        put(2.18, 2750.0);
-        put(2.0, 2664.0);
+        // put(5.14, 3315.0);
+        // put(4.2, 3239.0);
+        // put(4.0, 3090.0);
+        // put(3.64, 3114.0);
+        // put(3.36, 3082.0);
+        // put(3.22, 2980.0);
+        // put(2.18, 2750.0);
+        // put(2.0, 2664.0);
+        put(5.14, 3300.0);
+        put(4.2, 3200.0);
+        put(4.0, 3100.0);
+        put(3.64, 3000.0);
+        put(3.36, 3000.0);
+        put(3.22, 2900.0);
+        put(2.18, 2700.0);
+        put(2.0, 2600.0);
     }};
 
     private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{

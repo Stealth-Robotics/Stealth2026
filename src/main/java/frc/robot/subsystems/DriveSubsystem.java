@@ -41,33 +41,6 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
  * https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
  */
 public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
-    public enum FieldPose {
-        CLIMB_LEFT(new Pose2d(14.922, 3.891, Rotation2d.kZero)),
-        CLIMB_RIGHT(new Pose2d(0, 0, Rotation2d.kZero));
-
-        private final Pose2d pose;
-
-        FieldPose(Pose2d pose) {
-            this.pose = pose;
-        }
-
-        Pose2d getPose() {
-            return pose;
-        }
-
-        double getX() {
-            return pose.getX();
-        }
-
-        double getY() {
-            return pose.getY();
-        }
-
-        Rotation2d getRotation() {
-            return pose.getRotation();
-        }
-    }
-
     private final double POSITION_TOLERANCE_METERS = 0.01;
     private final double ANGLE_TOLERANCE_DEGREES = 0.1;
 
@@ -77,12 +50,10 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     public final SwerveRequest.FieldCentric fieldCentric = new SwerveRequest.FieldCentric()
             .withDeadband(MAX_SPEED * 0.1).withRotationalDeadband(MAX_ANGULAR_RATE * 0.1) // Add a 10% deadband
             .withDriveRequestType(SwerveModule.DriveRequestType.Velocity);
-            // .withDriveRequestType(SwerveModule.DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
 
     public final SwerveRequest.RobotCentric robotCentric = new SwerveRequest.RobotCentric()
             .withDeadband(MAX_SPEED * 0.1).withRotationalDeadband(MAX_ANGULAR_RATE * 0.1) // Add a 10% deadband
             .withDriveRequestType(SwerveModule.DriveRequestType.Velocity);
-            // .withDriveRequestType(SwerveModule.DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
 
     public final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
 
@@ -325,33 +296,6 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
             this,
             (sample, isStart) -> {}
         );
-    }
-
-    public Command goToPose(Supplier<FieldPose> targetPose) {
-        return run(() -> {
-            var pose = getPose();
-            ChassisSpeeds targetSpeeds = new ChassisSpeeds();
-
-            targetSpeeds.vxMetersPerSecond += m_pathXController.calculate(
-                pose.getX(), targetPose.get().getX()
-            );
-            targetSpeeds.vyMetersPerSecond += m_pathYController.calculate(
-                pose.getY(), targetPose.get().getY()
-            );
-            targetSpeeds.omegaRadiansPerSecond += m_pathThetaController.calculate(
-                pose.getRotation().getRadians(), targetPose.get().getRotation().getRadians()
-            );
-
-            setControl(
-                m_pathApplyFieldSpeeds.withSpeeds(targetSpeeds)
-            );
-        }).until(() -> robotNearPose(targetPose.get().getPose()));
-    }
-
-    private boolean robotNearPose(Pose2d targetPose) {
-        boolean withinPosition = getPose().getTranslation().getDistance(targetPose.getTranslation()) < POSITION_TOLERANCE_METERS;
-        boolean withinAngle = Math.abs(getPose().getRotation().getDegrees() - targetPose.getRotation().getDegrees()) < ANGLE_TOLERANCE_DEGREES;
-        return withinPosition && withinAngle;
     }
 
     public void applyRobotRelativeSpeeds(ChassisSpeeds speeds) {

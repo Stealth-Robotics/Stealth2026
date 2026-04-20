@@ -34,8 +34,8 @@ public class Autos {
             drive::getPose,
             drive::getRobotRelativeVelocity,
             drive::applyRobotRelativeSpeeds,
-            new PIDController(4.0, 0.0, 0.0), // Translation PID
-            new PIDController(3.0, 0.0, 0.0), // Rotation PID
+            new PIDController(6.0, 0.0, 0.0), // Translation PID
+            new PIDController(4.0, 0.0, 0.0), // Rotation PID
             new PIDController(2.0, 0.0, 0.0)  // Cross-track PID
         )
         .withDefaultShouldFlip()
@@ -47,6 +47,9 @@ public class Autos {
         buildDoubleTrench(AutoSide.LEFT);
         buildDoubleTrench(AutoSide.RIGHT);
 
+        build1729BurnsFinalsTiebreaker(AutoSide.LEFT);
+        build1729BurnsFinalsTiebreaker(AutoSide.RIGHT);
+
         // FollowPath.registerEventTrigger("intake", deployAndIntake());
         // FollowPath.registerEventTrigger("spinup", spinupShooter());
         // FollowPath.registerEventTrigger("shoot", startShooting());
@@ -55,6 +58,36 @@ public class Autos {
 
     public Command getAuto(String name) {
         return autoCache.get(name);
+    }
+
+    public void build1729BurnsFinalsTiebreaker(AutoSide side) {
+        int shootTime = 15;
+
+        String autoName = (side.equals(AutoSide.LEFT)) ? "LeftCompatibleBump" : "RightCompatibleBump";
+
+        Path path = new Path("CompatibleBump");
+        Path path2 = new Path();
+
+        if (side.equals(AutoSide.LEFT)) {
+            shootTime = 6;
+            path2 = new Path("CompatibleBumpExtension");
+        } 
+        else {
+            path.mirror();
+        }
+
+        FollowPath compatibleBump = pathBuilder.build(path);
+        FollowPath depotSweep = pathBuilder.build(path2);
+
+        Command autoRoutine = new SequentialCommandGroup(
+            new WaitCommand(0.3),
+            compatibleBump.alongWith(new WaitCommand(2).andThen(deployAndIntake())),
+            shootForTime(shootTime),
+            depotSweep.alongWith(deployAndIntake()),
+            startShooting()
+        );
+
+        autoCache.put(autoName, autoRoutine);
     }
 
     public void buildDoubleTrench(AutoSide side) {
@@ -98,10 +131,9 @@ public class Autos {
 
         Command autoRoutine = new SequentialCommandGroup(
             cycle1.alongWith(new WaitCommand(0.5).andThen(deployAndIntake())),
-            shootForTime(5),
+            shootForTime(4.2),
             deployAndIntake(),
-            cycle2,
-            startShooting()
+            cycle2
         );
 
         autoCache.put(autoName, autoRoutine);
@@ -133,13 +165,8 @@ public class Autos {
             new SequentialCommandGroup(
                 new ParallelDeadlineGroup(
                     new WaitCommand(4),
-                    new ConditionalCommand(
-                        intake.quickAgitate(() -> 0.4),
-                        new InstantCommand(), 
-                        () -> shooter.needsHopperAgitate()
-                    ).repeatedly()
+                    intake.quickAgitate(() -> 0.6).andThen(new WaitCommand(0.25)).repeatedly()
                 ),
-                new WaitCommand(2),
                 intake.fullAgitate()
             )
         );

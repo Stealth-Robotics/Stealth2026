@@ -7,8 +7,6 @@ import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.filter.Debouncer.DebounceType;
@@ -33,9 +31,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.DriveSubsystem;
-import frc.robot.subsystems.DriveSubsystem.FieldPose;
 import frc.robot.subsystems.IntakeSubsystem;
-import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 import frc.robot.util.AllianceUtility;
@@ -75,7 +71,7 @@ public class RobotSystem extends SubsystemBase {
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
 
-    private final Debouncer odometryDivergenceDebouncer = new Debouncer(0.25, DebounceType.kRising);
+    private final Debouncer odometryDivergenceDebouncer = new Debouncer(0.1, DebounceType.kRising);
 
     private long lastMs = 0;
 
@@ -114,7 +110,7 @@ public class RobotSystem extends SubsystemBase {
         retractTrigger.onTrue(intake.retractCommand());
 
         Trigger quickAgitateTrigger = new Trigger(() -> quickAgitate.getAsBoolean() && !deploy.getAsBoolean());
-        quickAgitateTrigger.whileTrue(intake.quickAgitate(() -> 0.25));
+        quickAgitateTrigger.whileTrue(intake.quickAgitate(() -> 0.5).repeatedly());
 
         Trigger fullAgitateTrigger = new Trigger(() -> fullAgitate.getAsBoolean() && !deploy.getAsBoolean());
         fullAgitateTrigger.whileTrue(intake.fullAgitate());
@@ -207,10 +203,6 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
-    public Command driveToPose(FieldPose targetPose) {
-        return drive.goToPose(() -> targetPose);
-    }
-
     public Command activatePrecisionDriving() {
         return new StartEndCommand(
             () -> {
@@ -250,40 +242,53 @@ public class RobotSystem extends SubsystemBase {
             for (String limelight : LimelightConstants.LIMELIGHTS) {
                 LimelightHelpers.SetRobotOrientation(limelight, robotRotation.getDegrees(), 0, 0, 0, 0, 0);
                 
-                var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+                // var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
 
-                boolean isHeadingDiverged = odometryDivergenceDebouncer.calculate(
-                    isGoodPoseEstimate(mt1) && 
-                    mt1.tagCount > 1 &&
-                    Math.abs(robotRotation.minus(mt1.pose.getRotation()).getDegrees()) > LimelightConstants.MAX_HEADING_DIVERGENCE_DEGREES
-                );
+                // boolean isDiverged = odometryDivergenceDebouncer.calculate(
+                //     isGoodPoseEstimateMT1(mt1) &&
+                //     (Math.abs(drive.getPose().getTranslation().getDistance(mt1.pose.getTranslation())) > LimelightConstants.MAX_POSITION_DIVERGENCE_METERS ||
+                //     Math.abs(robotRotation.minus(mt1.pose.getRotation()).getDegrees()) > LimelightConstants.MAX_HEADING_DIVERGENCE_DEGREES)
+                // );
 
-                if (isHeadingDiverged) {
+                // if (isDiverged) {
+                //     drive.addVisionMeasurement(
+                //         mt1.pose,
+                //         mt1.timestampSeconds,
+                //         LimelightConstants.MT1_STDDEVS
+                //     );
+
+                //     System.out.println("Fixed divergence");
+                // }
+                // else {
+                //     var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+                //     if (isGoodPoseEstimateMT2(mt2)) {
+                //         drive.addVisionMeasurement(
+                //             mt2.pose,
+                //             mt2.timestampSeconds,
+                //             LimelightConstants.MT2_STDDEVS
+                //         );
+                //     }
+                // }
+
+                var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+                if (isGoodPoseEstimateMT2(mt2)) {
                     drive.addVisionMeasurement(
-                        mt1.pose,
-                        mt1.timestampSeconds,
-                        VecBuilder.fill(0.7, 0.7, Math.toRadians(10)) //Trust vision theta a lot
+                        mt2.pose,
+                        mt2.timestampSeconds,
+                        LimelightConstants.MT2_STDDEVS
                     );
-                }
-                else {
-                    var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-                    if (isGoodPoseEstimate(mt2)) {
-                        drive.addVisionMeasurement(
-                            mt2.pose,
-                            mt2.timestampSeconds,
-                            LimelightConstants.STDDEVS
-                        );
-                    }
                 }
             }
         }        
     }
 
-    private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
+    private boolean isGoodPoseEstimateMT2(PoseEstimate poseEstimate) {
         if (
-            poseEstimate == null || poseEstimate.pose == null || poseEstimate.pose.equals(Pose2d.kZero) 
-            || !AllianceUtility.isWithinField(poseEstimate.pose) ||
+            poseEstimate == null ||
+            poseEstimate.pose == null ||
             poseEstimate.tagCount <= LimelightConstants.MIN_TAG_COUNT ||
+            poseEstimate.pose.equals(Pose2d.kZero) ||
+            !AllianceUtility.isWithinField(poseEstimate.pose) ||
            (poseEstimate.tagCount == 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_SINGLE_TAG_DISTANCE) ||
            (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE)
         ) return false;

@@ -46,9 +46,9 @@ public class IntakeSubsystem extends SubsystemBase {
     private double targetRollerSpeed = 0;
 
     private final double INTAKE_ROLLER_VOLTAGE = 12;
-    private final double MAX_ROLLER_SPEED = 1.0;
+    private final double MAX_ROLLER_SPEED = 0.75;
 
-    private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.401123046875;
+    private final double DEPLOY_ENCODER_ZERO_OFFSET = -0.3984375;
 
     private final double DEPLOY_ENCODER_TO_MECHANISM_RATIO = 1.0;
     private final double DEPLOY_MOTOR_TO_ENCODER_RATIO = 52.0;
@@ -57,12 +57,12 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_POSITION_TOLERANCE = 0.05;
 
     private final double DEPLOYED_ROTATIONS = 0.0;
-    private final double FULL_AGITATE_ROTATIONS = 0.25; //TODO: Tune value
-    private final double RETRACTED_ROTATIONS = 0.315;
+    private final double FULL_AGITATE_ROTATIONS = 0.3;
+    private final double RETRACTED_ROTATIONS = 0.32;
 
-    private final double DEPLOY_kP = 28;
-    private final double RETRACT_kP = 30;
-    private final double FAST_kP = 35;
+    private final double DEPLOY_kP = 40;
+    private final double RETRACT_kP = 36;
+    private final double FAST_kP = 70;
 
     private final double DEPLOY_kACCEL = 20;
     private final double DEPLOY_kVELO = 30;
@@ -144,25 +144,31 @@ public class IntakeSubsystem extends SubsystemBase {
             new InstantCommand(() -> setRollerSpeed(0.25)),
             new InstantCommand(() -> moveFastTo(magnitude.getAsDouble() * RETRACTED_ROTATIONS)),
             new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS),
-            new InstantCommand(() -> deploy()),
-            new InstantCommand(() -> setRollerSpeed(0))
-        );
+            deployCommand(),
+            stopRollers(),
+            new WaitCommand(INTAKE_TOSS_INTERVAL_SECONDS)
+        ).finallyDo(() -> {
+            deploy();
+            setRollerSpeed(0);
+        });
         
         command.addRequirements(this);
         return command;
     }
 
     public Command fullAgitate() {
-        final double ROTATION_INCREMENT = 0.005;
+        final double ROTATION_INCREMENT = 0.02;
 
-        var command = new InstantCommand(() -> setRollerSpeed(0.25))
-            .andThen(new RunCommand(() -> {
+        var command =
+            new RunCommand(() -> {
+                setRollerSpeed(0.25);
+
                 deployMotor.setControl(deployController.withSlot(1).withPosition(MathUtil.clamp(
                     deployController.getPositionMeasure().magnitude() + ROTATION_INCREMENT,
                     DEPLOYED_ROTATIONS,
                     FULL_AGITATE_ROTATIONS
                 )));
-            }))
+            })
             .finallyDo(() -> {
                 deploy();
                 setRollerSpeed(0);

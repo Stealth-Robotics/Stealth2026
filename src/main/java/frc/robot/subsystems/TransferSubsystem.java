@@ -6,8 +6,6 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-
-import dev.doglog.DogLog;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.DogLogUtil;
@@ -34,8 +32,8 @@ public class TransferSubsystem extends SubsystemBase {
     private final int FEEDER_STATOR_LIMIT = 50;
     
     private final InterpolatingDoubleTreeMap distanceToVoltageMap = new InterpolatingDoubleTreeMap() {{
-        put(2.0, 5.0);
-        put(3.5, 5.0);
+        put(2.0, 6.0);
+        put(3.0, 12.0);
         put(4.0, 12.0);
         put(6.0, 12.0);
     }};
