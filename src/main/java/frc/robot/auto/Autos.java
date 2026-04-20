@@ -28,9 +28,11 @@ public class Autos {
     public enum AutoName {
         LEFT_DOUBLE_BUMP,
         RIGHT_DOUBLE_BUMP,
+
         LEFT_DOUBLE_TRENCH,
         RIGHT_DOUBLE_TRENCH,
-        CENTER_COMPATIBLE
+
+        COMPATIBLE_BUMP_DEPOT
     }
 
     public Autos(DriveSubsystem drive, IntakeSubsystem intake, ShootingSuperstructure shooter) {
@@ -49,106 +51,70 @@ public class Autos {
         .withDefaultShouldFlip()
         .withPoseReset(drive::resetPose);
 
-        //Cache paths
-        buildDoubleBump(AutoSide.LEFT);
-        buildDoubleBump(AutoSide.RIGHT);
-        buildDoubleTrench(AutoSide.LEFT);
-        buildDoubleTrench(AutoSide.RIGHT);
-
-        build1729BurnsFinalsTiebreaker(AutoSide.LEFT);
-        build1729BurnsFinalsTiebreaker(AutoSide.RIGHT);
-
         FollowPath.registerEventTrigger("intake", deployAndIntake());
         FollowPath.registerEventTrigger("spinup", spinupShooter());
         FollowPath.registerEventTrigger("shoot", startShooting());
         FollowPath.registerEventTrigger("stop_shooting", stopShooting());
+
+        //Build autos
+        buildDoubleBump();
+        buildDoubleTrench();
+        buildCompatibleBumpDepot();
     }
 
-    public Command getAuto(AutoName name) {
-        return autoCache.get(name);
+    public HashMap<AutoName, Command> getAutoLibrary() {
+        return autoCache;
     }
 
-    public void build1729BurnsFinalsTiebreaker(AutoSide side) {
-        int shootTime = 15;
-
-        String autoName = (side.equals(AutoSide.LEFT)) ? "LeftCompatibleBump" : "RightCompatibleBump";
-
-        Path path = new Path("CompatibleBump");
-        Path path2 = new Path();
-
-        if (side.equals(AutoSide.LEFT)) {
-            shootTime = 6;
-            path2 = new Path("CompatibleBumpExtension");
-        } 
-        else {
-            path.mirror();
-        }
-
-        FollowPath compatibleBump = pathBuilder.build(path);
-        FollowPath depotSweep = pathBuilder.build(path2);
-
-        Command autoRoutine = new SequentialCommandGroup(
-            new WaitCommand(0.3),
-            compatibleBump.alongWith(new WaitCommand(2).andThen(deployAndIntake())),
-            shootForTime(shootTime),
-            depotSweep.alongWith(deployAndIntake()),
-            startShooting()
+    public void buildCompatibleBumpDepot() {
+        var autoBuilder = new AutoRoutineBuilder(
+            AutoName.COMPATIBLE_BUMP_DEPOT,
+            pathBuilder,
+            autoCache
         );
 
-        autoCache.put(autoName, autoRoutine);
+        autoBuilder
+            .addCommand(new WaitCommand(0.3)) //Starting delay
+            .followPath("CompatibleBump")
+            .addCommand(shootForTime(6))
+            .addCommand(deployAndIntake())
+            .followPath("CompatibleBumpExtension")
+            .addCommand(startShooting())
+            .build();
     }
 
-    public void buildDoubleTrench(AutoSide side) {
-        String autoName = (side.equals(AutoSide.LEFT)) ? "LeftDoubleTrench" : "RightDoubleTrench";
-
-        Path path = new Path("DoubleTrench_1");
-        Path path2 = new Path("DoubleTrench_2");
-
-        if (side.equals(AutoSide.LEFT)) {
-            path.mirror();
-            path2.mirror();
-        }
-
-        FollowPath cycle1 = pathBuilder.build(path);
-        FollowPath cycle2 = pathBuilder.build(path2);
-
-        Command autoRoutine = new SequentialCommandGroup(
-            cycle1,
-            shootForTime(5),
-            deployAndIntake(),
-            cycle2,
-            startShooting()
+    public void buildDoubleTrench() {
+        var autoBuilder = new AutoRoutineBuilder(
+            AutoName.LEFT_DOUBLE_TRENCH,
+            AutoName.RIGHT_DOUBLE_TRENCH,
+            pathBuilder,
+            autoCache
         );
 
-        autoCache.put(autoName, autoRoutine);
+        autoBuilder
+            .followPath("DoubleTrench_1")
+            .addCommand(shootForTime(5))
+            .addCommand(deployAndIntake())
+            .followPath("DoubleTrench_2")
+            .addCommand(startShooting())
+            .build();
     }
 
-    // public void buildDoubleBump(AutoSide side) {
-    //     String autoName = (side.equals(AutoSide.LEFT)) ? "LeftDoubleBump" : "RightDoubleBump";
+    public void buildDoubleBump() {
+        var autoBuilder = new AutoRoutineBuilder(
+            AutoName.LEFT_DOUBLE_BUMP,
+            AutoName.RIGHT_DOUBLE_BUMP,
+            pathBuilder,
+            autoCache
+        );
 
-    //     Path path = new Path("DoubleBump_1");
-    //     Path path2 = new Path("DoubleBump_2");
-
-    //     if (side.equals(AutoSide.LEFT)) {
-    //         path.mirror();
-    //         path2.mirror();
-    //     }
-
-    //     FollowPath cycle1 = pathBuilder.build(path);
-    //     FollowPath cycle2 = pathBuilder.build(path2);
-
-    //     Command autoRoutine = new SequentialCommandGroup(
-    //         cycle1.alongWith(new WaitCommand(0.5).andThen(deployAndIntake())),
-    //         shootForTime(4.2),
-    //         deployAndIntake(),
-    //         cycle2
-    //     );
-
-    //     autoCache.put(autoName, autoRoutine);
-    // }
-
-    public void buildDoubleBump(AutoSide side) {
-        
+        autoBuilder
+            .followPath("DoubleBump_1")
+            .addCommand(shootForTime(4.2))
+            .addCommand(deployAndIntake())
+            .followPath("DoubleBump_2")
+            .addCommand(startShooting())
+            .build();
     }
 
     // AUTO COMMAND HELPERS

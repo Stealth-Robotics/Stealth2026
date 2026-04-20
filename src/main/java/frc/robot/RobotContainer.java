@@ -88,17 +88,13 @@ public class RobotContainer {
     }
 
     /*
-     * Add all our working autonomous routines to the chooser for selection on Elastic
+     * Add all of our autonomous routines to the chooser for selection on Elastic
      */
-    private void addAutosToChooser() {        
-        autoChooser.addOption("LeftDoubleBump", autos.getAuto("LeftDoubleBump"));
-        autoChooser.addOption("RightDoubleBump", autos.getAuto("RightDoubleBump"));
-
-        autoChooser.addOption("LeftDoubleTrench", autos.getAuto("LeftDoubleTrench"));
-        autoChooser.addOption("RightDoubleTrench", autos.getAuto("RightDoubleTrench"));
-
-        autoChooser.addOption("LeftCompatibleBump", autos.getAuto("LeftCompatibleBump"));
-        autoChooser.addOption("RightCompatibleBump", autos.getAuto("RightCompatibleBump"));
+    private void addAutosToChooser() {
+        var autoLibrary = autos.getAutoLibrary();
+        for (var auto : autoLibrary.entrySet()) {
+            autoChooser.addOption(auto.getKey().name(), auto.getValue());
+        }
     }
 
     //Used mostly for telemetry and logging general match info
