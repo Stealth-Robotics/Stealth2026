@@ -1,4 +1,4 @@
-package frc.robot.util;
+package frc.robot.auto;
 
 public enum AutoSide {
     LEFT,
