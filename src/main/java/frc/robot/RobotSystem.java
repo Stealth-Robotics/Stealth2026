@@ -73,8 +73,6 @@ public class RobotSystem extends SubsystemBase {
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
 
-    private final Debouncer odometryDebouncer = new Debouncer(0.2, DebounceType.kRising);
-
     private long lastMs = 0;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
@@ -243,40 +241,17 @@ public class RobotSystem extends SubsystemBase {
 
             for (String limelight : LimelightConstants.LIMELIGHTS) {
                 LimelightHelpers.SetRobotOrientation(limelight, robotRotation.getDegrees(), 0, 0, 0, 0, 0);
-                
-                var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
 
-                boolean isDiverged = odometryDebouncer.calculate(
-                    isGoodPoseEstimate(mt1) &&
-                    Math.abs(robotRotation.minus(mt1.pose.getRotation()).getDegrees()) > LimelightConstants.MAX_HEADING_DIVERGENCE_DEGREES
-                );
+                var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
-                if (isDiverged) {
+                boolean headingClose = Math.abs(robotRotation.minus(mt2.pose.getRotation()).getDegrees()) <= LimelightConstants.MAX_HEADING_DIFFERENCE_DEGREES;
+                if (isGoodPoseEstimate(mt2) && headingClose) {
                     drive.addVisionMeasurement(
-                        mt1.pose,
-                        mt1.timestampSeconds,
-                        LimelightConstants.MT1_STDDEVS
+                        mt2.pose,
+                        mt2.timestampSeconds,
+                        LimelightConstants.MT2_STDDEVS
                     );
                 }
-                else {
-                    var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-                    if (isGoodPoseEstimate(mt2)) {
-                        drive.addVisionMeasurement(
-                            mt2.pose,
-                            mt2.timestampSeconds,
-                            LimelightConstants.MT2_STDDEVS
-                        );
-                    }
-                }
-
-                // var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-                // if (isGoodPoseEstimate(mt2)) {
-                //     drive.addVisionMeasurement(
-                //         mt2.pose,
-                //         mt2.timestampSeconds,
-                //         LimelightConstants.MT2_STDDEVS
-                //     );
-                // }
             }
         }        
     }

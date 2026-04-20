@@ -15,9 +15,8 @@ public class LimelightConstants {
     public static final int LIMELIGHT_DISABLED_THROTTLE = 0;
 
     public static final Vector<N3> MT2_STDDEVS = VecBuilder.fill(0.7, 0.7, 99999.0);
-    public static final Vector<N3> MT1_STDDEVS = VecBuilder.fill(0.1, 0.1, 0.1);
 
-    public static final double MAX_HEADING_DIVERGENCE_DEGREES = 5;
+    public static final double MAX_HEADING_DIFFERENCE_DEGREES = 10;
 
     public static final double MAX_VELO_METERS_PER_SECOND = 3.0;
     public static final double MAX_ANGULAR_VELO_RADIANS_PER_SECOND = 2.0;
