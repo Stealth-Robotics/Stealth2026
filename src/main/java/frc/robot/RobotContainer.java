@@ -103,6 +103,10 @@ public class RobotContainer {
         ShiftTracker.update();
     }
 
+    public void resetAfterAuto() {
+        robot.resetAfterAuto();
+    }
+
     public void resetFuelCounter() {
         robot.resetFuelShotCount();
     }

@@ -58,7 +58,6 @@ public class Robot extends TimedRobot {
 
         //Set the limelight's tag filter & IMU alpha
         for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetFiducialIDFiltersOverride(ll, LimelightConstants.TAG_FILTER_MODE.getTags());
             LimelightHelpers.SetIMUAssistAlpha(ll, LimelightConstants.IMU_ALPHA);
 
             LimelightHelpers.SetThrottle(ll, 0);

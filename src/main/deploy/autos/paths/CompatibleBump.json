@@ -37,6 +37,11 @@
       }
     },
     {
+      "type": "event_trigger",
+      "t_ratio": 0.20659014510701407,
+      "lib_key": "intake"
+    },
+    {
       "type": "waypoint",
       "translation_target": {
         "x_meters": 8.308017393665027,
@@ -122,6 +127,7 @@
     }
   ],
   "constraints": {
+    "end_translation_tolerance_meters": 0.2,
     "max_velocity_meters_per_sec": [
       {
         "value": 2.0,

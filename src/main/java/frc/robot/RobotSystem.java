@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
@@ -72,7 +73,7 @@ public class RobotSystem extends SubsystemBase {
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
 
-    private final Debouncer odometryDivergenceDebouncer = new Debouncer(0.1, DebounceType.kRising);
+    private final Debouncer odometryDebouncer = new Debouncer(0.2, DebounceType.kRising);
 
     private long lastMs = 0;
 
@@ -243,47 +244,44 @@ public class RobotSystem extends SubsystemBase {
             for (String limelight : LimelightConstants.LIMELIGHTS) {
                 LimelightHelpers.SetRobotOrientation(limelight, robotRotation.getDegrees(), 0, 0, 0, 0, 0);
                 
-                // var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
+                var mt1 = LimelightHelpers.getBotPoseEstimate_wpiBlue(limelight);
 
-                // boolean isDiverged = odometryDivergenceDebouncer.calculate(
-                //     isGoodPoseEstimateMT1(mt1) &&
-                //     (Math.abs(drive.getPose().getTranslation().getDistance(mt1.pose.getTranslation())) > LimelightConstants.MAX_POSITION_DIVERGENCE_METERS ||
-                //     Math.abs(robotRotation.minus(mt1.pose.getRotation()).getDegrees()) > LimelightConstants.MAX_HEADING_DIVERGENCE_DEGREES)
-                // );
+                boolean isDiverged = odometryDebouncer.calculate(
+                    isGoodPoseEstimate(mt1) &&
+                    Math.abs(robotRotation.minus(mt1.pose.getRotation()).getDegrees()) > LimelightConstants.MAX_HEADING_DIVERGENCE_DEGREES
+                );
 
-                // if (isDiverged) {
-                //     drive.addVisionMeasurement(
-                //         mt1.pose,
-                //         mt1.timestampSeconds,
-                //         LimelightConstants.MT1_STDDEVS
-                //     );
-
-                //     System.out.println("Fixed divergence");
-                // }
-                // else {
-                //     var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-                //     if (isGoodPoseEstimateMT2(mt2)) {
-                //         drive.addVisionMeasurement(
-                //             mt2.pose,
-                //             mt2.timestampSeconds,
-                //             LimelightConstants.MT2_STDDEVS
-                //         );
-                //     }
-                // }
-
-                var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-                if (isGoodPoseEstimateMT2(mt2)) {
+                if (isDiverged) {
                     drive.addVisionMeasurement(
-                        mt2.pose,
-                        mt2.timestampSeconds,
-                        LimelightConstants.MT2_STDDEVS
+                        mt1.pose,
+                        mt1.timestampSeconds,
+                        LimelightConstants.MT1_STDDEVS
                     );
                 }
+                else {
+                    var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+                    if (isGoodPoseEstimate(mt2)) {
+                        drive.addVisionMeasurement(
+                            mt2.pose,
+                            mt2.timestampSeconds,
+                            LimelightConstants.MT2_STDDEVS
+                        );
+                    }
+                }
+
+                // var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
+                // if (isGoodPoseEstimate(mt2)) {
+                //     drive.addVisionMeasurement(
+                //         mt2.pose,
+                //         mt2.timestampSeconds,
+                //         LimelightConstants.MT2_STDDEVS
+                //     );
+                // }
             }
         }        
     }
 
-    private boolean isGoodPoseEstimateMT2(PoseEstimate poseEstimate) {
+    private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
         if (
             poseEstimate == null ||
             poseEstimate.pose == null ||
@@ -303,6 +301,13 @@ public class RobotSystem extends SubsystemBase {
         }
         
         return true;
+    }
+
+    public void resetAfterAuto() {
+        CommandScheduler.getInstance().schedule(
+            intake.stopRollers(),
+            shooter.stopShooting()
+        );
     }
 
     public void resetFuelShotCount() {

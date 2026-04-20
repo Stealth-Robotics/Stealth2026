@@ -52,9 +52,6 @@ public class Autos {
         .withPoseReset(drive::resetPose);
 
         FollowPath.registerEventTrigger("intake", deployAndIntake());
-        FollowPath.registerEventTrigger("spinup", spinupShooter());
-        FollowPath.registerEventTrigger("shoot", startShooting());
-        FollowPath.registerEventTrigger("stop_shooting", stopShooting());
 
         //Build autos
         buildDoubleBump();
@@ -66,6 +63,10 @@ public class Autos {
         return autoCache;
     }
 
+    /*
+     * Starts on the left bump, does one mid cycle, shoots and then grabs the depot while shooting
+     * https://www.youtube.com/watch?v=FGAFQMbGrpY
+     */
     public void buildCompatibleBumpDepot() {
         var autoBuilder = new AutoRoutineBuilder(
             AutoName.COMPATIBLE_BUMP_DEPOT,
@@ -78,8 +79,8 @@ public class Autos {
             .followPath("CompatibleBump")
             .addCommand(shootForTime(6))
             .addCommand(deployAndIntake())
+            .addCommand(shoot())
             .followPath("CompatibleBumpExtension")
-            .addCommand(startShooting())
             .build();
     }
 
@@ -96,7 +97,7 @@ public class Autos {
             .addCommand(shootForTime(5))
             .addCommand(deployAndIntake())
             .followPath("DoubleTrench_2")
-            .addCommand(startShooting())
+            .addCommand(shootWithAgitate())
             .build();
     }
 
@@ -113,7 +114,7 @@ public class Autos {
             .addCommand(shootForTime(4.2))
             .addCommand(deployAndIntake())
             .followPath("DoubleBump_2")
-            .addCommand(startShooting())
+            .addCommand(shootWithAgitate())
             .build();
     }
 
@@ -133,13 +134,13 @@ public class Autos {
 
     private Command shootForTime(double seconds) {
         return new SequentialCommandGroup(
-            startShooting(),
+            shootWithAgitate(),
             new WaitCommand(seconds),
             stopShooting()
         );
     }
 
-    private Command startShooting() {
+    private Command shootWithAgitate() {
         return new ScheduleCommand(shooter.shoot().alongWith(
             new SequentialCommandGroup(
                 new ParallelDeadlineGroup(
@@ -149,6 +150,10 @@ public class Autos {
                 intake.fullAgitate()
             )
         ));
+    }
+
+    private Command shoot() {
+        return new ScheduleCommand(shooter.shoot());
     }
 
     private Command stopShooting() {
