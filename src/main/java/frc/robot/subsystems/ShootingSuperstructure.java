@@ -206,9 +206,11 @@ public class ShootingSuperstructure extends SubsystemBase {
     public Command clearTransfer() {
         return run(() -> {
             transfer.reverseFeed();
+            transfer.reverseSpin();
             shooter.spinToRPM(SHOOTER_REVERSE_RPM);
         }).finallyDo(() -> { 
             transfer.stopFeeding();
+            transfer.stopSpinning();
             shooter.coastShooter();
         });
     }

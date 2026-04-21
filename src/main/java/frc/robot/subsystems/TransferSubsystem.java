@@ -20,6 +20,7 @@ public class TransferSubsystem extends SubsystemBase {
     private final VoltageOut spindexerController = new VoltageOut(0);
     private final VoltageOut feederController = new VoltageOut(0);
 
+    private final double SPINNING_VOLTAGE = 12;
     private final double FEEDING_VOLTAGE = 12;
 
     private final int SPINDEXER_MOTOR_ID = 5;
@@ -72,6 +73,10 @@ public class TransferSubsystem extends SubsystemBase {
 
     public void spin(double metersToTarget) {
         spinAtVoltage(distanceToVoltageMap.get(metersToTarget));
+    }
+
+    public void reverseSpin() {
+        spinAtVoltage(-SPINNING_VOLTAGE);
     }
 
     private void spinAtVoltage(double voltage) {
