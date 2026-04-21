@@ -101,7 +101,8 @@ public class RobotSystem extends SubsystemBase {
         );
         raiseOnBumpTrigger.onTrue(intake.safeCommand());
 
-        Trigger lowerWhenNotOnBumpTrigger = new Trigger(() -> 
+        Trigger lowerWhenNotOnBumpTrigger = new Trigger(() ->
+            !DriverStation.isAutonomous() &&
             !ZoneManager.inBumpZone() &&
             intake.isSafe() &&
             !intake.isRetracting() &&
