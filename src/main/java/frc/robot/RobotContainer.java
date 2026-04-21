@@ -79,6 +79,9 @@ public class RobotContainer {
         driverController.rightStick().onTrue(robot.seedFieldCentric());
         driverController.leftBumper().whileTrue(robot.activatePrecisionDriving());
 
+        // uncomment for pigeon yaw testings
+        // driverController.start().onTrue(new InstantCommand(() -> robot.getDrive().getPigeon2().reset()));
+
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
  
         operatorController.povUp()
