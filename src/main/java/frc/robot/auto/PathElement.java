@@ -12,9 +12,9 @@ public class PathElement implements AutoElement {
     }
 
     @Override
-    public Command build(AutoSide side, Builder builder) {
+    public Command build(AutoSide side, boolean doNotFlip, Builder builder) {
         Path p = new Path(pathName);
-        if (side == AutoSide.RIGHT) 
+        if (!doNotFlip && side == AutoSide.LEFT)
             p.mirror();
         return builder.build(p);
     }

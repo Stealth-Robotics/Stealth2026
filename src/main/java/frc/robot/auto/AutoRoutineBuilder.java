@@ -3,6 +3,8 @@ package frc.robot.auto;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Supplier;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.auto.Autos.AutoName;
@@ -14,6 +16,8 @@ public class AutoRoutineBuilder {
     private final AutoName leftName;
     private final AutoName rightName;
 
+    private final boolean doNotFlip;
+
     private final HashMap<AutoName, Command> cache;
     private final List<AutoElement> autoComposition = new ArrayList<>();
 
@@ -24,6 +28,8 @@ public class AutoRoutineBuilder {
         this.leftName = leftName;
         this.rightName = rightName;
         this.cache = cache;
+
+        doNotFlip = false;
     }
 
     public AutoRoutineBuilder(AutoName name, Builder pathBuilder, HashMap<AutoName, Command> cache) {
@@ -31,6 +37,8 @@ public class AutoRoutineBuilder {
         this.leftName = name;
         this.rightName = null;
         this.cache = cache;
+
+        doNotFlip = true;
     }
 
     public AutoRoutineBuilder followPath(String pathName) {
@@ -38,7 +46,7 @@ public class AutoRoutineBuilder {
         return this;
     }
 
-    public AutoRoutineBuilder addCommand(Command command) {
+    public AutoRoutineBuilder addCommand(Supplier<Command> command) {
         autoComposition.add(new CommandElement(command));
         return this;
     }
@@ -50,11 +58,11 @@ public class AutoRoutineBuilder {
             if (name == null)
                 break;
 
-            List<Command> autoCommand = new ArrayList<>();
+            SequentialCommandGroup autoCommand = new SequentialCommandGroup();
             for (AutoElement autoStep : autoComposition) {
-                autoCommand.add(autoStep.build(side, pathBuilder));
+                autoCommand.addCommands(autoStep.build(side, doNotFlip, pathBuilder));
             }
-            cache.put(name, new SequentialCommandGroup(autoCommand.toArray(new Command[0])));
+            cache.put(name, autoCommand);
         }
     }
 }

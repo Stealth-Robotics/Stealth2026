@@ -3,15 +3,12 @@ package frc.robot.auto;
 import java.util.HashMap;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.ConditionalCommand;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.lib.BLine.FollowPath;
 import frc.robot.lib.BLine.FollowPath.Builder;
-import frc.robot.lib.BLine.Path;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
@@ -32,7 +29,9 @@ public class Autos {
         LEFT_DOUBLE_TRENCH,
         RIGHT_DOUBLE_TRENCH,
 
-        COMPATIBLE_BUMP_DEPOT
+        COMPATIBLE_BUMP_DEPOT,
+
+        LEFT_TRENCH_STEAL
     }
 
     public Autos(DriveSubsystem drive, IntakeSubsystem intake, ShootingSuperstructure shooter) {
@@ -51,16 +50,33 @@ public class Autos {
         .withDefaultShouldFlip()
         .withPoseReset(drive::resetPose);
 
+        // FollowPath.registerEventTrigger("shoot", shoot());
+        // FollowPath.registerEventTrigger("stop_shoot", stopShooting());
         FollowPath.registerEventTrigger("intake", deployAndIntake());
 
         //Build autos
         buildDoubleBump();
         buildDoubleTrench();
         buildCompatibleBumpDepot();
+        buildLeftTrenchSteal();
     }
 
     public HashMap<AutoName, Command> getAutoLibrary() {
         return autoCache;
+    }
+
+    public void buildLeftTrenchSteal() {
+        var autoBuilder = new AutoRoutineBuilder(
+            AutoName.LEFT_TRENCH_STEAL,
+            pathBuilder,
+            autoCache
+        );
+
+        autoBuilder
+            .addCommand(() -> new WaitCommand(2))
+            .followPath("LeftTrenchSteal")
+            .addCommand(() -> shootWithAgitate())
+            .build();
     }
 
     /*
@@ -75,12 +91,12 @@ public class Autos {
         );
 
         autoBuilder
-            .addCommand(new WaitCommand(0.3)) //Starting delay
+            .addCommand(() -> new WaitCommand(0.25)) //Starting delay
             .followPath("CompatibleBump")
-            .addCommand(shootForTime(6))
-            .addCommand(deployAndIntake())
-            .addCommand(shoot())
+            .addCommand(() -> shootForTime(5))
+            .addCommand(() -> deployAndIntake())
             .followPath("CompatibleBumpExtension")
+            .addCommand(() -> shootWithAgitate())
             .build();
     }
 
@@ -94,10 +110,10 @@ public class Autos {
 
         autoBuilder
             .followPath("DoubleTrench_1")
-            .addCommand(shootForTime(5))
-            .addCommand(deployAndIntake())
+            .addCommand(() -> shootForTime(5))
+            .addCommand(() -> deployAndIntake())
             .followPath("DoubleTrench_2")
-            .addCommand(shootWithAgitate())
+            .addCommand(() -> shootWithAgitate())
             .build();
     }
 
@@ -111,10 +127,10 @@ public class Autos {
 
         autoBuilder
             .followPath("DoubleBump_1")
-            .addCommand(shootForTime(4.2))
-            .addCommand(deployAndIntake())
+            .addCommand(() -> shootForTime(4))
+            .addCommand(() -> deployAndIntake())
             .followPath("DoubleBump_2")
-            .addCommand(shootWithAgitate())
+            .addCommand(() -> shootWithAgitate())
             .build();
     }
 

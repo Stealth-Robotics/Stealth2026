@@ -44,8 +44,11 @@ public class ZoneManager {
     }
 
     public static boolean inBumpZone() {
-        return AllianceUtility.flipRectZone(leftBump).contains(robotPose.getTranslation()) ||
-        AllianceUtility.flipRectZone(rightBump).contains(robotPose.getTranslation());
+        return 
+            leftBump.contains(robotPose.getTranslation()) ||
+            AllianceUtility.forceFlipRectZone(leftBump).contains(robotPose.getTranslation()) ||
+            rightBump.contains(robotPose.getTranslation()) ||
+            AllianceUtility.forceFlipRectZone(rightBump).contains(robotPose.getTranslation());
     }
 
     private static boolean inHubZone() {
