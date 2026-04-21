@@ -32,7 +32,8 @@ public class Autos {
         LEFT_DOUBLE_TRENCH,
         RIGHT_DOUBLE_TRENCH,
 
-        COMPATIBLE_BUMP_DEPOT
+        LEFT_COMPATIBLE_BUMP_DEPOT,
+        RIGHT_COMPATIBLE_BUMP_DEPOT
     }
 
     public Autos(DriveSubsystem drive, IntakeSubsystem intake, ShootingSuperstructure shooter) {
@@ -56,7 +57,8 @@ public class Autos {
         //Build autos
         buildDoubleBump();
         buildDoubleTrench();
-        buildCompatibleBumpDepot();
+        buildCompatibleBumpDepotLeft();
+        buildCompatibleBumpDepotRight();
     }
 
     public HashMap<AutoName, Command> getAutoLibrary() {
@@ -67,20 +69,35 @@ public class Autos {
      * Starts on the left bump, does one mid cycle, shoots and then grabs the depot while shooting
      * https://www.youtube.com/watch?v=FGAFQMbGrpY
      */
-    public void buildCompatibleBumpDepot() {
+    public void buildCompatibleBumpDepotLeft() {
         var autoBuilder = new AutoRoutineBuilder(
-            AutoName.COMPATIBLE_BUMP_DEPOT,
+            AutoName.LEFT_COMPATIBLE_BUMP_DEPOT,
             pathBuilder,
             autoCache
         );
 
         autoBuilder
-            .addCommand(new WaitCommand(0.3)) //Starting delay
+            .addCommand(new WaitCommand(0.2)) //Starting delay
             .followPath("CompatibleBump")
-            .addCommand(shootForTime(6))
             .addCommand(deployAndIntake())
             .addCommand(shoot())
-            .followPath("CompatibleBumpExtension")
+            .followPath("CompatibleBumpExtension_L")
+            .build();
+    }
+
+    public void buildCompatibleBumpDepotRight() {
+        var autoBuilder = new AutoRoutineBuilder(
+            AutoName.RIGHT_COMPATIBLE_BUMP_DEPOT,
+            pathBuilder,
+            autoCache
+        );
+
+        autoBuilder
+            .addCommand(new WaitCommand(0.2)) //Starting delay
+            .followPath("CompatibleBump")
+            .addCommand(deployAndIntake())
+            .addCommand(shoot())
+            .followPath("CompatibleBumpExtension_R")
             .build();
     }
 
