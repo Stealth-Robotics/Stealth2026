@@ -83,13 +83,13 @@ public class TunerConstants {
             new GyroTrimConfigs()
                 .withGyroScalarX(0)
                 .withGyroScalarY(0)
-                .withGyroScalarZ(-5)
+                .withGyroScalarZ(-6.951)
         )
         .withMountPose(
             new MountPoseConfigs()
-                .withMountPoseYaw(2.164)
-                .withMountPosePitch(0.15)
-                .withMountPoseRoll(-0.54)
+                .withMountPoseYaw(-0.0995)
+                .withMountPosePitch(-1.4814)
+                .withMountPoseRoll(-0.44326)
         );
 
     // CAN bus that the devices are located on;
