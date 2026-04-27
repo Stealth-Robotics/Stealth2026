@@ -3,9 +3,13 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot;
 
+import java.util.HashMap;
+import java.util.function.Consumer;
+
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
 import edu.wpi.first.hal.simulation.RoboRioDataJNI;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -13,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+
 import frc.robot.auto.Autos;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShiftTracker;
@@ -25,6 +30,7 @@ public class RobotContainer {
 
     private final Autos autos;
     private final SendableChooser<Command> autoChooser = new SendableChooser<>();
+    private final HashMap<String, Rotation2d> autoInitialDirections = new HashMap<>();
 
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
@@ -51,10 +57,21 @@ public class RobotContainer {
 
         configureBindings();
         addAutosToChooser();
+        autoChooser.onChange(getAutonomousCommandScheduler());
     }
 
     public Command getAutonomousCommand() {
         return autoChooser.getSelected();
+    }
+
+    public Consumer<Command> getAutonomousCommandScheduler() {
+        return (cmd) -> {
+            String name = autoChooser.getSelected().getName();
+            Rotation2d initialDir = autoInitialDirections.get(name);
+            if (initialDir != null) {
+                robot.getDrive().setModuleOrientations(initialDir);
+            }
+        };
     }
 
     private void configureBindings() {
@@ -95,8 +112,17 @@ public class RobotContainer {
      */
     private void addAutosToChooser() {
         var autoLibrary = autos.getAutoLibrary();
+        var autoDirections = autos.getAutoDirections(); // ADD
+
         for (var auto : autoLibrary.entrySet()) {
-            autoChooser.addOption(auto.getKey().name(), auto.getValue());
+            String name = auto.getKey().name();
+            autoChooser.addOption(name, auto.getValue());
+
+            // Cache the initial direction by command name
+            Rotation2d dir = autoDirections.get(auto.getKey());
+            if (dir != null) {
+                autoInitialDirections.put(name, dir);
+            }
         }
     }
 

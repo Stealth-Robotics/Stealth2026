@@ -2,6 +2,7 @@ package frc.robot.auto;
 
 import java.util.HashMap;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.ScheduleCommand;
@@ -16,6 +17,7 @@ import frc.robot.subsystems.ShootingSuperstructure;
 public class Autos {
     private Builder pathBuilder;
     private final HashMap<AutoName, Command> autoCache = new HashMap<>();
+    private final HashMap<AutoName, Rotation2d> autoDirections = new HashMap<>();
 
     private final IntakeSubsystem intake;
     private final ShootingSuperstructure shooter;
@@ -35,8 +37,8 @@ public class Autos {
     }
 
     public Autos(DriveSubsystem drive, IntakeSubsystem intake, ShootingSuperstructure shooter) {
-        this.intake = intake;
-        this.shooter = shooter;
+       this.intake = intake;
+       this.shooter = shooter;
 
         pathBuilder = new FollowPath.Builder(
             drive,
@@ -65,33 +67,29 @@ public class Autos {
         return autoCache;
     }
 
+    public HashMap<AutoName, Rotation2d> getAutoDirections() {
+        return autoDirections;
+    }
+
     public void buildLeftTrenchSteal() {
-        var autoBuilder = new AutoRoutineBuilder(
+        new AutoRoutineBuilder(
             AutoName.LEFT_TRENCH_STEAL,
             pathBuilder,
-            autoCache
-        );
-
-        autoBuilder
+            autoCache,
+            autoDirections)
             .addCommand(() -> new WaitCommand(2))
             .followPath("LeftTrenchSteal")
             .addCommand(() -> shootWithAgitate())
             .build();
     }
 
-    /*
-     * Starts on the left bump, does one mid cycle, shoots and then grabs the depot while shooting
-     * https://www.youtube.com/watch?v=FGAFQMbGrpY
-     */
     public void buildCompatibleBumpDepot() {
-        var autoBuilder = new AutoRoutineBuilder(
+        new AutoRoutineBuilder(
             AutoName.COMPATIBLE_BUMP_DEPOT,
             pathBuilder,
-            autoCache
-        );
-
-        autoBuilder
-            .addCommand(() -> new WaitCommand(0.25)) //Starting delay
+            autoCache,
+            autoDirections)
+            .addCommand(() -> new WaitCommand(0.25))
             .followPath("CompatibleBump")
             .addCommand(() -> shootForTime(5))
             .addCommand(() -> deployAndIntake())
@@ -101,14 +99,12 @@ public class Autos {
     }
 
     public void buildDoubleTrench() {
-        var autoBuilder = new AutoRoutineBuilder(
+        new AutoRoutineBuilder(
             AutoName.LEFT_DOUBLE_TRENCH,
             AutoName.RIGHT_DOUBLE_TRENCH,
             pathBuilder,
-            autoCache
-        );
-
-        autoBuilder
+            autoCache,
+            autoDirections)
             .followPath("DoubleTrench_1")
             .addCommand(() -> shootForTime(5))
             .addCommand(() -> deployAndIntake())
@@ -118,14 +114,12 @@ public class Autos {
     }
 
     public void buildDoubleBump() {
-        var autoBuilder = new AutoRoutineBuilder(
+        new AutoRoutineBuilder(
             AutoName.LEFT_DOUBLE_BUMP,
             AutoName.RIGHT_DOUBLE_BUMP,
             pathBuilder,
-            autoCache
-        );
-
-        autoBuilder
+            autoCache,
+            autoDirections)
             .followPath("DoubleBump_1")
             .addCommand(() -> shootForTime(4))
             .addCommand(() -> deployAndIntake())
@@ -133,9 +127,7 @@ public class Autos {
             .addCommand(() -> shootWithAgitate())
             .build();
     }
-
-    // AUTO COMMAND HELPERS
-
+    
     private Command deployAndIntake() {
         return new ScheduleCommand(intake.deployCommand().andThen(intake.startRollers()));
     }

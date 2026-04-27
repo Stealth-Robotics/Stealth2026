@@ -81,6 +81,8 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     private final SwerveRequest.SysIdSwerveSteerGains m_steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
     private final SwerveRequest.SysIdSwerveRotation m_rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
 
+    private final SwerveRequest.PointWheelsAt m_pointWheelsAt = new SwerveRequest.PointWheelsAt();
+
     /* SysId routine for characterizing translation. This is used to find PID gains for the drive motors. */
     private final SysIdRoutine m_sysIdRoutineTranslation = new SysIdRoutine(
         new SysIdRoutine.Config(
@@ -220,6 +222,17 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         if (Utils.isSimulation()) {
             startSimThread();
         }
+    }
+
+    /**
+     * Pre-orients all swerve modules to the given direction.
+     * Call from disabledPeriodic when auto selection changes to eliminate
+     * the first-frame pivot delay when the path starts.
+     *
+     * @param direction The direction to point all modules toward
+     */
+    public void setModuleOrientations(Rotation2d direction) {
+        setControl(m_pointWheelsAt.withModuleDirection(direction));
     }
 
     /**
