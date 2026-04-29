@@ -77,7 +77,7 @@ public class RobotSystem extends SubsystemBase {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
         shooter = new ShootingSuperstructure(
-            () -> drive.getPose(), 
+            () -> drive.getPose(),
             () -> drive.getFieldRelativeVelocity()
         );
 
@@ -98,15 +98,17 @@ public class RobotSystem extends SubsystemBase {
         Trigger retractTrigger = new Trigger(retract);
         retractTrigger.onTrue(intake.retractCommand());
 
+        //TODO: Comment out if auto issues (auto not shooting or stopping mid-auto)
+
         Trigger raiseOnBumpTrigger = new Trigger(() -> 
             ZoneManager.inBumpZone() &&
             intake.isDeployed() &&
             !deploy.getAsBoolean()
         );
-        raiseOnBumpTrigger.onTrue(intake.safeCommand());
+        raiseOnBumpTrigger.onTrue(new InstantCommand(() -> intake.safe()));
 
         Trigger lowerWhenNotOnBumpTrigger = new Trigger(() ->
-            !DriverStation.isAutonomous() &&
+            // !DriverStation.isAutonomous() &&
             !ZoneManager.inBumpZone() &&
             intake.isSafe() &&
             !intake.isRetracting() &&
@@ -114,7 +116,7 @@ public class RobotSystem extends SubsystemBase {
             !fullAgitate.getAsBoolean() &&
             !deploy.getAsBoolean()
         );
-        lowerWhenNotOnBumpTrigger.onTrue(intake.deployCommand());
+        lowerWhenNotOnBumpTrigger.onTrue(new InstantCommand(() -> intake.deploy()));
 
         Trigger quickAgitateTrigger = new Trigger(() -> quickAgitate.getAsBoolean() && !deploy.getAsBoolean());
         quickAgitateTrigger.whileTrue(intake.quickAgitate(() -> 0.5).repeatedly());
@@ -251,8 +253,7 @@ public class RobotSystem extends SubsystemBase {
 
                 var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
-                boolean headingClose = Math.abs(robotRotation.minus(mt2.pose.getRotation()).getDegrees()) <= LimelightConstants.MAX_HEADING_DIFFERENCE_DEGREES;
-                if (isGoodPoseEstimate(mt2) && headingClose) {
+                if (isGoodPoseEstimate(mt2)) {
                     drive.addVisionMeasurement(
                         mt2.pose,
                         mt2.timestampSeconds,

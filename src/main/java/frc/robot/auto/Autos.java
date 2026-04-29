@@ -29,6 +29,9 @@ public class Autos {
         LEFT_DOUBLE_TRENCH,
         RIGHT_DOUBLE_TRENCH,
 
+        LEFT_SIMPLE_BUMP,
+        RIGHT_SIMPLE_BUMP,
+
         COMPATIBLE_BUMP_DEPOT,
 
         LEFT_TRENCH_STEAL
@@ -57,6 +60,8 @@ public class Autos {
         //Build autos
         buildDoubleBump();
         buildDoubleTrench();
+        buildSimpleBump();
+        
         buildCompatibleBumpDepot();
     }
 
@@ -81,6 +86,25 @@ public class Autos {
             .addCommand(() -> shootForTime(5))
             .addCommand(() -> deployAndIntake())
             .followPath("CompatibleBumpExtension")
+            .addCommand(() -> shootWithAgitate())
+            .build();
+    }
+
+    /*
+     * Pauses then does one close hub sweep over the bump and returns over the bump to empty
+     */
+    public void buildSimpleBump() {
+        var autoBuilder = new AutoRoutineBuilder(
+            AutoName.LEFT_SIMPLE_BUMP,
+            AutoName.RIGHT_SIMPLE_BUMP,
+            pathBuilder,
+            autoCache
+        );
+
+        autoBuilder
+            .addCommand(() -> new WaitCommand(3))
+            .addCommand(() -> deployAndIntake())
+            .followPath("SimpleBump")
             .addCommand(() -> shootWithAgitate())
             .build();
     }

@@ -216,7 +216,7 @@ public class IntakeSubsystem extends SubsystemBase {
         deployMotor.setControl(deployController.withSlot(1).withPosition(RETRACTED_ROTATIONS));
     }
 
-    private void safe() {
+    public void safe() {
         isRetracting = false;
         deployMotor.setControl(deployController.withSlot(1).withPosition(SAFE_ROTATIONS));
     }
