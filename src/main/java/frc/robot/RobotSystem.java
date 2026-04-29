@@ -113,7 +113,7 @@ public class RobotSystem extends SubsystemBase {
         lowerWhenNotOnBumpTrigger.onTrue(intake.deployCommand());
 
         Trigger quickAgitateTrigger = new Trigger(() -> quickAgitate.getAsBoolean() && !deploy.getAsBoolean());
-        quickAgitateTrigger.whileTrue(intake.quickAgitate(() -> 0.4).repeatedly());
+        quickAgitateTrigger.whileTrue(intake.quickAgitate(() -> 0.5).repeatedly());
 
         Trigger fullAgitateTrigger = new Trigger(() -> fullAgitate.getAsBoolean() && !deploy.getAsBoolean());
         fullAgitateTrigger.whileTrue(intake.fullAgitate());

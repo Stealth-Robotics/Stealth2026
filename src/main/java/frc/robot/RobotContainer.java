@@ -28,10 +28,10 @@ public class RobotContainer {
 
     public RobotContainer() {
         DogLog.setOptions(new DogLogOptions()
+            .withCaptureConsole(true)
             .withNtPublish(true)
             .withCaptureDs(false)
             .withLogExtras(false)
-            .withCaptureConsole(true)
         );
 
         robot = new RobotSystem(driverController, operatorController);
