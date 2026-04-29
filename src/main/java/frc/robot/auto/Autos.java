@@ -103,6 +103,10 @@ public class Autos {
             .build();
     }
 
+    /*
+     * Similar to compatible bump depot, but instead of cycling clockwise, it goes behind the hub
+     * and runs a counter clockwise sweep for greater bot compatability
+     */
     public void buildCompatibleBumpDepotMid() {
         var autoBuilder = new AutoRoutineBuilder(
             AutoName.COMPATIBLE_BUMP_DEPOT_MID, 
