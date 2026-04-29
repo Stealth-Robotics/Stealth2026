@@ -237,7 +237,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private void logMotorData() {
         var currentMs = System.currentTimeMillis();
-        if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+        if (currentMs - lastMs >= DogLogUtil.LOW_PRI_LOGGING_INTERVAL_MS) {
             BaseStatusSignal.refreshAll(
                 shooterMotor1.getSupplyCurrent(), shooterMotor1.getStatorCurrent(), shooterMotor1.getDeviceTemp(),
                 shooterMotor2.getSupplyCurrent(), shooterMotor2.getStatorCurrent(), shooterMotor2.getDeviceTemp(),

@@ -110,7 +110,7 @@ public class TransferSubsystem extends SubsystemBase {
 
     private void logMotorData() {
         long currentMs = System.currentTimeMillis();
-        if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
+        if (currentMs - lastMs >= DogLogUtil.LOW_PRI_LOGGING_INTERVAL_MS) {
             BaseStatusSignal.refreshAll(
                 spindexerMotor.getSupplyCurrent(), spindexerMotor.getStatorCurrent(), spindexerMotor.getDeviceTemp(),
                 feederMotor.getSupplyCurrent(), feederMotor.getStatorCurrent(), feederMotor.getDeviceTemp()

@@ -61,25 +61,10 @@ public class Autos {
         buildDoubleTrench();
         buildCompatibleBumpDepot();
         buildCompatibleBumpDepotMid();
-        buildLeftTrenchSteal();
     }
 
     public HashMap<AutoName, Command> getAutoLibrary() {
         return autoCache;
-    }
-
-    public void buildLeftTrenchSteal() {
-        var autoBuilder = new AutoRoutineBuilder(
-            AutoName.LEFT_TRENCH_STEAL,
-            pathBuilder,
-            autoCache
-        );
-
-        autoBuilder
-            .addCommand(() -> new WaitCommand(2))
-            .followPath("LeftTrenchSteal")
-            .addCommand(() -> shootWithAgitate())
-            .build();
     }
 
     /*
