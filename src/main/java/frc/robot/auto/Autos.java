@@ -31,6 +31,8 @@ public class Autos {
 
         COMPATIBLE_BUMP_DEPOT,
 
+        COMPATIBLE_BUMP_DEPOT_MID,
+
         LEFT_TRENCH_STEAL
     }
 
@@ -58,6 +60,7 @@ public class Autos {
         buildDoubleBump();
         buildDoubleTrench();
         buildCompatibleBumpDepot();
+        buildCompatibleBumpDepotMid();
         buildLeftTrenchSteal();
     }
 
@@ -98,6 +101,23 @@ public class Autos {
             .followPath("CompatibleBumpExtension")
             .addCommand(() -> shootWithAgitate())
             .build();
+    }
+
+    public void buildCompatibleBumpDepotMid() {
+        var autoBuilder = new AutoRoutineBuilder(
+            AutoName.COMPATIBLE_BUMP_DEPOT_MID, 
+            pathBuilder, 
+            autoCache
+        );
+
+        autoBuilder
+            .addCommand(() -> new WaitCommand(0.25))
+            .followPath("CompatibleBump2")
+            .addCommand(() -> shootForTime(5))
+            .addCommand(() -> deployAndIntake())
+            .followPath("CompatibleBumpExtension")
+            .addCommand(() -> shootWithAgitate())
+            .build();            
     }
 
     public void buildDoubleTrench() {
