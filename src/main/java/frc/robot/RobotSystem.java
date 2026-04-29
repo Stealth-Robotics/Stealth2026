@@ -50,8 +50,10 @@ public class RobotSystem extends SubsystemBase {
 
     //Allows us to disable certain logging for performance reasons
     private final boolean LOG_LIMELIGHTS = true;
-    private final boolean LOG_SWERVE_DRIVE = true;
-    private final boolean LOG_PDH = true;
+    private final boolean LOG_SWERVE_DRIVE = false;
+    private final boolean LOG_PDH = false;
+    private final boolean LOG_PIGEON = false;
+    private final boolean LOG_RIO_CAN = false;
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
     private DrivingMode lastDrivingMode = DrivingMode.NORMAL;
@@ -67,7 +69,9 @@ public class RobotSystem extends SubsystemBase {
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
 
-    private long lastMs = 0;
+    private long lastLowPriLogMs = 0;
+    private long lastLimelightLogMs = 0;
+    private long lastHighPriStatsLogMs = 0;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -292,6 +296,10 @@ public class RobotSystem extends SubsystemBase {
         shooter.resetFuelShotCount();
     }
 
+    public DriveSubsystem getDrive() {
+        return drive;
+    }
+
     @Override
     public void periodic() {
         var drivePose = drive.getPose();
@@ -306,46 +314,73 @@ public class RobotSystem extends SubsystemBase {
         //Update the field's robot pose
         elasticField.setRobotPose(drivePose);
 
-        DogLog.forceNt.log("Current Zone", ZoneManager.getZone().name());
-        DogLog.forceNt.log("Driving Mode", currentDrivingMode.name());
-        DogLog.forceNt.log("Drive Pose", drivePose);
+        // All logging of data
+        logStats(drivePose);
+    }
 
-        if (LOG_LIMELIGHTS) {
-            for (String ll : LimelightConstants.LIMELIGHTS) {
-                PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
-                if (m1Pose != null) {
-                    DogLog.log(ll + "/M1Pose", m1Pose.pose);
-
-                    List<Pose3d> visibleTags = new ArrayList<>();
-                    for (var tag : m1Pose.rawFiducials) {
-                        tagFieldLayout.getTagPose(tag.id).ifPresent(visibleTags::add);
-                    }
-
-                    if (!visibleTags.isEmpty())
-                        DogLog.log(ll + "/VisibleTags", visibleTags.toArray(new Pose3d[0]));
-                }
-            }
+    private void logStats(Pose2d drivePose) {
+        long currentMs = System.currentTimeMillis();
+        if (currentMs - lastHighPriStatsLogMs >= DogLogUtil.HIGH_PRI_STATS_LOGGING_INTERVAL) {
+            DogLog.forceNt.log("Current Zone", ZoneManager.getZone().name());
+            DogLog.forceNt.log("Driving Mode", currentDrivingMode.name());
+            DogLog.forceNt.log("Drive Pose", drivePose);       
+            lastHighPriStatsLogMs = currentMs;
         }
+
+        if (currentMs - lastLowPriLogMs >= DogLogUtil.LOW_PRI_LOGGING_INTERVAL_MS) {
+            logPdhStats();
+            logCanStats();
+            logDriveStats();
+            logPigeonStats();
+            lastLowPriLogMs = currentMs;
+        }
+
+        logLimelightStats();
+    }   
+
+    private void logLimelightStats() {
+        if (!LOG_LIMELIGHTS) return;
 
         long currentMs = System.currentTimeMillis();
-        if (currentMs - lastMs >= DogLogUtil.MOTOR_LOGGING_INTERVAL_MS) {
-            if (LOG_SWERVE_DRIVE)
-                logDriveStats();
-            logStats();
-            logPdhStats();
-            lastMs = currentMs;
-        }
+        if (currentMs - lastLimelightLogMs < DogLogUtil.LIMELIGHT_LOGGING_INTERVAL) return;
+        
+        lastLimelightLogMs = currentMs;
+
+        for (String ll : LimelightConstants.LIMELIGHTS) {
+            PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
+            if (m1Pose != null) {
+                DogLog.log(ll + "/M1Pose", m1Pose.pose);
+
+                List<Pose3d> visibleTags = new ArrayList<>();
+                for (var tag : m1Pose.rawFiducials) {
+                    tagFieldLayout.getTagPose(tag.id).ifPresent(visibleTags::add);
+                }
+
+                if (!visibleTags.isEmpty())
+                    DogLog.log(ll + "/VisibleTags", visibleTags.toArray(new Pose3d[0]));
+            }
+        }  
+    }
+
+    private void logPigeonStats() {
+        if (!LOG_PIGEON) return;
+
+        DogLog.log("Pigeon/Total Yaw", drive.getPigeon2().getYaw().getValueAsDouble());
+        DogLog.log("Pigeon/Accel Exceeded", drive.getPigeon2().getFault_SaturatedAccelerometer().getValue());
+        DogLog.log("Pigeon/Boot While Enabled", drive.getPigeon2().getFault_BootDuringEnable().getValue());
     }
 
     private void logPdhStats() {
-        if (LOG_PDH) {
-            DogLog.log("PDH/TotalCurrent", pdh.getTotalCurrent());
-            DogLog.log("PDH/Voltage", pdh.getVoltage());
-            DogLog.log("PDH/Temperature", pdh.getTemperature());
-        }
+        if (!LOG_PDH) return;
+
+        DogLog.log("PDH/TotalCurrent", pdh.getTotalCurrent());
+        DogLog.log("PDH/Voltage", pdh.getVoltage());
+        DogLog.log("PDH/Temperature", pdh.getTemperature());
     }
 
-    private void logStats() {
+    private void logCanStats() {
+        if (!LOG_RIO_CAN) return;
+            
         var canStatus = RobotController.getCANStatus();
         DogLog.log("CAN/Utilization", canStatus.percentBusUtilization * 100);
         DogLog.log("CAN/TxError", canStatus.txFullCount);
@@ -353,6 +388,8 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private void logDriveStats() {
+        if (!LOG_SWERVE_DRIVE) return;
+
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
         DogLog.log("Drive/ModuleStates", drive.getModuleStates());
         DogLog.log("Drive/Rotation", drive.getPose().getRotation());
