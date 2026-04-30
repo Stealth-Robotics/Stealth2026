@@ -26,6 +26,9 @@ public class Autos {
         LEFT_DOUBLE_BUMP,
         RIGHT_DOUBLE_BUMP,
 
+        LEFT_DB,
+        RIGHT_DB,
+
         LEFT_DOUBLE_TRENCH,
         RIGHT_DOUBLE_TRENCH,
 
@@ -53,12 +56,14 @@ public class Autos {
         .withDefaultShouldFlip()
         .withPoseReset(drive::resetPose);
 
-        // FollowPath.registerEventTrigger("shoot", shoot());
-        // FollowPath.registerEventTrigger("stop_shoot", stopShooting());
+        FollowPath.registerEventTrigger("shoot", shoot());
+        FollowPath.registerEventTrigger("stop_shoot", stopShooting());
         FollowPath.registerEventTrigger("intake", deployAndIntake());
 
         //Build autos
         buildDoubleBump();
+        buildDB();
+
         buildDoubleTrench();
         buildSimpleBump();
         
@@ -139,6 +144,23 @@ public class Autos {
             .addCommand(() -> shootForTime(4))
             .addCommand(() -> deployAndIntake())
             .followPath("DoubleBump_2")
+            .addCommand(() -> shootWithAgitate())
+            .build();
+    }
+
+    public void buildDB() {
+        var autoBuilder = new AutoRoutineBuilder(
+            AutoName.LEFT_DB,
+            AutoName.RIGHT_DB,
+            pathBuilder,
+            autoCache
+        );
+
+        autoBuilder
+            .followPath("DB_1")
+            .addCommand(() -> shootForTime(3))
+            .addCommand(() -> deployAndIntake())
+            .followPath("DB_2")
             .addCommand(() -> shootWithAgitate())
             .build();
     }
