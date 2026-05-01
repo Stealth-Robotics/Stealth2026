@@ -23,11 +23,11 @@ public class Autos {
     private final double SHOOTER_SPINUP_RPMS = 2900;
 
     public enum AutoName {
-        LEFT_DOUBLE_BUMP,
-        RIGHT_DOUBLE_BUMP,
-
         LEFT_DB,
         RIGHT_DB,
+        
+        LEFT_DB_SAFE,
+        RIGHT_DB_SAFE,
 
         LEFT_DOUBLE_TRENCH,
         RIGHT_DOUBLE_TRENCH,
@@ -61,8 +61,8 @@ public class Autos {
         FollowPath.registerEventTrigger("intake", deployAndIntake());
 
         //Build autos
-        buildDoubleBump();
         buildDB();
+        buildDBSafe();
 
         buildDoubleTrench();
         buildSimpleBump();
@@ -88,7 +88,7 @@ public class Autos {
         autoBuilder
             .addCommand(() -> new WaitCommand(0.25)) //Starting delay
             .followPath("CompatibleBump")
-            .addCommand(() -> shootForTime(5))
+            .addCommand(() -> shootForTime(3))
             .addCommand(() -> deployAndIntake())
             .followPath("CompatibleBumpExtension")
             .addCommand(() -> shootWithAgitate())
@@ -131,19 +131,19 @@ public class Autos {
             .build();
     }
 
-    public void buildDoubleBump() {
+    public void buildDBSafe() {
         var autoBuilder = new AutoRoutineBuilder(
-            AutoName.LEFT_DOUBLE_BUMP,
-            AutoName.RIGHT_DOUBLE_BUMP,
+            AutoName.LEFT_DB_SAFE,
+            AutoName.RIGHT_DB_SAFE,
             pathBuilder,
             autoCache
         );
 
         autoBuilder
-            .followPath("DoubleBump_1")
-            .addCommand(() -> shootForTime(4))
+            .followPath("DB_1")
+            .addCommand(() -> shootForTime(3))
             .addCommand(() -> deployAndIntake())
-            .followPath("DoubleBump_2")
+            .followPath("DB_2_Safe")
             .addCommand(() -> shootWithAgitate())
             .build();
     }
@@ -191,7 +191,7 @@ public class Autos {
         return new ScheduleCommand(shooter.shoot().alongWith(
             new SequentialCommandGroup(
                 new ParallelDeadlineGroup(
-                    new WaitCommand(4),
+                    new WaitCommand(3),
                     intake.quickAgitate(() -> 0.6).andThen(new WaitCommand(0.25)).repeatedly()
                 ),
                 intake.fullAgitate()
