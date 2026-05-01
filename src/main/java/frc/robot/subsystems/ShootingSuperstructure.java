@@ -64,7 +64,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private final CANrange shotSensor;
     private final CANrangeConfiguration shotSensorConfig = new CANrangeConfiguration();
 
-    private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3;
+    private final double HUB_TRAJECTORY_MAX_HEIGHT_METERS = 3; //TODO: Maybe lower a bit?
     private final double PASSING_TRAJECTORY_MAX_HEIGHT_METERS = 6;
 
     private final double FIELD_DIVIDER = 4.03;

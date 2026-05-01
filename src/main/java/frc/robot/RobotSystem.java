@@ -49,9 +49,9 @@ public class RobotSystem extends SubsystemBase {
     private final Field2d elasticField = new Field2d();
 
     //Allows us to disable certain logging for performance reasons
-    private final boolean LOG_LIMELIGHTS = false;
+    private final boolean LOG_LIMELIGHTS = true;
     private final boolean LOG_SWERVE_DRIVE = false;
-    private final boolean LOG_PDH = false;
+    private final boolean LOG_PDH = true;
     private final boolean LOG_PIGEON = false;
     private final boolean LOG_RIO_CAN = false;
 

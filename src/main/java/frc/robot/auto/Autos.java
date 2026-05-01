@@ -35,9 +35,7 @@ public class Autos {
         LEFT_SIMPLE_BUMP,
         RIGHT_SIMPLE_BUMP,
 
-        COMPATIBLE_BUMP_DEPOT,
-
-        LEFT_TRENCH_STEAL
+        COMPATIBLE_BUMP_DEPOT
     }
 
     public Autos(DriveSubsystem drive, IntakeSubsystem intake, ShootingSuperstructure shooter) {
@@ -191,8 +189,8 @@ public class Autos {
         return new ScheduleCommand(shooter.shoot().alongWith(
             new SequentialCommandGroup(
                 new ParallelDeadlineGroup(
-                    new WaitCommand(3),
-                    intake.quickAgitate(() -> 0.6).andThen(new WaitCommand(0.25)).repeatedly()
+                    new WaitCommand(2.75),
+                    intake.quickAgitate(() -> 0.6).andThen(new WaitCommand(0.4)).repeatedly()
                 ),
                 intake.fullAgitate()
             )

@@ -36,7 +36,7 @@ public class TurretSubsystem extends SubsystemBase {
     //The unclamped value that the turret is commanded to go to (used to see if it is at the target)
     private double rawTargetDegrees = 0;
 
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 4.0;
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 8.0;
 
     public final double MAX_TURRET_DEGREES = 120;
     private final double TURRET_HOME_DEGREES = 0;

@@ -54,8 +54,6 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledExit() {
-        m_robotContainer.resetFuelCounter();
-
         //Set the limelight's tag filter & IMU alpha
         for (String ll : LimelightConstants.LIMELIGHTS) {
             LimelightHelpers.SetIMUAssistAlpha(ll, LimelightConstants.IMU_ALPHA);
@@ -72,6 +70,7 @@ public class Robot extends TimedRobot {
 
     @Override
     public void autonomousInit() {
+        m_robotContainer.resetFuelCounter();
         ShiftTracker.start();
         
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();
