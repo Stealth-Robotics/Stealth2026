@@ -22,6 +22,7 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.AllianceUtility;
@@ -69,6 +70,9 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final double FIELD_DIVIDER = 4.03;
     private final double PASSING_CENTER_DIVIDER_OFFSET = 0.85;
+
+    private double horizontalOffset = 0.0;
+    private double verticalOffset = 0.0;
 
     private final ShotParams hub = new ShotParams(new Translation3d(4.645, 4.034, 1.828), HUB_TRAJECTORY_MAX_HEIGHT_METERS);
     private final ShotParams leftPass = new ShotParams(new Translation3d(1, 7.0, 0), PASSING_TRAJECTORY_MAX_HEIGHT_METERS);
@@ -127,6 +131,11 @@ public class ShootingSuperstructure extends SubsystemBase {
         shotSensor.getIsDetected().setUpdateFrequency(100, 0.02);
     }
 
+    public void incrementOffsets(double x, double y) {
+        horizontalOffset += x;
+        verticalOffset += y;
+    }
+
     public void changeRPMOffset(int delta) {
         RPMOffset += delta;
     }
@@ -157,7 +166,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
             if (!state.equals(ShooterState.TRENCH)) {
                 shooter.setHoodDegrees(
-                    (state.equals(ShooterState.PASS)) ? shooter.getMaxHoodDegrees() : latestSOTMParameters.hoodAngle()
+                    (state.equals(ShooterState.PASS)) ? shooter.getMaxHoodDegrees() : latestSOTMParameters.hoodAngle() + verticalOffset
                 );
             }
 
@@ -243,6 +252,8 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         Rotation2d robotYaw = robotPoseSupplier.get().getRotation();
         Rotation2d turretAngle = Rotation2d.fromDegrees(latestSOTMParameters.turretAngle());
+        Rotation2d offset = Rotation2d.fromDegrees(horizontalOffset);
+        if(SmartDashboard.getBoolean("Static Shooter", false)) turretAngle = new Rotation2d(0);
 
         Rotation2d turretTargetRot = robotYaw.minus(turretAngle);
 

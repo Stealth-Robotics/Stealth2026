@@ -153,6 +153,10 @@ public class RobotSystem extends SubsystemBase {
         shooter.changeRPMOffset(delta);
     }
 
+    public void changeShooterOffset(double dx, double dy) {
+        shooter.incrementOffsets(dx, dy);
+    }
+
     private void updateShootingState() {
         FieldZone zone = ZoneManager.getZone();
 

@@ -84,10 +84,14 @@ public class RobotContainer {
 
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
  
+        operatorController.povRight()
+            .onTrue(new InstantCommand(() -> robot.changeShooterOffset(5, 0)));
+        operatorController.povLeft()
+            .onTrue(new InstantCommand(() -> robot.changeShooterOffset(-5, 0)));
         operatorController.povUp()
-            .onTrue(new InstantCommand(() -> robot.changeRPMOffset(25)));
+            .onTrue(new InstantCommand(() -> robot.changeShooterOffset(0, 1)));
         operatorController.povDown()
-            .onTrue(new InstantCommand(() -> robot.changeRPMOffset(-25)));
+            .onTrue(new InstantCommand(() -> robot.changeShooterOffset(0, -1)));
     }
 
     /*
