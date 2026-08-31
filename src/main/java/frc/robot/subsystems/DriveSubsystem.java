@@ -41,9 +41,6 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
  * https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
  */
 public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
-    private final double POSITION_TOLERANCE_METERS = 0.01;
-    private final double ANGLE_TOLERANCE_DEGREES = 0.1;
-
     public double MAX_SPEED = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
     public double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.8).in(RadiansPerSecond);
 
