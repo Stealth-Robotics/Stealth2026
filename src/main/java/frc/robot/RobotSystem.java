@@ -1,8 +1,6 @@
 package frc.robot;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
@@ -72,19 +70,15 @@ public class RobotSystem extends SubsystemBase {
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
 
-    //Gyro filtering queue size
-    private static final int GYRO_HISTORY_SIZE = 5;
-
     //Maximum jump size that the gyro can make in 20ms (if it is greater than it is highly sus)
-    private static final double MAX_GYRO_JUMP_DEGREES = 15.0;
+    private static final double MAX_GYRO_JUMP_DEGREES = 15.0; //TODO: Tune to actual value
+    
+    private static final double MAX_VISION_ROTATION_ERROR_DEGREES = 45.0; //TODO: Tune to actual value
 
-    private static final double MAX_VISION_ROTATION_ERROR_DEGREES = 45.0;
-
-    private final Deque<Rotation2d> gyroReadingHistory = new ArrayDeque<>();
     private Rotation2d lastGoodGyroReading = Rotation2d.kZero;
 
     private boolean gyroReadingRejected = false; 
-    private boolean gyroHistoryInitialized = false;
+    private boolean hasValidGyroReading = false;
 
     private long lastLowPriLogMs = 0;
     private long lastLimelightLogMs = 0;
@@ -105,13 +99,19 @@ public class RobotSystem extends SubsystemBase {
     public Command forceResetOdometry() {
         return new InstantCommand(() -> {
             Pose2d resetPose = AllianceUtility.flipPose(ODOMETRY_RESET_POSE);
-
             drive.resetPose(resetPose);
 
-            gyroReadingHistory.clear();
             lastGoodGyroReading = resetPose.getRotation();
+            hasValidGyroReading = true;
+        });
+    }
 
-            gyroHistoryInitialized = true;
+    public Command seedFieldCentric() {
+        return runOnce(() -> {
+            drive.seedFieldCentric();
+
+            lastGoodGyroReading = drive.getPose().getRotation();
+            hasValidGyroReading = true;
         });
     }
 
@@ -249,10 +249,6 @@ public class RobotSystem extends SubsystemBase {
         );
     }
 
-    public Command seedFieldCentric() {
-        return runOnce(() -> drive.seedFieldCentric());
-    }
-
     public Autos getAutos() {
         return new Autos(
             drive,
@@ -301,37 +297,33 @@ public class RobotSystem extends SubsystemBase {
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
-        if (
+        boolean isBadEstimate = 
             poseEstimate == null ||
             poseEstimate.pose == null ||
             poseEstimate.rawFiducials == null ||
-            poseEstimate.tagCount <= LimelightConstants.MIN_TAG_COUNT ||
+            poseEstimate.tagCount < LimelightConstants.MIN_TAG_COUNT ||
             poseEstimate.pose.equals(Pose2d.kZero) ||
             !AllianceUtility.isWithinField(poseEstimate.pose) ||
            (poseEstimate.tagCount == 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_SINGLE_TAG_DISTANCE) ||
-           (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE)
-        ) return false;
+           (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE);
+
+        if (isBadEstimate) return false;
         
-        if (poseEstimate.tagCount <= 1) {
-            for (RawFiducial tag : poseEstimate.rawFiducials) {
-                if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) {
-                    return false;
-                }
-            }
-        }
+        if (poseEstimate.tagCount <= 1)
+            for (RawFiducial tag : poseEstimate.rawFiducials)
+                if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) return false;
         
         return true;
     }
 
     private Rotation2d getTrustedGyroRotation(Rotation2d rawRotation) {
-        if (!gyroHistoryInitialized) { 
-            gyroReadingHistory.clear();
-            gyroReadingHistory.addLast(rawRotation); 
+        gyroReadingRejected = false;
 
-            lastGoodGyroReading = rawRotation; 
-            gyroHistoryInitialized = true;
-
-            return rawRotation; 
+        if (!hasValidGyroReading) { 
+            lastGoodGyroReading = rawRotation;
+            hasValidGyroReading = true;
+            
+            return rawRotation;
         }
 
         double rotationChangeDegrees = Math.abs(rawRotation.minus(lastGoodGyroReading).getDegrees());
@@ -339,17 +331,15 @@ public class RobotSystem extends SubsystemBase {
         //Unacceptable magnitude of a jump, so we reject it
         if (rotationChangeDegrees > MAX_GYRO_JUMP_DEGREES) {
             gyroReadingRejected = true;
+            
+            //Reset the pigeon with last valid reading
+            drive.recoverGyro(lastGoodGyroReading);
 
             return lastGoodGyroReading;
         }
 
-        //Gyro reading must be sensible so we accept it into the history books :)
+        //Gyro reading must be sensible so we accept it :)
         lastGoodGyroReading = rawRotation;
-        gyroReadingHistory.addLast(rawRotation);
-
-        while (gyroReadingHistory.size() > GYRO_HISTORY_SIZE)
-            gyroReadingHistory.removeFirst(); 
-        
         return rawRotation;
     }
 

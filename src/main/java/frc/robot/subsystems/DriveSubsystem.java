@@ -284,6 +284,19 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         return ChassisSpeeds.fromRobotRelativeSpeeds(getState().Speeds, getPose().getRotation());
     }
 
+    public void recoverGyro(Rotation2d lastGoodPigeonReading) {
+        Pose2d currentPose = getState().Pose;
+
+        //Reset the actual gyro sensor
+        getPigeon2().setYaw(lastGoodPigeonReading.getDegrees());
+
+        //Reset the pose estimator while preserving the translation coordinates
+        resetPose(new Pose2d(
+            currentPose.getTranslation(),
+            lastGoodPigeonReading
+        ));
+    }
+
     public AutoFactory createAutoFactory() {
         return new AutoFactory(
             () -> getState().Pose,

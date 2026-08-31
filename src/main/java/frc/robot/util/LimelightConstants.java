@@ -25,7 +25,7 @@ public class LimelightConstants {
     public static final double MAX_SINGLE_TAG_DISTANCE = 3;
     public static final double MAX_MULTI_TAG_DISTANCE = 4;
 
-    public static final int MIN_TAG_COUNT = 0; //1 is safer
+    public static final int MIN_TAG_COUNT = 1;
 
     public static final String[] LIMELIGHTS = {
         "limelight-front",
