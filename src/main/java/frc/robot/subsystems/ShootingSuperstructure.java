@@ -41,7 +41,7 @@ public class ShootingSuperstructure extends SubsystemBase {
     private ShooterState state = ShooterState.IDLE;
     private PassingTarget passingTarget = PassingTarget.RIGHT;
 
-    private SOTMResult latestSOTMParameters = new SOTMResult(0, 0, 0, 0);
+    private SOTMResult latestSOTMParameters = new SOTMResult(0, 0, 0, 0, 0);
 
     //Allows us to manually offset the set RPMs during a match
     private int RPMOffset = 0;
@@ -246,7 +246,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         Rotation2d turretTargetRot = robotYaw.minus(turretAngle);
 
-        turret.setTargetDegrees(turretTargetRot.getDegrees());
+        turret.setTarget(turretTargetRot.getDegrees(), latestSOTMParameters.turretVelocity());
     }
 
     /**
@@ -274,7 +274,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         Rotation2d turretTargetRot = robotYaw.minus(turretAngle);
 
-        turret.setTargetDegrees(turretTargetRot.getDegrees());
+        turret.setTarget(turretTargetRot.getDegrees(), latestSOTMParameters.turretVelocity());
     }
 
     private PassingTarget calculatePassingTarget(Pose2d turretPose) {

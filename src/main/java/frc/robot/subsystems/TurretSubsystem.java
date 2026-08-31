@@ -4,6 +4,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
@@ -23,18 +24,20 @@ public class TurretSubsystem extends SubsystemBase {
     private final TalonFXConfiguration turretConfig = new TalonFXConfiguration();
     private final CANcoderConfiguration turretEncoderConfig = new CANcoderConfiguration();
 
-    private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
+    private final VoltageOut turretController = new VoltageOut(0);
 
     private final double TURRET_LOOKAHEAD_SECONDS = 0.1;
 
-    private final double kACCELERATION = 200.0;
-    private final double kCRUISE_VELOCITY = 400.0;
-    private final double kP = 120.0;
-    private final double kI = 80.0;
-    private final double kD = 0.0;
+    //TODO: Tune new P + FF control system
+    private final double kP = 0.0;
+    private final double kPV = 0.0;
+    private final double kV = 0.0;
 
     //The unclamped value that the turret is commanded to go to (used to see if it is at the target)
     private double rawTargetDegrees = 0;
+
+    //The most recent commanded target turret angle
+    private double lastTargetAngleDegrees = 0;
 
     private final double TURRET_ANGLE_TOLERANCE_DEGREES = 4.0;
 
@@ -69,12 +72,6 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig.CurrentLimits.StatorCurrentLimit = TURRET_STATOR_LIMIT;
         turretConfig.CurrentLimits.SupplyCurrentLimit = TURRET_SUPPLY_LIMIT;
 
-        turretConfig.Slot0.kP = kP;
-        turretConfig.Slot0.kI = kI;
-        turretConfig.Slot0.kD = kD;
-        turretConfig.MotionMagic.MotionMagicAcceleration = kACCELERATION;
-        turretConfig.MotionMagic.MotionMagicCruiseVelocity = kCRUISE_VELOCITY;
-
         turretConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         turretConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
@@ -91,14 +88,20 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void homeTurret() {
-        setTargetDegrees(TURRET_HOME_DEGREES);
+        setTarget(TURRET_HOME_DEGREES, 0);
     }
 
-    public void setTargetDegrees(double degrees) {
-        rawTargetDegrees = degrees;
-        turretMotor.setControl(turretController.withPosition(
-            Units.degreesToRotations(MathUtil.clamp(degrees, MIN_TURRET_DEGREES, MAX_TURRET_DEGREES))
-        ));
+    public void setTarget(double targetAngleDegrees, double targetVelocity) {
+        rawTargetDegrees = targetAngleDegrees;
+        
+        targetAngleDegrees = MathUtil.clamp(targetAngleDegrees, MIN_TURRET_DEGREES, MAX_TURRET_DEGREES);
+        lastTargetAngleDegrees = targetAngleDegrees;
+
+        double angleError = targetAngleDegrees - getTurretAngleDegrees();
+        double velocityError = targetVelocity - getTurretVelocity();
+
+        double voltageOutput = (kP * angleError) + (kPV * velocityError) + (kV * targetVelocity);
+        turretMotor.setControl(turretController.withOutput(voltageOutput));
     }
 
     /*
@@ -127,7 +130,7 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public double getTargetAngleDegrees() {
-        return Units.rotationsToDegrees(turretController.Position);
+        return Units.rotationsToDegrees(lastTargetAngleDegrees);
     }
 
     @Override

@@ -13,9 +13,7 @@ public class ShotCalculator {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
 
     private static final double systemPeriod = Units.millisecondsToSeconds(20);
-
-    //Time needed for ball to travel through feeder towards the flywheel
-    private static final double mechanismLatency = Units.millisecondsToSeconds(10);
+    private static final double communicationLatency = Units.millisecondsToSeconds(10);
 
     private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
         put(5.14, 3300.0);
@@ -41,7 +39,14 @@ public class ShotCalculator {
     private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
     private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
 
-    public record SOTMResult(double rpm, double turretAngle, double hoodAngle, double distance) {}
+    //Structure for holding the calculations returned by this class
+    public record SOTMResult(
+        double rpm, 
+        double turretAngle, 
+        double turretVelocity, 
+        double hoodAngle, 
+        double distance
+    ) {}
 
     public static void resetFilters() {
         vxFilter.reset();
@@ -51,26 +56,25 @@ public class ShotCalculator {
 
     /**
      * @param fuelExitPose The position where the fuel will exit the shooter relative to the field
-     * @param robotVelocity The linear velocity of the robot (robot relative)
+     * @param fieldRelativeRobotVelocity The linear velocity of the robot
      * @param targetPose The position of the target we are shooting at
      * @param targetHeight The max height the fuel will ever reach during flight
      */
-    public static SOTMResult calculate(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight, boolean isPassShot) {
-        double totalLatencySeconds = systemPeriod + mechanismLatency;
-
-        double filteredVx = vxFilter.calculate(robotVelocity.vxMetersPerSecond);
-        double filteredVy = vyFilter.calculate(robotVelocity.vyMetersPerSecond);
-        double filteredVOmega = vOmegaFilter.calculate(robotVelocity.omegaRadiansPerSecond);
+    public static SOTMResult calculate(Pose3d fuelExitPose, ChassisSpeeds fieldRelativeRobotVelocity, Translation3d targetPose, double targetHeight, boolean isPassShot) {
+        double totalLatencySeconds = systemPeriod + communicationLatency;
+        
+        //Filtered field relative robot velocity components
+        double vx = vxFilter.calculate(fieldRelativeRobotVelocity.vxMetersPerSecond);
+        double vy = vyFilter.calculate(fieldRelativeRobotVelocity.vyMetersPerSecond);
+        double vo = vOmegaFilter.calculate(fieldRelativeRobotVelocity.omegaRadiansPerSecond);
 
         //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
-        fuelExitPose = fuelExitPose.plus(
-            new Transform3d(
-                filteredVx * totalLatencySeconds,
-                filteredVy * totalLatencySeconds,
-                0,
-                Rotation3d.kZero
-            )
-        );
+        fuelExitPose = fuelExitPose.plus(new Transform3d(
+            vx * totalLatencySeconds,
+            vy * totalLatencySeconds,
+            0,
+            Rotation3d.kZero
+        ));
 
         //Clamp targetHeight to make sure values don't result in a NaN result
         targetHeight = Math.max(targetHeight, Math.max(fuelExitPose.getZ(), targetPose.getZ()));
@@ -84,21 +88,15 @@ public class ShotCalculator {
             Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
 
         double fuelZVelo = (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0;
+        
+        //Target coordinates relative to turret/shooter in field coordinates
+        double dx = targetPose.getX() - fuelExitPose.getX();
+        double dy = targetPose.getY() - fuelExitPose.getY();
 
-        Translation3d movingShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t - filteredVx,
-            (targetPose.getY() - fuelExitPose.getY()) / t - filteredVy,
-            fuelZVelo
-        );
-
-        Translation3d stationaryShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t,
-            (targetPose.getY() - fuelExitPose.getY()) / t,
-            fuelZVelo
-        );
+        Translation3d movingShotVelocity = new Translation3d(dx / t - vx, dy / t - vy, fuelZVelo);
+        Translation3d stationaryShotVelocity = new Translation3d(dx / t, dy / t, fuelZVelo);
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
-        DogLogUtil.logDouble("MetersToTarget", metersToGoal);
 
         double baseRPM = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToRPM.get(metersToGoal);
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();
@@ -107,12 +105,19 @@ public class ShotCalculator {
         double targetFlywheelRPM = baseRPM * veloScale;
 
         double targetTurretAngle = Units.radiansToDegrees(
-            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds * 1.5)
+            Math.atan2(movingShotVelocity.getY(), 
+            movingShotVelocity.getX()) - (vo * totalLatencySeconds)
         );
         
         double horizontalSpeed = Math.hypot(movingShotVelocity.getX(), movingShotVelocity.getY());
-        double targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
+        double targetHoodAngle = 90 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
+        
+        //How fast the line of sight between the target and turret is changing
+        double lineOfSightVelocity = (dx * vy - dy * vx) / (dx * dx + dy * dy);
 
-        return new SOTMResult(targetFlywheelRPM, targetTurretAngle, targetHoodAngle, metersToGoal);
+        //Calculate the necessary turret velocity to match the robot's velocity to aim smoothly and not lag behind
+        double targetTurretVelocity = lineOfSightVelocity - vo;
+
+        return new SOTMResult(targetFlywheelRPM, targetTurretAngle, targetTurretVelocity, targetHoodAngle, metersToGoal);
     }
 }
