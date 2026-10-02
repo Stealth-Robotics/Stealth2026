@@ -89,7 +89,8 @@ public class RobotSystem extends SubsystemBase {
         intake = new IntakeSubsystem();
         shooter = new ShootingSuperstructure(
             () -> drive.getPose(),
-            () -> drive.getFieldRelativeVelocity()
+            () -> drive.getFieldRelativeVelocity(),
+            () -> drive.getRotation3d()
         );
 
         //Log the field + robot pose to Elastic

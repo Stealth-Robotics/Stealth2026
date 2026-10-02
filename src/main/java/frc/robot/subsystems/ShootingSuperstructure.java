@@ -54,6 +54,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
     private final Supplier<Pose2d> robotPoseSupplier;
     private final Supplier<ChassisSpeeds> robotVelocitySupplier;
+    private final Supplier<Rotation3d> gyroSupplier;
 
     //Flag used to spin up for shooting and then forget checking rpms
     private boolean alreadySpinningAtTarget = false;
@@ -102,7 +103,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         RIGHT
     }
 
-    public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier) {
+    public ShootingSuperstructure(Supplier<Pose2d> robotPoseSupplier, Supplier<ChassisSpeeds> robotVelocitySupplier, Supplier<Rotation3d> gyroSupplier) {
         shooter = new ShooterSubsystem();
         turret = new TurretSubsystem();
         transfer = new TransferSubsystem();
@@ -111,6 +112,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         this.robotPoseSupplier = robotPoseSupplier;
         this.robotVelocitySupplier = robotVelocitySupplier;
+        this.gyroSupplier = gyroSupplier;
 
         //Configure CANRange sensor
         shotSensorConfig.FovParams.FOVRangeX = 6.75;
@@ -237,11 +239,12 @@ public class ShootingSuperstructure extends SubsystemBase {
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
+            gyroSupplier.get(),
             params.maxTrajectoryHeight(),
             false
         );
 
-        Rotation2d robotYaw = robotPoseSupplier.get().getRotation();
+        Rotation2d robotYaw = Rotation2d.kZero;
         Rotation2d turretAngle = Rotation2d.fromDegrees(latestSOTMParameters.turretAngle());
 
         Rotation2d turretTargetRot = robotYaw.minus(turretAngle);
@@ -265,11 +268,12 @@ public class ShootingSuperstructure extends SubsystemBase {
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
+            gyroSupplier.get(),
             params.maxTrajectoryHeight(),
             true
         );
 
-        Rotation2d robotYaw = robotPoseSupplier.get().getRotation();
+        Rotation2d robotYaw = Rotation2d.kZero;
         Rotation2d turretAngle = Rotation2d.fromDegrees(latestSOTMParameters.turretAngle());
 
         Rotation2d turretTargetRot = robotYaw.minus(turretAngle);

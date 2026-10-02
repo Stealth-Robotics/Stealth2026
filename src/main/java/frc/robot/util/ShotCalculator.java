@@ -60,7 +60,7 @@ public class ShotCalculator {
      * @param targetPose The position of the target we are shooting at
      * @param targetHeight The max height the fuel will ever reach during flight
      */
-    public static SOTMResult calculate(Pose3d fuelExitPose, ChassisSpeeds fieldRelativeRobotVelocity, Translation3d targetPose, double targetHeight, boolean isPassShot) {
+    public static SOTMResult calculate(Pose3d fuelExitPose, ChassisSpeeds fieldRelativeRobotVelocity, Translation3d targetPose, Rotation3d gyro, double targetHeight, boolean isPassShot) {
         double totalLatencySeconds = systemPeriod + communicationLatency;
         
         //Filtered field relative robot velocity components
@@ -94,6 +94,7 @@ public class ShotCalculator {
         double dy = targetPose.getY() - fuelExitPose.getY();
 
         Translation3d movingShotVelocity = new Translation3d(dx / t - vx, dy / t - vy, fuelZVelo);
+        movingShotVelocity.rotateBy(Rotation3d.kZero.minus(gyro));
         Translation3d stationaryShotVelocity = new Translation3d(dx / t, dy / t, fuelZVelo);
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
