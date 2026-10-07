@@ -107,6 +107,10 @@ public class RobotContainer {
         LoggingUtility.update();
     }
 
+    public void resetSOTMFilters() {
+        robot.resetSOTMFilters();
+    }
+
     public void resetAfterAuto() {
         robot.resetAfterAuto();
     }

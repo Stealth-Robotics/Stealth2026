@@ -17,7 +17,9 @@ import choreo.trajectory.SwerveSample;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
@@ -268,8 +270,24 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
 
     public String getSysIdRoutineName() { return m_sysIdRoutineName; }
 
-    public Pose2d getPose() {
+    public Pose2d getPose2d() {
         return getState().Pose;
+    }
+
+    public Pose3d getPose() {
+        Pose2d pose = getState().Pose;
+        Rotation3d rotation = getRotation3d();
+
+        return new Pose3d(
+            pose.getX(),
+            pose.getY(),
+            0.0,
+            new Rotation3d(
+                rotation.getX(),
+                rotation.getY(),
+                pose.getRotation().getRadians()
+            )
+        );
     }
 
     public SwerveModuleState[] getModuleStates() {
@@ -281,7 +299,7 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     }
 
     public ChassisSpeeds getFieldRelativeVelocity() {
-        return ChassisSpeeds.fromRobotRelativeSpeeds(getState().Speeds, getPose().getRotation());
+        return ChassisSpeeds.fromRobotRelativeSpeeds(getState().Speeds, getPose().getRotation().toRotation2d());
     }
 
     public void recoverGyro(Rotation2d lastGoodPigeonReading) {

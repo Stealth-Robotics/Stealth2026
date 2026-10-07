@@ -99,7 +99,7 @@ public class RobotSystem extends SubsystemBase {
         return runOnce(() -> {
             drive.seedFieldCentric();
 
-            lastGoodGyroReading = drive.getPose().getRotation();
+            lastGoodGyroReading = drive.getPose2d().getRotation();
             hasValidGyroReading = true;
         });
     }
@@ -247,7 +247,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public double getRobotYawDegrees() {
-        return drive.getPose().getRotation().getDegrees();
+        return drive.getPose2d().getRotation().getDegrees();
     }
 
     private void updateOdometry() {
@@ -263,7 +263,7 @@ public class RobotSystem extends SubsystemBase {
         if (!rotatingSlowEnough || !drivingSlowEnough)
             return;
 
-        Rotation2d rawRobotRotation = drive.getPose().getRotation(); 
+        Rotation2d rawRobotRotation = drive.getPose2d().getRotation(); 
         Rotation2d robotRotation = getTrustedGyroRotation(rawRobotRotation);
 
         for (String limelight : LimelightConstants.LIMELIGHTS) {
@@ -332,6 +332,10 @@ public class RobotSystem extends SubsystemBase {
         return rawRotation;
     }
 
+    public void resetSOTMFilters() {
+        shooter.resetSOTMFilters();
+    }
+
     public void resetAfterAuto() {
         CommandScheduler.getInstance().schedule(
             intake.stopRollers(),
@@ -349,7 +353,7 @@ public class RobotSystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        var drivePose = drive.getPose();
+        var drivePose = drive.getPose2d();
         
         ZoneManager.updateRobotPose(drivePose);
 

@@ -4,115 +4,152 @@ import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 
 public class SOTMSolver {
-    private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
+    private final double GRAVITY = 9.80665;
+    private final double LATENCY = Units.millisecondsToSeconds(30);
+    private final Transform3d TURRET_OFFSET = new Transform3d(0.14, -0.178, 0.5, Rotation3d.kZero);
 
-    private static final double systemPeriod = Units.millisecondsToSeconds(20);
+    private final InterpolatingDoubleTreeMap heightMap = new InterpolatingDoubleTreeMap();
+    private final InterpolatingDoubleTreeMap hubRPMMap = new InterpolatingDoubleTreeMap();
+    private final InterpolatingDoubleTreeMap passRPMMap = new InterpolatingDoubleTreeMap();
 
-    //Time needed for ball to travel through feeder towards the flywheel
-    private static final double mechanismLatency = Units.millisecondsToSeconds(10);
+    private final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.25, 0.02);
+    private final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.25, 0.02);
+    private final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.25, 0.02);
 
-    private static final InterpolatingDoubleTreeMap hubDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(5.14, 3300.0);
-        put(4.2, 3200.0);
-        put(4.0, 3100.0);
-        put(3.64, 3000.0);
-        put(3.36, 3000.0);
-        put(3.22, 2900.0);
-        put(2.18, 2700.0);
-        put(2.0, 2600.0);
-    }};
+    public SOTMSolver() {
+        //Populate interpolation tables with measured values
+        heightMap.put(0.0, 2.0);
+        heightMap.put(2.0, 2.0);
+        heightMap.put(5.14, 3.0);
+        heightMap.put(14.0, 6.0);
 
-    private static final InterpolatingDoubleTreeMap passingDistanceToRPM = new InterpolatingDoubleTreeMap() {{
-        put(3.0, 2800.0);
-        put(5.0, 3100.0);
-        put(8.0, 3800.0);
-        put(11.0, 4200.0);
-        put(14.0, 6000.0);
-    }};
+        hubRPMMap.put(2.0, 2600.0);
+        hubRPMMap.put(2.18, 2700.0);
+        hubRPMMap.put(3.22, 2900.0);
+        hubRPMMap.put(3.36, 3000.0);
+        hubRPMMap.put(3.64, 3000.0);
+        hubRPMMap.put(4.0, 3100.0);
+        hubRPMMap.put(4.2, 3200.0);
+        hubRPMMap.put(5.14, 3300.0);
 
-    //Velocity smoothing filters
-    private static final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
-    private static final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
-    private static final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.1, systemPeriod);
+        passRPMMap.put(3.0, 2800.0);
+        passRPMMap.put(5.0, 3100.0);
+        passRPMMap.put(8.0, 3800.0);
+        passRPMMap.put(11.0, 4200.0);
+        passRPMMap.put(14.0, 6000.0);
+    }
 
-    public record SOTMResult(double rpm, double turretAngle, double hoodAngle, double distance) {}
-
-    public static void resetVelocityFilters() {
+    public void resetFilters() {
         vxFilter.reset();
         vyFilter.reset();
         vOmegaFilter.reset();
     }
 
     /**
-     * @param fuelExitPose The position where the fuel will exit the shooter relative to the field
-     * @param robotVelocity The linear velocity of the robot (robot relative)
-     * @param targetPose The position of the target we are shooting at
-     * @param targetHeight The max height the fuel will ever reach during flight
+     * @param robotPose The pose of the robot on the field
+     * @param robotVelocity The field relative velocity of the robot
+     * @param targetPose The aiming target
+     * @param pass Whether this shot is a pass shot or not
+     * @return ShotSolution containing needed setpoints to hit the target
      */
-    public static SOTMResult calculate(Pose3d fuelExitPose, ChassisSpeeds robotVelocity, Translation3d targetPose, double targetHeight, boolean isPassShot) {
-        double totalLatencySeconds = systemPeriod + mechanismLatency;
-
-        double filteredVx = vxFilter.calculate(robotVelocity.vxMetersPerSecond);
-        double filteredVy = vyFilter.calculate(robotVelocity.vyMetersPerSecond);
-        double filteredVOmega = vOmegaFilter.calculate(robotVelocity.omegaRadiansPerSecond);
-
-        //Adjust the fuel exit pose adjusting for communication latency (assumes constant velocity)
-        fuelExitPose = fuelExitPose.plus(
-            new Transform3d(
-                filteredVx * totalLatencySeconds,
-                filteredVy * totalLatencySeconds,
-                0,
-                Rotation3d.kZero
-            )
+    public ShotSolution solve(Pose3d robotPose, ChassisSpeeds robotVelocity, Translation3d targetPose, boolean pass) {
+        double vx = vxFilter.calculate(robotVelocity.vxMetersPerSecond);
+        double vy = vyFilter.calculate(robotVelocity.vyMetersPerSecond);
+        double vo = vOmegaFilter.calculate(robotVelocity.omegaRadiansPerSecond);
+        
+        Translation2d turretTangentialVelocityRobotRelative = new Translation2d(
+            -vo * TURRET_OFFSET.getY(),
+            vo * TURRET_OFFSET.getX()
         );
 
-        //Clamp targetHeight to make sure values don't result in a NaN result
-        targetHeight = Math.max(targetHeight, Math.max(fuelExitPose.getZ(), targetPose.getZ()));
+        Translation2d turretTangentialVelocityFieldRelative = 
+            turretTangentialVelocityRobotRelative.rotateBy(robotPose.getRotation().toRotation2d());
 
-        /*
-         *  t is calculated to be the seconds needed for the ball to reach desired height, 
-         *  and return to goal height, under vacuum conditions
-        */
-        double t = 
-            Math.sqrt(2.0 * (targetHeight - fuelExitPose.getZ()) / GRAVITATIONAL_CONSTANT) +
-            Math.sqrt(2.0 * (targetHeight - targetPose.getZ()) / GRAVITATIONAL_CONSTANT);
+        //Calculated turret linear velocity based off of the robot's velocity and the imparted tangential velocity
+        double turretVx = vx + turretTangentialVelocityFieldRelative.getX();
+        double turretVy = vy + turretTangentialVelocityFieldRelative.getY();
 
-        double fuelZVelo = (targetPose.getZ() - fuelExitPose.getZ()) / t + GRAVITATIONAL_CONSTANT * t / 2.0;
+        Pose3d predictedTurretPose = new Pose3d(
+            robotPose.getX() + vx * LATENCY,
+            robotPose.getY() + vy * LATENCY,
+            robotPose.getZ(), //Always zero
+            robotPose.getRotation().rotateBy(new Rotation3d(0, 0, vo * LATENCY))
+        ).transformBy(TURRET_OFFSET);
+
+        double distanceToTarget = targetPose.getDistance(predictedTurretPose.getTranslation());
+
+        double shotHeight = Math.max(
+            heightMap.get(distanceToTarget),
+            Math.max(predictedTurretPose.getZ(), targetPose.getZ()) + 0.1
+        );
+
+        double t =
+            Math.sqrt(2.0 * (shotHeight - predictedTurretPose.getZ()) / GRAVITY) +
+            Math.sqrt(2.0 * (shotHeight - targetPose.getZ()) / GRAVITY);
+
+        double fuelZVelocity = (targetPose.getZ() - predictedTurretPose.getZ()) / t + GRAVITY * t / 2.0;
 
         Translation3d movingShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t - filteredVx,
-            (targetPose.getY() - fuelExitPose.getY()) / t - filteredVy,
-            fuelZVelo
+            (targetPose.getX() - predictedTurretPose.getX()) / t - turretVx,
+            (targetPose.getY() - predictedTurretPose.getY()) / t - turretVy,
+            fuelZVelocity
         );
 
         Translation3d stationaryShotVelocity = new Translation3d(
-            (targetPose.getX() - fuelExitPose.getX()) / t,
-            (targetPose.getY() - fuelExitPose.getY()) / t,
-            fuelZVelo
+            (targetPose.getX() - predictedTurretPose.getX()) / t,
+            (targetPose.getY() - predictedTurretPose.getY()) / t,
+            fuelZVelocity
         );
 
-        double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
-        LoggingUtility.logDouble("MetersToTarget", metersToGoal);
+        double baseRPM = pass ? passRPMMap.get(distanceToTarget) : hubRPMMap.get(distanceToTarget);
 
-        double baseRPM = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToRPM.get(metersToGoal);
-        double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();
+        double stationaryNorm = stationaryShotVelocity.getNorm();
+        double veloScale = (stationaryNorm > 1e-4) ? movingShotVelocity.getNorm() / stationaryNorm : 1.0;
 
         //Scale up the measured RPM by the scale needed to compensate for robot velocity
         double targetFlywheelRPM = baseRPM * veloScale;
 
-        double targetTurretAngle = Units.radiansToDegrees(
-            Math.atan2(movingShotVelocity.getY(), movingShotVelocity.getX()) - (filteredVOmega * totalLatencySeconds * 1.5)
-        );
+        Translation3d tiltAdjustedShotVelocity =
+            movingShotVelocity.rotateBy(predictedTurretPose.getRotation().unaryMinus());
         
-        double horizontalSpeed = Math.hypot(movingShotVelocity.getX(), movingShotVelocity.getY());
-        double targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(movingShotVelocity.getZ(), horizontalSpeed));
+        //Calculate the necessary turret and hood angles to hit the target
+        double targetTurretAngle = Units.radiansToDegrees(Math.atan2(tiltAdjustedShotVelocity.getY(), tiltAdjustedShotVelocity.getX()));
+        double horizontalSpeed = Math.hypot(tiltAdjustedShotVelocity.getX(), tiltAdjustedShotVelocity.getY());
+        double targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(tiltAdjustedShotVelocity.getZ(), horizontalSpeed));
 
-        return new SOTMResult(targetFlywheelRPM, targetTurretAngle, targetHoodAngle, metersToGoal);
+        //Turret velocity feedforward calculation
+        double dx = targetPose.getX() - predictedTurretPose.getX();
+        double dy = targetPose.getY() - predictedTurretPose.getY();
+        double distanceSquared = dx * dx + dy * dy;
+
+        double fieldRelativeTargetTurretVelocity = 0.0;
+
+        if (distanceSquared > 1e-4) //Avoidy the division by zero
+            fieldRelativeTargetTurretVelocity = (dx * (-turretVy) - dy * (-turretVx)) / distanceSquared;
+
+        double targetTurretVelocity = Units.radiansToDegrees(fieldRelativeTargetTurretVelocity - vo);
+
+        return new ShotSolution(
+            targetFlywheelRPM,
+            targetTurretAngle,
+            targetTurretVelocity,
+            targetHoodAngle,
+            distanceToTarget
+        );
     }
+
+    public record ShotSolution(
+        double rpm,
+        double turretAngle,
+        double turretVelocity,
+        double hoodAngle,
+        double metersToTarget
+    ) {}
 }

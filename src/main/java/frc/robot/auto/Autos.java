@@ -43,7 +43,7 @@ public class Autos {
 
         pathBuilder = new FollowPath.Builder(
             drive,
-            drive::getPose,
+            drive::getPose2d,
             drive::getRobotRelativeVelocity,
             drive::applyRobotRelativeSpeeds,
             new PIDController(6.0, 0.0, 0.0), // Translation PID

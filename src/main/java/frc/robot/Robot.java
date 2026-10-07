@@ -14,7 +14,6 @@ import frc.robot.util.Elastic;
 import frc.robot.util.LimelightConstants;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
-import frc.robot.util.SOTMSolver;
 
 public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
@@ -53,13 +52,13 @@ public class Robot extends TimedRobot {
     public void disabledExit() {
         Elastic.selectTab("Enabled");
 
-        SOTMSolver.resetVelocityFilters();
         m_robotContainer.resetFuelCounter();
     }
 
     @Override
     public void autonomousInit() {
         ShiftTracker.start();
+        m_robotContainer.resetSOTMFilters();
         
         m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
@@ -81,6 +80,8 @@ public class Robot extends TimedRobot {
         if (!ShiftTracker.isRunning()) {
             ShiftTracker.start();
         }
+
+        m_robotContainer.resetSOTMFilters();
 
         if (m_autonomousCommand != null) {
             m_autonomousCommand.cancel();
