@@ -393,8 +393,7 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         DogLog.log("Drive/ModuleStates", getModuleStates());
         DogLog.log("Drive/Rotation", getPose().getRotation());
         
-        @SuppressWarnings("rawtypes")
-        SwerveModule[] modules = getModules();
+        SwerveModule<?, ?, ?>[] modules = getModules();
         for (int i = 0; i < modules.length; i++) {
             LoggingUtility.logDouble(DRIVE_CURRENT_KEYS[i], modules[i].getDriveMotor().getSupplyCurrent().getValueAsDouble());
             LoggingUtility.logDouble(STEER_CURRENT_KEYS[i], modules[i].getSteerMotor().getSupplyCurrent().getValueAsDouble());

@@ -70,7 +70,7 @@ public class RobotSystem extends SubsystemBase {
 
     private Rotation2d lastGoodGyroReading = Rotation2d.kZero;
 
-    private boolean gyroReadingRejected = false; 
+    private boolean gyroReadingRejected = false;
     private boolean hasValidGyroReading = false;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
