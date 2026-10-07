@@ -378,7 +378,6 @@ public class RobotSystem extends SubsystemBase {
         if (LoggingUtility.updateLowPriorityLogs()) {
             logPDH();
             logCAN();
-            logSwerveDrive();
             logPigeon();
             logLimelights();
         }
@@ -389,7 +388,7 @@ public class RobotSystem extends SubsystemBase {
 
         for (String ll : LimelightConstants.LIMELIGHTS) {
             PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
-            if (m1Pose != null) {
+            if (m1Pose != null && m1Pose.rawFiducials != null) {
                 DogLog.log(ll + "/M1Pose", m1Pose.pose);
 
                 List<Pose3d> visibleTags = new ArrayList<>();
@@ -428,28 +427,5 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("CAN/Utilization", canStatus.percentBusUtilization * 100);
         DogLog.log("CAN/TxError", canStatus.txFullCount);
         DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
-    }
-
-    private void logSwerveDrive() {
-        if (!LoggingUtility.LOG_DRIVE) return;
-
-        DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
-        DogLog.log("Drive/ModuleStates", drive.getModuleStates());
-        DogLog.log("Drive/Rotation", drive.getPose().getRotation());
-
-        for (var module : drive.getModules()) {
-            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
-                module.getDriveMotor().getSupplyCurrent(true).getValueAsDouble());
-            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
-                module.getSteerMotor().getSupplyCurrent(true).getValueAsDouble());
-            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Stator_Current",
-                module.getDriveMotor().getStatorCurrent(true).getValueAsDouble());
-            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Stator_Current",
-                module.getSteerMotor().getStatorCurrent(true).getValueAsDouble());
-            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
-                module.getDriveMotor().getDeviceTemp(true).getValueAsDouble());
-            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
-                module.getSteerMotor().getDeviceTemp(true).getValueAsDouble());
-        }     
     }
 }
