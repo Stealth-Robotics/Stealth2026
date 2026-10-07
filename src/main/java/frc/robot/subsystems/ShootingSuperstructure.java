@@ -26,9 +26,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.AllianceUtility;
 import frc.robot.util.ShotParams;
-import frc.robot.util.ShotCalculator.SOTMResult;
-import frc.robot.util.ShotCalculator;
-import frc.robot.util.DogLogUtil;
+import frc.robot.util.SOTMSolver.SOTMResult;
+import frc.robot.util.SOTMSolver;
+import frc.robot.util.LoggingUtility;
 
 public class ShootingSuperstructure extends SubsystemBase {
     private final ShooterSubsystem shooter;
@@ -233,7 +233,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         ShotParams params = AllianceUtility.flipPose(hub);
         Pose3d turretPose3d = new Pose3d(robotPoseSupplier.get()).transformBy(TURRET_TRANSFORM_METERS);
 
-        latestSOTMParameters = ShotCalculator.calculate(
+        latestSOTMParameters = SOTMSolver.calculate(
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
@@ -261,7 +261,7 @@ public class ShootingSuperstructure extends SubsystemBase {
             (passingTarget.equals(PassingTarget.LEFT) ? leftPass : rightPass)
         );
 
-        latestSOTMParameters = ShotCalculator.calculate(
+        latestSOTMParameters = SOTMSolver.calculate(
             turretPose3d,
             robotVelocitySupplier.get(),
             params.target(),
@@ -378,7 +378,7 @@ public class ShootingSuperstructure extends SubsystemBase {
 
         updateShotCounting();
 
-        DogLogUtil.logDouble("ShootingSuperstructure/BPS", bpsFilter.lastValue());
+        LoggingUtility.logDouble("ShootingSuperstructure/BPS", bpsFilter.lastValue());
 
         //Log our shooting counts
         DogLog.log("ShootingSuperstructure/Hub_Shots_Total", hubShots);

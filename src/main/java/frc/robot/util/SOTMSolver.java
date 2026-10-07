@@ -9,7 +9,7 @@ import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 
-public class ShotCalculator {
+public class SOTMSolver {
     private static final double GRAVITATIONAL_CONSTANT = 9.80665; // Gravitational constant in m/s^2
 
     private static final double systemPeriod = Units.millisecondsToSeconds(20);
@@ -43,7 +43,7 @@ public class ShotCalculator {
 
     public record SOTMResult(double rpm, double turretAngle, double hoodAngle, double distance) {}
 
-    public static void resetFilters() {
+    public static void resetVelocityFilters() {
         vxFilter.reset();
         vyFilter.reset();
         vOmegaFilter.reset();
@@ -98,7 +98,7 @@ public class ShotCalculator {
         );
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
-        DogLogUtil.logDouble("MetersToTarget", metersToGoal);
+        LoggingUtility.logDouble("MetersToTarget", metersToGoal);
 
         double baseRPM = (isPassShot) ? passingDistanceToRPM.get(metersToGoal) : hubDistanceToRPM.get(metersToGoal);
         double veloScale = movingShotVelocity.getNorm() / stationaryShotVelocity.getNorm();

@@ -14,7 +14,7 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.util.DogLogUtil;
+import frc.robot.util.LoggingUtility;
 
 public class TurretSubsystem extends SubsystemBase {
     private final TalonFX turretMotor;
@@ -55,8 +55,6 @@ public class TurretSubsystem extends SubsystemBase {
     private final int TURRET_STATOR_LIMIT = 35;
     private final int TURRET_SUPPLY_LIMIT = 30;
     
-    private long lastMs = 0;
-
     public TurretSubsystem() {
         turretMotor = new TalonFX(TURRET_MOTOR_ID);
         turretEncoder = new CANcoder(TURRET_ENCODER_ID);
@@ -134,23 +132,17 @@ public class TurretSubsystem extends SubsystemBase {
     public void periodic() {
         var turretAngle = getTurretAngleDegrees();
         
-        DogLogUtil.logDoubleForceNT("Turret/turret_degrees", turretAngle);
-        DogLogUtil.logDouble("Turret/turret_error_degrees", turretAngle - getTargetAngleDegrees());
+        LoggingUtility.logDoubleForceNT("Turret/turret_degrees", turretAngle);
+        LoggingUtility.logDouble("Turret/turret_error_degrees", turretAngle - getTargetAngleDegrees());
 
-        logMotorData();
-    }
-
-    private void logMotorData() {
-        long currentMs = System.currentTimeMillis();
-        if (currentMs - lastMs >= DogLogUtil.LOW_PRI_LOGGING_INTERVAL_MS) {
+        if (LoggingUtility.LOG_TURRET && LoggingUtility.updateLowPriorityLogs()) {
             BaseStatusSignal.refreshAll(
                 turretMotor.getSupplyCurrent(), turretMotor.getStatorCurrent(), turretMotor.getDeviceTemp()
             );
             
-            DogLogUtil.logDouble("Turret/turret_supply_current", turretMotor.getSupplyCurrent().getValueAsDouble());
-            DogLogUtil.logDouble("Turret/turret_stator_current", turretMotor.getStatorCurrent().getValueAsDouble());
-            DogLogUtil.logDouble("Turret/turret_device_temp", turretMotor.getDeviceTemp().getValueAsDouble());
-            lastMs = currentMs;
+            LoggingUtility.logDouble("Turret/turret_supply_current", turretMotor.getSupplyCurrent().getValueAsDouble());
+            LoggingUtility.logDouble("Turret/turret_stator_current", turretMotor.getStatorCurrent().getValueAsDouble());
+            LoggingUtility.logDouble("Turret/turret_device_temp", turretMotor.getDeviceTemp().getValueAsDouble());
         }
     }
 }

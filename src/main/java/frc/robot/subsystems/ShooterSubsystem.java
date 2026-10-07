@@ -20,7 +20,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.util.DogLogUtil;
+import frc.robot.util.LoggingUtility;
 import frc.robot.util.Elastic;
 import frc.robot.util.Elastic.Notification;
 
@@ -81,11 +81,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private boolean disableHood = false;
     private double requestedHoodDegrees = 0;
 
-    private final Notification hoodLimitExceededError = 
-        new Notification(Elastic.NotificationLevel.ERROR, "Robot Error", "Hood has exceeded its limits. Switching to neutral mode.");
+    private final Notification hoodLimitExceededError = new Notification(Elastic.NotificationLevel.ERROR, "Robot Error", "Hood has exceeded its limits. Switching to neutral mode.");
     
-    private long lastMs = 0;
-
     public ShooterSubsystem() {
         shooterMotor1 = new TalonFX(SHOOTER_MOTOR_1_ID);
         shooterMotor2 = new TalonFX(SHOOTER_MOTOR_2_ID);
@@ -229,34 +226,27 @@ public class ShooterSubsystem extends SubsystemBase {
 
         DogLog.log("Shooter/shooter_target_rpm", (int) getTargetRPM());
         
-        DogLogUtil.logDoubleForceNT("Shooter/hood_angle", hoodDegrees);
-        DogLogUtil.logDouble("Shooter/hood_target_angle", requestedHoodDegrees);
+        LoggingUtility.logDoubleForceNT("Shooter/hood_angle", hoodDegrees);
+        LoggingUtility.logDouble("Shooter/hood_target_angle", requestedHoodDegrees);
 
-        logMotorData();
-    }
-
-    private void logMotorData() {
-        var currentMs = System.currentTimeMillis();
-        if (currentMs - lastMs >= DogLogUtil.LOW_PRI_LOGGING_INTERVAL_MS) {
+        if (LoggingUtility.LOG_SHOOTER && LoggingUtility.updateLowPriorityLogs()) {
             BaseStatusSignal.refreshAll(
                 shooterMotor1.getSupplyCurrent(), shooterMotor1.getStatorCurrent(), shooterMotor1.getDeviceTemp(),
                 shooterMotor2.getSupplyCurrent(), shooterMotor2.getStatorCurrent(), shooterMotor2.getDeviceTemp(),
                 hoodMotor.getSupplyCurrent(), hoodMotor.getStatorCurrent(), hoodMotor.getDeviceTemp()
             );
 
-            DogLogUtil.logDouble("Shooter/shooter1_current", shooterMotor1.getSupplyCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Shooter/shooter1_stator_current", shooterMotor1.getStatorCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Shooter/shooter1_temperature_C", shooterMotor1.getDeviceTemp(false).getValueAsDouble());
+            LoggingUtility.logDouble("Shooter/shooter1_current", shooterMotor1.getSupplyCurrent(false).getValueAsDouble());
+            LoggingUtility.logDouble("Shooter/shooter1_stator_current", shooterMotor1.getStatorCurrent(false).getValueAsDouble());
+            LoggingUtility.logDouble("Shooter/shooter1_temperature_C", shooterMotor1.getDeviceTemp(false).getValueAsDouble());
 
-            DogLogUtil.logDouble("Shooter/shooter2_current", shooterMotor2.getSupplyCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Shooter/shooter2_stator_current", shooterMotor2.getStatorCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Shooter/shooter2_temperature_C", shooterMotor2.getDeviceTemp(false).getValueAsDouble());
+            LoggingUtility.logDouble("Shooter/shooter2_current", shooterMotor2.getSupplyCurrent(false).getValueAsDouble());
+            LoggingUtility.logDouble("Shooter/shooter2_stator_current", shooterMotor2.getStatorCurrent(false).getValueAsDouble());
+            LoggingUtility.logDouble("Shooter/shooter2_temperature_C", shooterMotor2.getDeviceTemp(false).getValueAsDouble());
 
-            DogLogUtil.logDouble("Shooter/hood_current", hoodMotor.getSupplyCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Shooter/hood_stator_current", hoodMotor.getStatorCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Shooter/hood_temperature_C", hoodMotor.getDeviceTemp(false).getValueAsDouble());
-            
-            lastMs = currentMs;
+            LoggingUtility.logDouble("Shooter/hood_current", hoodMotor.getSupplyCurrent(false).getValueAsDouble());
+            LoggingUtility.logDouble("Shooter/hood_stator_current", hoodMotor.getStatorCurrent(false).getValueAsDouble());
+            LoggingUtility.logDouble("Shooter/hood_temperature_C", hoodMotor.getDeviceTemp(false).getValueAsDouble());
         }
     }
 }

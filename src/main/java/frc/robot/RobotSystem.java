@@ -33,7 +33,7 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 import frc.robot.util.AllianceUtility;
-import frc.robot.util.DogLogUtil;
+import frc.robot.util.LoggingUtility;
 import frc.robot.util.DrivingMode;
 import frc.robot.util.LimelightConstants;
 import frc.robot.util.LimelightHelpers;
@@ -48,13 +48,6 @@ public class RobotSystem extends SubsystemBase {
     private final ShootingSuperstructure shooter;
     
     private final Field2d elasticField = new Field2d();
-
-    //Allows us to disable certain logging for performance reasons
-    private final boolean LOG_LIMELIGHTS = true;
-    private final boolean LOG_SWERVE_DRIVE = false;
-    private final boolean LOG_PDH = false;
-    private final boolean LOG_PIGEON = false;
-    private final boolean LOG_RIO_CAN = false;
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
     private DrivingMode lastDrivingMode = DrivingMode.NORMAL;
@@ -79,10 +72,6 @@ public class RobotSystem extends SubsystemBase {
 
     private boolean gyroReadingRejected = false; 
     private boolean hasValidGyroReading = false;
-
-    private long lastLowPriLogMs = 0;
-    private long lastLimelightLogMs = 0;
-    private long lastHighPriStatsLogMs = 0;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -365,44 +354,34 @@ public class RobotSystem extends SubsystemBase {
         ZoneManager.updateRobotPose(drivePose);
 
         updateShootingState();
-
-        //Update odometry with our Limelight's and also log everything
         updateOdometry();
 
         //Update the field's robot pose
         elasticField.setRobotPose(drivePose);
 
-        // All logging of data
-        logStats(drivePose);
+        handleLogging(drivePose);
     }
 
-    private void logStats(Pose2d drivePose) {
-        long currentMs = System.currentTimeMillis();
-        if (currentMs - lastHighPriStatsLogMs >= DogLogUtil.HIGH_PRI_STATS_LOGGING_INTERVAL) {
+    //LOGGING (Beware of scariness)
+
+    private void handleLogging(Pose2d drivePose) {
+        if (LoggingUtility.updateHighPriorityLogs()) {
             DogLog.forceNt.log("Current Zone", ZoneManager.getZone().name());
             DogLog.forceNt.log("Driving Mode", currentDrivingMode.name());
-            DogLog.forceNt.log("Drive Pose", drivePose);       
-            lastHighPriStatsLogMs = currentMs;
+            DogLog.forceNt.log("Drive Pose", drivePose);
         }
 
-        if (currentMs - lastLowPriLogMs >= DogLogUtil.LOW_PRI_LOGGING_INTERVAL_MS) {
-            logPdhStats();
-            logCanStats();
-            logDriveStats();
-            logPigeonStats();
-            lastLowPriLogMs = currentMs;
+        if (LoggingUtility.updateLowPriorityLogs()) {
+            logPDH();
+            logCAN();
+            logSwerveDrive();
+            logPigeon();
+            logLimelights();
         }
-
-        logLimelightStats();
     }   
 
-    private void logLimelightStats() {
-        if (!LOG_LIMELIGHTS) return;
-
-        long currentMs = System.currentTimeMillis();
-        if (currentMs - lastLimelightLogMs < DogLogUtil.LIMELIGHT_LOGGING_INTERVAL) return;
-        
-        lastLimelightLogMs = currentMs;
+    private void logLimelights() {
+        if (!LoggingUtility.LOG_LIMELIGHTS) return;
 
         for (String ll : LimelightConstants.LIMELIGHTS) {
             PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
@@ -420,8 +399,8 @@ public class RobotSystem extends SubsystemBase {
         }  
     }
 
-    private void logPigeonStats() {
-        if (!LOG_PIGEON) return;
+    private void logPigeon() {
+        if (!LoggingUtility.LOG_PIGEON) return;
 
         DogLog.log("Pigeon/Total Yaw", drive.getPigeon2().getYaw().getValueAsDouble());
         DogLog.log("Pigeon/Accel Exceeded", drive.getPigeon2().getFault_SaturatedAccelerometer().getValue());
@@ -430,16 +409,16 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log( "Pigeon/TrustedRotation", lastGoodGyroReading);
     }
 
-    private void logPdhStats() {
-        if (!LOG_PDH) return;
+    private void logPDH() {
+        if (!LoggingUtility.LOG_PDH) return;
 
         DogLog.log("PDH/TotalCurrent", pdh.getTotalCurrent());
         DogLog.log("PDH/Voltage", pdh.getVoltage());
         DogLog.log("PDH/Temperature", pdh.getTemperature());
     }
 
-    private void logCanStats() {
-        if (!LOG_RIO_CAN) return;
+    private void logCAN() {
+        if (!LoggingUtility.LOG_CAN) return;
             
         var canStatus = RobotController.getCANStatus();
         DogLog.log("CAN/Utilization", canStatus.percentBusUtilization * 100);
@@ -447,25 +426,25 @@ public class RobotSystem extends SubsystemBase {
         DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
     }
 
-    private void logDriveStats() {
-        if (!LOG_SWERVE_DRIVE) return;
+    private void logSwerveDrive() {
+        if (!LoggingUtility.LOG_DRIVE) return;
 
         DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
         DogLog.log("Drive/ModuleStates", drive.getModuleStates());
         DogLog.log("Drive/Rotation", drive.getPose().getRotation());
 
         for (var module : drive.getModules()) {
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
+            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
                 module.getDriveMotor().getSupplyCurrent(true).getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
+            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
                 module.getSteerMotor().getSupplyCurrent(true).getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Stator_Current",
+            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Stator_Current",
                 module.getDriveMotor().getStatorCurrent(true).getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Stator_Current",
+            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Stator_Current",
                 module.getSteerMotor().getStatorCurrent(true).getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
+            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
                 module.getDriveMotor().getDeviceTemp(true).getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
+            LoggingUtility.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
                 module.getSteerMotor().getDeviceTemp(true).getValueAsDouble());
         }     
     }

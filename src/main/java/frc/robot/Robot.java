@@ -14,7 +14,7 @@ import frc.robot.util.Elastic;
 import frc.robot.util.LimelightConstants;
 import frc.robot.util.LimelightHelpers;
 import frc.robot.util.ShiftTracker;
-import frc.robot.util.ShotCalculator;
+import frc.robot.util.SOTMSolver;
 
 public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
@@ -28,23 +28,20 @@ public class Robot extends TimedRobot {
 
         //Stop hoot replay logging
         SignalLogger.enableAutoLogging(false);
+        
+        //Set all limelights to use the external pigeon gyro
+        for (String limelight : LimelightConstants.LIMELIGHTS)
+            LimelightHelpers.SetIMUMode(limelight, LimelightConstants.IMU_MODE);
     }
 
     @Override
     public void robotPeriodic() {
         CommandScheduler.getInstance().run();
-
-        //Run the robot container's periodic
         m_robotContainer.periodic();
     }
 
     @Override
     public void disabledInit() {
-        for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetThrottle(ll, LimelightConstants.LIMELIGHT_DISABLED_THROTTLE);
-            LimelightHelpers.SetIMUMode(ll, LimelightConstants.DISABLED_IMU_MODE);
-        }
-
         Elastic.selectTab("Disabled");
     }
 
@@ -54,20 +51,10 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledExit() {
+        Elastic.selectTab("Enabled");
+
+        SOTMSolver.resetVelocityFilters();
         m_robotContainer.resetFuelCounter();
-
-        //Set the limelight's tag filter & IMU alpha
-        for (String ll : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetIMUAssistAlpha(ll, LimelightConstants.IMU_ALPHA);
-
-            LimelightHelpers.SetThrottle(ll, 0);
-            LimelightHelpers.SetIMUMode(ll, LimelightConstants.ENABLED_IMU_MODE);
-        }
-
-        Elastic.selectTab("Teleoperated");
-
-        //Reset the ShotCalculator's velocity filters 
-        ShotCalculator.resetFilters();
     }
 
     @Override
