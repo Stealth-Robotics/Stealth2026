@@ -32,7 +32,7 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ShootingSuperstructure;
 import frc.robot.subsystems.ShootingSuperstructure.ShooterState;
 import frc.robot.util.AllianceUtility;
-import frc.robot.util.DogLogUtil;
+import frc.robot.util.LoggingUtility;
 import frc.robot.util.DrivingMode;
 import frc.robot.util.LimelightConstants;
 import frc.robot.util.LimelightHelpers;
@@ -48,17 +48,9 @@ public class RobotSystem extends SubsystemBase {
     
     private final Field2d elasticField = new Field2d();
 
-    //Allows us to disable certain logging for performance reasons
-    private final boolean LOG_LIMELIGHTS = true;
-    private final boolean LOG_SWERVE_DRIVE = false;
-    private final boolean LOG_PDH = true;
-    private final boolean LOG_PIGEON = false;
-    private final boolean LOG_RIO_CAN = false;
-
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
-    private DrivingMode lastDrivingMode = DrivingMode.NORMAL;
 
-    private double filteredX, filteredY, filteredTheta, lastFilteredX, lastFilteredY, lastFilteredTheta;
+    private double filteredX, filteredY, filteredTheta;
 
     private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(4.0), precisionYLimiter = new SlewRateLimiter(4.0);
     private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(10.0);
@@ -68,10 +60,6 @@ public class RobotSystem extends SubsystemBase {
 
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
-
-    private long lastLowPriLogMs = 0;
-    private long lastLimelightLogMs = 0;
-    private long lastHighPriStatsLogMs = 0;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -97,8 +85,6 @@ public class RobotSystem extends SubsystemBase {
 
         Trigger retractTrigger = new Trigger(retract);
         retractTrigger.onTrue(intake.retractCommand());
-
-        //TODO: Comment out if auto issues (auto not shooting or stopping mid-auto)
 
         Trigger raiseOnBumpTrigger = new Trigger(() -> 
             ZoneManager.inBumpZone() &&
@@ -172,20 +158,14 @@ public class RobotSystem extends SubsystemBase {
     public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
-                double xInput = x.getAsDouble(), yInput = y.getAsDouble(), thetaInput = theta.getAsDouble();
+                double xInput = x.getAsDouble();
+                double yInput = y.getAsDouble();
+                double thetaInput = theta.getAsDouble();
                 
                 //Change inputs for finer control around zero
                 xInput = Math.copySign(Math.pow(xInput, 2), xInput);
                 yInput = Math.copySign(Math.pow(yInput, 2), yInput);
                 thetaInput = Math.copySign(Math.pow(thetaInput, 2), thetaInput);
-
-                if (currentDrivingMode != lastDrivingMode) {
-                    precisionXLimiter.reset(lastFilteredX);
-                    precisionYLimiter.reset(lastFilteredY);
-                    precisionThetaLimiter.reset(lastFilteredTheta);
-
-                    lastDrivingMode = currentDrivingMode;
-                }
 
                 if (currentDrivingMode.equals(DrivingMode.PRECISION)) {
                     filteredX = precisionXLimiter.calculate(xInput);
@@ -197,10 +177,6 @@ public class RobotSystem extends SubsystemBase {
                     filteredY = yInput;
                     filteredTheta = thetaInput;
                 }
-
-                lastFilteredX = filteredX;
-                lastFilteredY = filteredY;
-                lastFilteredTheta = filteredTheta;
 
                 double speed = currentDrivingMode.getSlowingFactor();
 
@@ -215,6 +191,10 @@ public class RobotSystem extends SubsystemBase {
     public Command activatePrecisionDriving() {
         return new StartEndCommand(
             () -> {
+                precisionXLimiter.reset(0.0);
+                precisionYLimiter.reset(0.0);
+                precisionThetaLimiter.reset(0.0);
+
                 currentDrivingMode = DrivingMode.PRECISION;
             },
             () -> {
@@ -236,39 +216,35 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public double getRobotYawDegrees() {
-        return drive.getPose().getRotation().getDegrees();
+        return drive.getPose2d().getRotation().getDegrees();
     }
 
     private void updateOdometry() {
         var robotSpeed = drive.getFieldRelativeVelocity();
 
-        boolean rotatingSlowEnough = Math.abs(robotSpeed.omegaRadiansPerSecond) < LimelightConstants.MAX_ANGULAR_VELO_RADIANS_PER_SECOND;
-        boolean drivingSlowEnough = Math.hypot(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond) < LimelightConstants.MAX_VELO_METERS_PER_SECOND;
+        boolean rotatingSlowEnough = 
+            Math.abs(robotSpeed.omegaRadiansPerSecond) < LimelightConstants.MAX_ANGULAR_VELO_RADIANS_PER_SECOND;
+        boolean drivingSlowEnough = 
+            Math.hypot(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond) < LimelightConstants.MAX_VELO_METERS_PER_SECOND;
+        
+        if (!rotatingSlowEnough || !drivingSlowEnough)
+            return;
 
-        if (rotatingSlowEnough && drivingSlowEnough) {
-            var robotRotation = drive.getPose().getRotation();
+        for (String limelight : LimelightConstants.LIMELIGHTS) {
+            LimelightHelpers.SetRobotOrientation(limelight, drive.getPose2d().getRotation().getDegrees(), 0, 0, 0, 0, 0);
+            var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
-            for (String limelight : LimelightConstants.LIMELIGHTS) {
-                LimelightHelpers.SetRobotOrientation(limelight, robotRotation.getDegrees(), 0, 0, 0, 0, 0);
-
-                var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
-
-                if (isGoodPoseEstimate(mt2)) {
-                    drive.addVisionMeasurement(
-                        mt2.pose,
-                        mt2.timestampSeconds,
-                        LimelightConstants.MT2_STDDEVS
-                    );
-                }
-            }
-        }        
+            if (isGoodPoseEstimate(mt2))
+                drive.addVisionMeasurement(mt2.pose, mt2.timestampSeconds, LimelightConstants.MT2_STDDEVS);
+        }    
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
         if (
             poseEstimate == null ||
             poseEstimate.pose == null ||
-            poseEstimate.tagCount <= LimelightConstants.MIN_TAG_COUNT ||
+            poseEstimate.rawFiducials == null ||
+            poseEstimate.tagCount < LimelightConstants.MIN_TAG_COUNT ||
             poseEstimate.pose.equals(Pose2d.kZero) ||
             !AllianceUtility.isWithinField(poseEstimate.pose) ||
            (poseEstimate.tagCount == 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_SINGLE_TAG_DISTANCE) ||
@@ -284,6 +260,10 @@ public class RobotSystem extends SubsystemBase {
         }
         
         return true;
+    }
+
+    public void resetSOTMFilters() {
+        shooter.resetSOTMFilters();
     }
 
     public void resetAfterAuto() {
@@ -303,53 +283,42 @@ public class RobotSystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        var drivePose = drive.getPose();
+        var drivePose = drive.getPose2d();
         
         ZoneManager.updateRobotPose(drivePose);
 
         updateShootingState();
-
-        //Update odometry with our Limelight's and also log everything
         updateOdometry();
 
         //Update the field's robot pose
         elasticField.setRobotPose(drivePose);
 
-        // All logging of data
-        logStats(drivePose);
+        handleLogging(drivePose);
     }
 
-    private void logStats(Pose2d drivePose) {
-        long currentMs = System.currentTimeMillis();
-        if (currentMs - lastHighPriStatsLogMs >= DogLogUtil.HIGH_PRI_STATS_LOGGING_INTERVAL) {
+    //LOGGING (Beware of scariness)
+
+    private void handleLogging(Pose2d drivePose) {
+        if (LoggingUtility.updateHighPriorityLogs()) {
             DogLog.forceNt.log("Current Zone", ZoneManager.getZone().name());
             DogLog.forceNt.log("Driving Mode", currentDrivingMode.name());
-            DogLog.forceNt.log("Drive Pose", drivePose);       
-            lastHighPriStatsLogMs = currentMs;
+            DogLog.forceNt.log("Drive Pose", drivePose);
         }
 
-        if (currentMs - lastLowPriLogMs >= DogLogUtil.LOW_PRI_LOGGING_INTERVAL_MS) {
-            logPdhStats();
-            logCanStats();
-            logDriveStats();
-            logPigeonStats();
-            lastLowPriLogMs = currentMs;
+        if (LoggingUtility.updateLowPriorityLogs()) {
+            logPDH();
+            logCAN();
+            logPigeon();
+            logLimelights();
         }
-
-        logLimelightStats();
     }   
 
-    private void logLimelightStats() {
-        if (!LOG_LIMELIGHTS) return;
-
-        long currentMs = System.currentTimeMillis();
-        if (currentMs - lastLimelightLogMs < DogLogUtil.LIMELIGHT_LOGGING_INTERVAL) return;
-        
-        lastLimelightLogMs = currentMs;
+    private void logLimelights() {
+        if (!LoggingUtility.LOG_LIMELIGHTS) return;
 
         for (String ll : LimelightConstants.LIMELIGHTS) {
             PoseEstimate m1Pose = LimelightHelpers.getBotPoseEstimate_wpiBlue(ll);
-            if (m1Pose != null) {
+            if (m1Pose != null && m1Pose.rawFiducials != null) {
                 DogLog.log(ll + "/M1Pose", m1Pose.pose);
 
                 List<Pose3d> visibleTags = new ArrayList<>();
@@ -363,51 +332,28 @@ public class RobotSystem extends SubsystemBase {
         }  
     }
 
-    private void logPigeonStats() {
-        if (!LOG_PIGEON) return;
+    private void logPigeon() {
+        if (!LoggingUtility.LOG_PIGEON) return;
 
         DogLog.log("Pigeon/Total Yaw", drive.getPigeon2().getYaw().getValueAsDouble());
-        DogLog.log("Pigeon/Accel Exceeded", drive.getPigeon2().getFault_SaturatedAccelerometer().getValue());
+        DogLog.log("Pigeon/Accel Saturated", drive.getPigeon2().getFault_SaturatedAccelerometer().getValue());
         DogLog.log("Pigeon/Boot While Enabled", drive.getPigeon2().getFault_BootDuringEnable().getValue());
     }
 
-    private void logPdhStats() {
-        if (!LOG_PDH) return;
+    private void logPDH() {
+        if (!LoggingUtility.LOG_PDH) return;
 
         DogLog.log("PDH/TotalCurrent", pdh.getTotalCurrent());
         DogLog.log("PDH/Voltage", pdh.getVoltage());
         DogLog.log("PDH/Temperature", pdh.getTemperature());
     }
 
-    private void logCanStats() {
-        if (!LOG_RIO_CAN) return;
+    private void logCAN() {
+        if (!LoggingUtility.LOG_CAN) return;
             
         var canStatus = RobotController.getCANStatus();
         DogLog.log("CAN/Utilization", canStatus.percentBusUtilization * 100);
         DogLog.log("CAN/TxError", canStatus.txFullCount);
         DogLog.log("CAN/RxError", canStatus.receiveErrorCount);
-    }
-
-    private void logDriveStats() {
-        if (!LOG_SWERVE_DRIVE) return;
-
-        DogLog.log("Drive/ChassisSpeeds", drive.getRobotRelativeVelocity());
-        DogLog.log("Drive/ModuleStates", drive.getModuleStates());
-        DogLog.log("Drive/Rotation", drive.getPose().getRotation());
-
-        for (var module : drive.getModules()) {
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Current",
-                module.getDriveMotor().getSupplyCurrent(true).getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Current",
-                module.getSteerMotor().getSupplyCurrent(true).getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Stator_Current",
-                module.getDriveMotor().getStatorCurrent(true).getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Stator_Current",
-                module.getSteerMotor().getStatorCurrent(true).getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getDriveMotor().getDeviceID()) + "_Temperature_C",
-                module.getDriveMotor().getDeviceTemp(true).getValueAsDouble());
-            DogLogUtil.logDouble("Drive/" + TunerConstants.getDeviceName(module.getSteerMotor().getDeviceID()) + "_Temperature_C",
-                module.getSteerMotor().getDeviceTemp(true).getValueAsDouble());
-        }     
     }
 }
