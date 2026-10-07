@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -13,6 +14,10 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.LoggingUtility;
 
@@ -24,6 +29,12 @@ public class TurretSubsystem extends SubsystemBase {
     private final CANcoderConfiguration turretEncoderConfig = new CANcoderConfiguration();
 
     private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
+
+    private final StatusSignal<Angle> turretPosition;
+    private final StatusSignal<AngularVelocity> turretVelocitySignal;
+    private final StatusSignal<Current> turretSupplyCurrent;
+    private final StatusSignal<Current> turretStatorCurrent;
+    private final StatusSignal<Temperature> turretDeviceTemp;
 
     private final double TURRET_LOOKAHEAD_SECONDS = 0.1;
 
@@ -94,7 +105,25 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = Units.degreesToRotations(MIN_TURRET_DEGREES);
 
         turretMotor.getConfigurator().apply(turretConfig);
-        turretEncoder.getConfigurator().apply(turretEncoderConfig);        
+        turretEncoder.getConfigurator().apply(turretEncoderConfig);
+        
+        turretPosition = turretMotor.getPosition();
+        turretVelocitySignal = turretMotor.getVelocity();
+        turretSupplyCurrent = turretMotor.getSupplyCurrent();
+        turretStatorCurrent = turretMotor.getStatorCurrent();
+        turretDeviceTemp = turretMotor.getDeviceTemp();
+        
+        //High priority
+        BaseStatusSignal.setUpdateFrequencyForAll(
+            50.0,
+            turretPosition, turretVelocitySignal
+        );
+
+        //Low priority
+        BaseStatusSignal.setUpdateFrequencyForAll(
+            10.0,
+            turretSupplyCurrent, turretStatorCurrent, turretDeviceTemp
+        );
     }
 
     public void homeTurret() {
@@ -140,11 +169,11 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     private double getTurretVelocity() {
-        return Units.rotationsToDegrees(turretMotor.getVelocity().getValueAsDouble());
+        return Units.rotationsToDegrees(turretVelocitySignal.getValueAsDouble());
     }
 
     public double getTurretAngleDegrees() {
-        return Units.rotationsToDegrees(turretMotor.getPosition().getValueAsDouble());
+        return Units.rotationsToDegrees(turretPosition.getValueAsDouble());
     }
 
     public double getTargetAngleDegrees() {
@@ -153,6 +182,9 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        //Bulk refresh the high priority signals
+        BaseStatusSignal.refreshAll(turretPosition, turretVelocitySignal);
+
         var turretAngle = getTurretAngleDegrees();
         
         LoggingUtility.logDoubleForceNT("Turret/turret_degrees", turretAngle);
@@ -160,12 +192,12 @@ public class TurretSubsystem extends SubsystemBase {
 
         if (LoggingUtility.LOG_TURRET && LoggingUtility.updateLowPriorityLogs()) {
             BaseStatusSignal.refreshAll(
-                turretMotor.getSupplyCurrent(), turretMotor.getStatorCurrent(), turretMotor.getDeviceTemp()
+                turretSupplyCurrent, turretStatorCurrent, turretDeviceTemp
             );
             
-            LoggingUtility.logDouble("Turret/turret_supply_current", turretMotor.getSupplyCurrent().getValueAsDouble());
-            LoggingUtility.logDouble("Turret/turret_stator_current", turretMotor.getStatorCurrent().getValueAsDouble());
-            LoggingUtility.logDouble("Turret/turret_device_temp", turretMotor.getDeviceTemp().getValueAsDouble());
+            LoggingUtility.logDouble("Turret/turret_supply_current", turretSupplyCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Turret/turret_stator_current", turretStatorCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Turret/turret_device_temp", turretDeviceTemp.getValueAsDouble());
         }
     }
 }

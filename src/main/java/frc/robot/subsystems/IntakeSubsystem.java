@@ -6,6 +6,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
@@ -18,6 +19,9 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -33,6 +37,20 @@ public class IntakeSubsystem extends SubsystemBase {
     private final TalonFX rightRollerMotor;
 
     private final TalonFX deployMotor;
+
+    private final StatusSignal<AngularVelocity> leftRollerVelocity;
+    private final StatusSignal<Current> leftRollerSupplyCurrent;
+    private final StatusSignal<Current> leftRollerStatorCurrent;
+    private final StatusSignal<Temperature> leftRollerTemp;
+
+    private final StatusSignal<AngularVelocity> rightRollerVelocity;
+    private final StatusSignal<Current> rightRollerSupplyCurrent;
+    private final StatusSignal<Current> rightRollerStatorCurrent;
+    private final StatusSignal<Temperature> rightRollerTemp;
+
+    private final StatusSignal<Current> deploySupplyCurrent;
+    private final StatusSignal<Current> deployStatorCurrent;
+    private final StatusSignal<Temperature> deployTemp;
 
     private final CANcoder deployEncoder;
     private final CANcoderConfiguration deployEncoderConfig = new CANcoderConfiguration();
@@ -136,6 +154,27 @@ public class IntakeSubsystem extends SubsystemBase {
 
         deployMotor.getConfigurator().apply(deployConfig);
         deployMotor.setControl(deployController.withSlot(0).withPosition(deployMotor.getPosition().getValue()));
+        
+        leftRollerVelocity = leftRollerMotor.getVelocity();
+        leftRollerSupplyCurrent = leftRollerMotor.getSupplyCurrent();
+        leftRollerStatorCurrent = leftRollerMotor.getStatorCurrent();
+        leftRollerTemp = leftRollerMotor.getDeviceTemp();
+
+        rightRollerVelocity = rightRollerMotor.getVelocity();
+        rightRollerSupplyCurrent = rightRollerMotor.getSupplyCurrent();
+        rightRollerStatorCurrent = rightRollerMotor.getStatorCurrent();
+        rightRollerTemp = rightRollerMotor.getDeviceTemp();
+
+        deploySupplyCurrent = deployMotor.getSupplyCurrent();
+        deployStatorCurrent = deployMotor.getStatorCurrent();
+        deployTemp = deployMotor.getDeviceTemp();
+
+        BaseStatusSignal.setUpdateFrequencyForAll(
+            10.0,
+            leftRollerVelocity, leftRollerSupplyCurrent, leftRollerStatorCurrent, leftRollerTemp,
+            rightRollerVelocity, rightRollerSupplyCurrent, rightRollerStatorCurrent, rightRollerTemp,
+            deploySupplyCurrent, deployStatorCurrent, deployTemp
+        );
     }
 
     public Command quickAgitate(DoubleSupplier magnitude) {
@@ -251,25 +290,24 @@ public class IntakeSubsystem extends SubsystemBase {
 
         if (LoggingUtility.LOG_INTAKE && LoggingUtility.updateLowPriorityLogs()) {
             BaseStatusSignal.refreshAll(
-                leftRollerMotor.getSupplyCurrent(), leftRollerMotor.getStatorCurrent(), leftRollerMotor.getDeviceTemp(),
-                rightRollerMotor.getSupplyCurrent(), rightRollerMotor.getStatorCurrent(), rightRollerMotor.getDeviceTemp(),
-                deployMotor.getSupplyCurrent(), deployMotor.getStatorCurrent(), deployMotor.getDeviceTemp(),
-                leftRollerMotor.getVelocity(), rightRollerMotor.getVelocity()
+                leftRollerVelocity, leftRollerSupplyCurrent, leftRollerStatorCurrent, leftRollerTemp,
+                rightRollerVelocity, rightRollerSupplyCurrent, rightRollerStatorCurrent, rightRollerTemp,
+                deploySupplyCurrent, deployStatorCurrent, deployTemp
             );
 
-            LoggingUtility.logDouble("Intake/left_roller_rpm", leftRollerMotor.getVelocity(false).getValueAsDouble() * 60.0);
-            LoggingUtility.logDouble("Intake/left_roller_supply_current", leftRollerMotor.getSupplyCurrent(false).getValueAsDouble());
-            LoggingUtility.logDouble("Intake/left_roller_stator_current", leftRollerMotor.getStatorCurrent(false).getValueAsDouble());
-            LoggingUtility.logDouble("Intake/left_roller_temperature_C", leftRollerMotor.getDeviceTemp(false).getValueAsDouble());
+            LoggingUtility.logDouble("Intake/left_roller_rpm", leftRollerVelocity.getValueAsDouble() * 60.0);
+            LoggingUtility.logDouble("Intake/left_roller_supply_current", leftRollerSupplyCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Intake/left_roller_stator_current", leftRollerStatorCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Intake/left_roller_temperature_C", leftRollerTemp.getValueAsDouble());
 
-            LoggingUtility.logDouble("Intake/right_roller_rpm", rightRollerMotor.getVelocity(false).getValueAsDouble() * 60.0);
-            LoggingUtility.logDouble("Intake/right_roller_supply_current", rightRollerMotor.getSupplyCurrent(false).getValueAsDouble());
-            LoggingUtility.logDouble("Intake/right_roller_stator_current", rightRollerMotor.getStatorCurrent(false).getValueAsDouble());
-            LoggingUtility.logDouble("Intake/right_roller_temperature_C", rightRollerMotor.getDeviceTemp(false).getValueAsDouble());
+            LoggingUtility.logDouble("Intake/right_roller_rpm", rightRollerVelocity.getValueAsDouble() * 60.0);
+            LoggingUtility.logDouble("Intake/right_roller_supply_current", rightRollerSupplyCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Intake/right_roller_stator_current", rightRollerStatorCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Intake/right_roller_temperature_C", rightRollerTemp.getValueAsDouble());
 
-            LoggingUtility.logDouble("Intake/intake_supply_current", deployMotor.getSupplyCurrent(false).getValueAsDouble());
-            LoggingUtility.logDouble("Intake/intake_stator_current", deployMotor.getStatorCurrent(false).getValueAsDouble());
-            LoggingUtility.logDouble("Intake/intake_temperature_C", deployMotor.getDeviceTemp(false).getValueAsDouble());
+            LoggingUtility.logDouble("Intake/intake_supply_current", deploySupplyCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Intake/intake_stator_current", deployStatorCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Intake/intake_temperature_C", deployTemp.getValueAsDouble());
         }
     }
 }
