@@ -131,6 +131,12 @@ public class IntakeSubsystem extends SubsystemBase {
         deployConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         deployConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
+        deployConfig.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        deployConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold = RETRACTED_ROTATIONS;
+
+        deployConfig.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        deployConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = DEPLOYED_ROTATIONS;
+
         deployConfig.MotorOutput.DutyCycleNeutralDeadband = DEPLOY_POSITION_TOLERANCE / 2.0;
 
         deployConfig.Feedback.FeedbackRemoteSensorID = deployEncoder.getDeviceID();
