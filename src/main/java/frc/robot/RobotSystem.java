@@ -2,7 +2,6 @@ package frc.robot;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import dev.doglog.DogLog;
@@ -50,9 +49,8 @@ public class RobotSystem extends SubsystemBase {
     private final Field2d elasticField = new Field2d();
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
-    private DrivingMode lastDrivingMode = DrivingMode.NORMAL;
 
-    private double filteredX, filteredY, filteredTheta, lastFilteredX, lastFilteredY, lastFilteredTheta;
+    private double filteredX, filteredY, filteredTheta;
 
     private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(4.0), precisionYLimiter = new SlewRateLimiter(4.0);
     private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(10.0);
@@ -62,16 +60,6 @@ public class RobotSystem extends SubsystemBase {
 
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
-
-    //Maximum jump size that the gyro can make in 20ms (if it is greater than it is highly sus)
-    private static final double MAX_GYRO_JUMP_DEGREES = 15.0; //TODO: Tune to actual value
-    
-    private static final double MAX_VISION_ROTATION_ERROR_DEGREES = 45.0; //TODO: Tune to actual value
-
-    private Rotation2d lastGoodGyroReading = Rotation2d.kZero;
-
-    private boolean gyroReadingRejected = false;
-    private boolean hasValidGyroReading = false;
 
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
@@ -86,22 +74,7 @@ public class RobotSystem extends SubsystemBase {
     }
 
     public Command forceResetOdometry() {
-        return new InstantCommand(() -> {
-            Pose2d resetPose = AllianceUtility.flipPose(ODOMETRY_RESET_POSE);
-            drive.resetPose(resetPose);
-
-            lastGoodGyroReading = resetPose.getRotation();
-            hasValidGyroReading = true;
-        });
-    }
-
-    public Command seedFieldCentric() {
-        return runOnce(() -> {
-            drive.seedFieldCentric();
-
-            lastGoodGyroReading = drive.getPose2d().getRotation();
-            hasValidGyroReading = true;
-        });
+        return new InstantCommand(() -> drive.resetPose(AllianceUtility.flipPose(ODOMETRY_RESET_POSE)));
     }
 
     public void configureIntake(DoubleSupplier rollerSpeed, BooleanSupplier deploy, BooleanSupplier retract, 
@@ -112,8 +85,6 @@ public class RobotSystem extends SubsystemBase {
 
         Trigger retractTrigger = new Trigger(retract);
         retractTrigger.onTrue(intake.retractCommand());
-
-        //TODO: Comment out if auto issues (auto not shooting or stopping mid-auto)
 
         Trigger raiseOnBumpTrigger = new Trigger(() -> 
             ZoneManager.inBumpZone() &&
@@ -187,20 +158,14 @@ public class RobotSystem extends SubsystemBase {
     public void setDriveDefaultCommand(DoubleSupplier x, DoubleSupplier y, DoubleSupplier theta) {
         drive.setDefaultCommand(
             drive.applyRequest(() -> {
-                double xInput = x.getAsDouble(), yInput = y.getAsDouble(), thetaInput = theta.getAsDouble();
+                double xInput = x.getAsDouble();
+                double yInput = y.getAsDouble();
+                double thetaInput = theta.getAsDouble();
                 
                 //Change inputs for finer control around zero
                 xInput = Math.copySign(Math.pow(xInput, 2), xInput);
                 yInput = Math.copySign(Math.pow(yInput, 2), yInput);
                 thetaInput = Math.copySign(Math.pow(thetaInput, 2), thetaInput);
-
-                if (currentDrivingMode != lastDrivingMode) {
-                    precisionXLimiter.reset(lastFilteredX);
-                    precisionYLimiter.reset(lastFilteredY);
-                    precisionThetaLimiter.reset(lastFilteredTheta);
-
-                    lastDrivingMode = currentDrivingMode;
-                }
 
                 if (currentDrivingMode.equals(DrivingMode.PRECISION)) {
                     filteredX = precisionXLimiter.calculate(xInput);
@@ -212,10 +177,6 @@ public class RobotSystem extends SubsystemBase {
                     filteredY = yInput;
                     filteredTheta = thetaInput;
                 }
-
-                lastFilteredX = filteredX;
-                lastFilteredY = filteredY;
-                lastFilteredTheta = filteredTheta;
 
                 double speed = currentDrivingMode.getSlowingFactor();
 
@@ -230,12 +191,20 @@ public class RobotSystem extends SubsystemBase {
     public Command activatePrecisionDriving() {
         return new StartEndCommand(
             () -> {
+                precisionXLimiter.reset(0.0);
+                precisionYLimiter.reset(0.0);
+                precisionThetaLimiter.reset(0.0);
+
                 currentDrivingMode = DrivingMode.PRECISION;
             },
             () -> {
                 currentDrivingMode = DrivingMode.NORMAL;
             }
         );
+    }
+
+    public Command seedFieldCentric() {
+        return runOnce(() -> drive.seedFieldCentric());
     }
 
     public Autos getAutos() {
@@ -257,36 +226,21 @@ public class RobotSystem extends SubsystemBase {
             Math.abs(robotSpeed.omegaRadiansPerSecond) < LimelightConstants.MAX_ANGULAR_VELO_RADIANS_PER_SECOND;
         boolean drivingSlowEnough = 
             Math.hypot(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond) < LimelightConstants.MAX_VELO_METERS_PER_SECOND;
-
-        gyroReadingRejected = false;
         
         if (!rotatingSlowEnough || !drivingSlowEnough)
             return;
 
-        Rotation2d rawRobotRotation = drive.getPose2d().getRotation(); 
-        Rotation2d robotRotation = getTrustedGyroRotation(rawRobotRotation);
-
         for (String limelight : LimelightConstants.LIMELIGHTS) {
-            LimelightHelpers.SetRobotOrientation(limelight, robotRotation.getDegrees(), 0, 0, 0, 0, 0);
+            LimelightHelpers.SetRobotOrientation(limelight, drive.getPose2d().getRotation().getDegrees(), 0, 0, 0, 0, 0);
             var mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelight);
 
-            if (isGoodPoseEstimate(mt2)) {
-                Optional<Pose2d> odometryAtVisionTime = drive.samplePoseAt(mt2.timestampSeconds);
-
-                if (odometryAtVisionTime.isEmpty())
-                    continue;
-
-                Pose2d expectedPose = odometryAtVisionTime.get();
-                double rotationError = Math.abs(mt2.pose.getRotation().minus(expectedPose.getRotation()).getDegrees());
-
-                if (rotationError < MAX_VISION_ROTATION_ERROR_DEGREES)
-                    drive.addVisionMeasurement(mt2.pose, mt2.timestampSeconds, LimelightConstants.MT2_STDDEVS);
-            }
+            if (isGoodPoseEstimate(mt2))
+                drive.addVisionMeasurement(mt2.pose, mt2.timestampSeconds, LimelightConstants.MT2_STDDEVS);
         }    
     }
 
     private boolean isGoodPoseEstimate(PoseEstimate poseEstimate) {
-        boolean isBadEstimate = 
+        if (
             poseEstimate == null ||
             poseEstimate.pose == null ||
             poseEstimate.rawFiducials == null ||
@@ -294,42 +248,18 @@ public class RobotSystem extends SubsystemBase {
             poseEstimate.pose.equals(Pose2d.kZero) ||
             !AllianceUtility.isWithinField(poseEstimate.pose) ||
            (poseEstimate.tagCount == 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_SINGLE_TAG_DISTANCE) ||
-           (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE);
-
-        if (isBadEstimate) return false;
+           (poseEstimate.tagCount > 1 && poseEstimate.avgTagDist >= LimelightConstants.MAX_MULTI_TAG_DISTANCE)
+        ) return false;
         
-        if (poseEstimate.tagCount <= 1)
-            for (RawFiducial tag : poseEstimate.rawFiducials)
-                if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) return false;
+        if (poseEstimate.tagCount <= 1) {
+            for (RawFiducial tag : poseEstimate.rawFiducials) {
+                if (tag.ambiguity >= LimelightConstants.MAX_TAG_AMBIGUITY) {
+                    return false;
+                }
+            }
+        }
         
         return true;
-    }
-
-    private Rotation2d getTrustedGyroRotation(Rotation2d rawRotation) {
-        gyroReadingRejected = false;
-
-        if (!hasValidGyroReading) { 
-            lastGoodGyroReading = rawRotation;
-            hasValidGyroReading = true;
-            
-            return rawRotation;
-        }
-
-        double rotationChangeDegrees = Math.abs(rawRotation.minus(lastGoodGyroReading).getDegrees());
-        
-        //Unacceptable magnitude of a jump, so we reject it
-        if (rotationChangeDegrees > MAX_GYRO_JUMP_DEGREES) {
-            gyroReadingRejected = true;
-            
-            //Reset the pigeon with last valid reading
-            drive.recoverGyro(lastGoodGyroReading);
-
-            return lastGoodGyroReading;
-        }
-
-        //Gyro reading must be sensible so we accept it :)
-        lastGoodGyroReading = rawRotation;
-        return rawRotation;
     }
 
     public void resetSOTMFilters() {
@@ -406,10 +336,8 @@ public class RobotSystem extends SubsystemBase {
         if (!LoggingUtility.LOG_PIGEON) return;
 
         DogLog.log("Pigeon/Total Yaw", drive.getPigeon2().getYaw().getValueAsDouble());
-        DogLog.log("Pigeon/Accel Exceeded", drive.getPigeon2().getFault_SaturatedAccelerometer().getValue());
+        DogLog.log("Pigeon/Accel Saturated", drive.getPigeon2().getFault_SaturatedAccelerometer().getValue());
         DogLog.log("Pigeon/Boot While Enabled", drive.getPigeon2().getFault_BootDuringEnable().getValue());
-        DogLog.log( "Pigeon/GyroReadingRejected", gyroReadingRejected); 
-        DogLog.log( "Pigeon/TrustedRotation", lastGoodGyroReading);
     }
 
     private void logPDH() {
