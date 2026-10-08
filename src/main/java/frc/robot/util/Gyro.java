@@ -21,7 +21,7 @@ public class Gyro {
         double pitch = -Math.PI/2 + 2 * Math.atan2(Math.sqrt(1 + 2 * (qw * qy - qx * qz)), Math.sqrt(1 - 2 * (qw * qy - qx * qz)));
         double yaw = Math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz));
         
-        if(roll < significantTilt && pitch < significantTilt) {
+        if(Math.abs(roll) < significantTilt && Math.abs(pitch) < significantTilt) {
             return new Rotation3d(rotation3d.toRotation2d());
         }
         return rotation3d;
