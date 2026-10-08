@@ -120,7 +120,7 @@ public class SOTMSolver {
             movingShotVelocity.rotateBy(predictedTurretPose.getRotation().unaryMinus());
         
         //Calculate the necessary turret and hood angles to hit the target
-        double targetTurretAngle = Units.radiansToDegrees(Math.atan2(tiltAdjustedShotVelocity.getY(), tiltAdjustedShotVelocity.getX()));
+        double targetTurretAngle = -Units.radiansToDegrees(Math.atan2(tiltAdjustedShotVelocity.getY(), tiltAdjustedShotVelocity.getX()));
         double horizontalSpeed = Math.hypot(tiltAdjustedShotVelocity.getX(), tiltAdjustedShotVelocity.getY());
         double targetHoodAngle = 90.0 - Units.radiansToDegrees(Math.atan2(tiltAdjustedShotVelocity.getZ(), horizontalSpeed));
 
