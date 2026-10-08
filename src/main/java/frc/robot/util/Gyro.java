@@ -8,7 +8,7 @@ import edu.wpi.first.math.numbers.N3;
 
 public class Gyro {
     // Angle in degrees that designates a significant tilt.
-    private static double degreesSignificance = 2.0;
+    private static double significantTilt = Math.toRadians(5);
     // Flattens a Rotation3d into a yaw, unless the tilt is above a threshold
     public static Rotation3d flatten(Rotation3d rotation3d){
         // From https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles -> Quaternions to angles Conversion
@@ -21,7 +21,9 @@ public class Gyro {
         double pitch = -Math.PI/2 + 2 * Math.atan2(Math.sqrt(1 + 2 * (qw * qy - qx * qz)), Math.sqrt(1 - 2 * (qw * qy - qx * qz)));
         double yaw = Math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz));
         
-
+        if(roll < significantTilt && pitch < significantTilt) {
+            return new Rotation3d(rotation3d.toRotation2d());
+        }
+        return rotation3d;
     }
-
 }

@@ -94,7 +94,7 @@ public class ShotCalculator {
         double dy = targetPose.getY() - fuelExitPose.getY();
 
         Translation3d movingShotVelocity = new Translation3d(dx / t - vx, dy / t - vy, fuelZVelo);
-        movingShotVelocity.rotateBy(Rotation3d.kZero.minus(gyro));
+        movingShotVelocity.rotateBy(Gyro.flatten(gyro.unaryMinus()));
         Translation3d stationaryShotVelocity = new Translation3d(dx / t, dy / t, fuelZVelo);
 
         double metersToGoal = targetPose.getDistance(fuelExitPose.getTranslation());
