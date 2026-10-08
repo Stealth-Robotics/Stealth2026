@@ -56,13 +56,6 @@ public class AllianceUtility {
         return originalY;
     }
 
-    public static ShotParams flipPose(ShotParams original) {
-        if (latestAlliance.equals(Alliance.Red)) {
-            return new ShotParams(flipPose(original.target()), original.maxTrajectoryHeight());
-        }
-        return original;
-    }
-
     public static RectZone flipRectZone(RectZone original) {
         if (latestAlliance.equals(Alliance.Red)) {
             return new RectZone(

@@ -14,10 +14,13 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import choreo.auto.AutoFactory;
 import choreo.trajectory.SwerveSample;
+import dev.doglog.DogLog;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
@@ -32,6 +35,7 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.generated.TunerConstants;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
+import frc.robot.util.LoggingUtility;
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -42,7 +46,7 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
  */
 public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     public double MAX_SPEED = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
-    public double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.8).in(RadiansPerSecond);
+    public double MAX_ANGULAR_RATE = RotationsPerSecond.of(2.5).in(RadiansPerSecond);
 
     public final SwerveRequest.FieldCentric fieldCentric = new SwerveRequest.FieldCentric()
             .withDeadband(MAX_SPEED * 0.1).withRotationalDeadband(MAX_ANGULAR_RATE * 0.1) // Add a 10% deadband
@@ -53,6 +57,34 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
             .withDriveRequestType(SwerveModule.DriveRequestType.Velocity);
 
     public final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
+
+    private static final String[] DRIVE_CURRENT_KEYS = {
+        "Drive/FrontLeft_DriveCurrent",
+        "Drive/FrontRight_DriveCurrent",
+        "Drive/BackLeft_DriveCurrent",
+        "Drive/BackRight_DriveCurrent"
+    };
+
+    private static final String[] STEER_CURRENT_KEYS = {
+        "Drive/FrontLeft_SteerCurrent",
+        "Drive/FrontRight_SteerCurrent",
+        "Drive/BackLeft_SteerCurrent",
+        "Drive/BackRight_SteerCurrent"
+    };
+
+    private static final String[] DRIVE_STATOR_CURRENT_KEYS = {
+        "Drive/FrontLeft_Drive_Stator_Current",
+        "Drive/FrontRight_Drive_Stator_Current",
+        "Drive/BackLeft_Drive_Stator_Current",
+        "Drive/BackRight_Drive_Stator_Current"
+    };
+
+    private static final String[] STEER_STATOR_CURRENT_KEYS = {
+        "Drive/FrontLeft_Steer_Stator_Current",
+        "Drive/FrontRight_Steer_Stator_Current",
+        "Drive/BackLeft_Steer_Stator_Current",
+        "Drive/BackRight_Steer_Stator_Current"
+    };
 
     /** Swerve request to apply during field-centric path following */
     private final SwerveRequest.ApplyFieldSpeeds m_pathApplyFieldSpeeds = new SwerveRequest.ApplyFieldSpeeds();
@@ -268,8 +300,24 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
 
     public String getSysIdRoutineName() { return m_sysIdRoutineName; }
 
-    public Pose2d getPose() {
+    public Pose2d getPose2d() {
         return getState().Pose;
+    }
+
+    public Pose3d getPose() {
+        Pose2d pose = getState().Pose;
+        Rotation3d rotation = getRotation3d();
+
+        return new Pose3d(
+            pose.getX(),
+            pose.getY(),
+            0.0,
+            new Rotation3d(
+                rotation.getX(),
+                rotation.getY(),
+                pose.getRotation().getRadians()
+            )
+        );
     }
 
     public SwerveModuleState[] getModuleStates() {
@@ -281,20 +329,7 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
     }
 
     public ChassisSpeeds getFieldRelativeVelocity() {
-        return ChassisSpeeds.fromRobotRelativeSpeeds(getState().Speeds, getPose().getRotation());
-    }
-
-    public void recoverGyro(Rotation2d lastGoodPigeonReading) {
-        Pose2d currentPose = getState().Pose;
-
-        //Reset the actual gyro sensor
-        getPigeon2().setYaw(lastGoodPigeonReading.getDegrees());
-
-        //Reset the pose estimator while preserving the translation coordinates
-        resetPose(new Pose2d(
-            currentPose.getTranslation(),
-            lastGoodPigeonReading
-        ));
+        return ChassisSpeeds.fromRobotRelativeSpeeds(getState().Speeds, getPose().getRotation().toRotation2d());
     }
 
     public AutoFactory createAutoFactory() {
@@ -338,6 +373,23 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
         );
     }
 
+    private void logSwerveDrive() {
+        if (!LoggingUtility.LOG_DRIVE) return;
+
+        DogLog.log("Drive/ChassisSpeeds", getRobotRelativeVelocity());
+        DogLog.log("Drive/ModuleStates", getModuleStates());
+        DogLog.log("Drive/Rotation", getPose().getRotation());
+        
+        SwerveModule<?, ?, ?>[] modules = getModules();
+        for (int i = 0; i < modules.length; i++) {
+            LoggingUtility.logDouble(DRIVE_CURRENT_KEYS[i], modules[i].getDriveMotor().getSupplyCurrent().getValueAsDouble());
+            LoggingUtility.logDouble(STEER_CURRENT_KEYS[i], modules[i].getSteerMotor().getSupplyCurrent().getValueAsDouble());
+
+            LoggingUtility.logDouble(DRIVE_STATOR_CURRENT_KEYS[i], modules[i].getDriveMotor().getStatorCurrent().getValueAsDouble());
+            LoggingUtility.logDouble(STEER_STATOR_CURRENT_KEYS[i], modules[i].getSteerMotor().getStatorCurrent().getValueAsDouble());
+        }
+    }
+
     @Override
     public void periodic() {
         /*
@@ -357,8 +409,9 @@ public class DriveSubsystem extends TunerSwerveDrivetrain implements Subsystem {
                 m_hasAppliedOperatorPerspective = true;
             });
         }
-
-        //Update odometry with limelight tag info here
+        
+        if (LoggingUtility.LOG_DRIVE && LoggingUtility.updateLowPriorityLogs())
+            logSwerveDrive();
     }
 
     private void startSimThread() {

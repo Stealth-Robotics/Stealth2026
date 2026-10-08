@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.auto.Autos;
 import frc.robot.util.AllianceUtility;
+import frc.robot.util.LoggingUtility;
 import frc.robot.util.ShiftTracker;
 
 public class RobotContainer {
@@ -100,10 +101,14 @@ public class RobotContainer {
         }
     }
 
-    //Used mostly for telemetry and logging general match info
     public void periodic() {
         AllianceUtility.update();
         ShiftTracker.update();
+        LoggingUtility.update();
+    }
+
+    public void resetSOTMFilters() {
+        robot.resetSOTMFilters();
     }
 
     public void resetAfterAuto() {

@@ -23,8 +23,11 @@ public class Autos {
     private final double SHOOTER_SPINUP_RPMS = 2900;
 
     public enum AutoName {
-        LEFT_DOUBLE_BUMP,
-        RIGHT_DOUBLE_BUMP,
+        LEFT_DB,
+        RIGHT_DB,
+        
+        LEFT_DB_SAFE,
+        RIGHT_DB_SAFE,
 
         LEFT_DOUBLE_TRENCH,
         RIGHT_DOUBLE_TRENCH,
@@ -32,9 +35,7 @@ public class Autos {
         LEFT_SIMPLE_BUMP,
         RIGHT_SIMPLE_BUMP,
 
-        COMPATIBLE_BUMP_DEPOT,
-
-        LEFT_TRENCH_STEAL
+        COMPATIBLE_BUMP_DEPOT
     }
 
     public Autos(DriveSubsystem drive, IntakeSubsystem intake, ShootingSuperstructure shooter) {
@@ -43,7 +44,7 @@ public class Autos {
 
         pathBuilder = new FollowPath.Builder(
             drive,
-            drive::getPose,
+            drive::getPose2d,
             drive::getRobotRelativeVelocity,
             drive::applyRobotRelativeSpeeds,
             new PIDController(6.0, 0.0, 0.0), // Translation PID
@@ -53,12 +54,14 @@ public class Autos {
         .withDefaultShouldFlip()
         .withPoseReset(drive::resetPose);
 
-        // FollowPath.registerEventTrigger("shoot", shoot());
-        // FollowPath.registerEventTrigger("stop_shoot", stopShooting());
+        FollowPath.registerEventTrigger("shoot", shoot());
+        FollowPath.registerEventTrigger("stop_shoot", stopShooting());
         FollowPath.registerEventTrigger("intake", deployAndIntake());
 
         //Build autos
-        buildDoubleBump();
+        buildDB();
+        buildDBSafe();
+
         buildDoubleTrench();
         buildSimpleBump();
         
@@ -83,7 +86,7 @@ public class Autos {
         autoBuilder
             .addCommand(() -> new WaitCommand(0.25)) //Starting delay
             .followPath("CompatibleBump")
-            .addCommand(() -> shootForTime(5))
+            .addCommand(() -> shootForTime(3))
             .addCommand(() -> deployAndIntake())
             .followPath("CompatibleBumpExtension")
             .addCommand(() -> shootWithAgitate())
@@ -126,19 +129,36 @@ public class Autos {
             .build();
     }
 
-    public void buildDoubleBump() {
+    public void buildDBSafe() {
         var autoBuilder = new AutoRoutineBuilder(
-            AutoName.LEFT_DOUBLE_BUMP,
-            AutoName.RIGHT_DOUBLE_BUMP,
+            AutoName.LEFT_DB_SAFE,
+            AutoName.RIGHT_DB_SAFE,
             pathBuilder,
             autoCache
         );
 
         autoBuilder
-            .followPath("DoubleBump_1")
-            .addCommand(() -> shootForTime(4))
+            .followPath("DB_1")
+            .addCommand(() -> shootForTime(3))
             .addCommand(() -> deployAndIntake())
-            .followPath("DoubleBump_2")
+            .followPath("DB_2_Safe")
+            .addCommand(() -> shootWithAgitate())
+            .build();
+    }
+
+    public void buildDB() {
+        var autoBuilder = new AutoRoutineBuilder(
+            AutoName.LEFT_DB,
+            AutoName.RIGHT_DB,
+            pathBuilder,
+            autoCache
+        );
+
+        autoBuilder
+            .followPath("DB_1")
+            .addCommand(() -> shootForTime(3))
+            .addCommand(() -> deployAndIntake())
+            .followPath("DB_2")
             .addCommand(() -> shootWithAgitate())
             .build();
     }
@@ -169,8 +189,8 @@ public class Autos {
         return new ScheduleCommand(shooter.shoot().alongWith(
             new SequentialCommandGroup(
                 new ParallelDeadlineGroup(
-                    new WaitCommand(4),
-                    intake.quickAgitate(() -> 0.6).andThen(new WaitCommand(0.25)).repeatedly()
+                    new WaitCommand(2.75),
+                    intake.quickAgitate(() -> 0.6).andThen(new WaitCommand(0.4)).repeatedly()
                 ),
                 intake.fullAgitate()
             )

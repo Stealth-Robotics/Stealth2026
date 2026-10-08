@@ -1,14 +1,17 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.util.DogLogUtil;
+import frc.robot.util.LoggingUtility;
 
 public class TransferSubsystem extends SubsystemBase {
     private final TalonFX spindexerMotor;
@@ -17,8 +20,19 @@ public class TransferSubsystem extends SubsystemBase {
     private final TalonFXConfiguration spindexerConfig = new TalonFXConfiguration();
     private final TalonFXConfiguration feederConfig = new TalonFXConfiguration();
 
+    private final StatusSignal<Current> spindexerSupplyCurrent;
+    private final StatusSignal<Current> spindexerStatorCurrent;
+    private final StatusSignal<Temperature> spindexerDeviceTemp;
+
+    private final StatusSignal<Current> feederSupplyCurrent;
+    private final StatusSignal<Current> feederStatorCurrent;
+    private final StatusSignal<Temperature> feederDeviceTemp;
+
     private final VoltageOut spindexerController = new VoltageOut(0);
     private final VoltageOut feederController = new VoltageOut(0);
+    
+    //TODO: Determine if necessary after changing shooting trajectory to be lower
+    private final boolean USE_INTERPOLATION = false;
 
     private final double SPINNING_VOLTAGE = 12;
     private final double FEEDING_VOLTAGE = 12;
@@ -39,8 +53,6 @@ public class TransferSubsystem extends SubsystemBase {
         put(6.0, 12.0);
     }};
     
-    private long lastMs = 0;
-
     public TransferSubsystem() {
         spindexerMotor = new TalonFX(SPINDEXER_MOTOR_ID);
         feederMotor = new TalonFX(FEEDER_MOTOR_ID);
@@ -69,10 +81,27 @@ public class TransferSubsystem extends SubsystemBase {
 
         spindexerMotor.getConfigurator().apply(spindexerConfig);
         feederMotor.getConfigurator().apply(feederConfig);
+
+        spindexerSupplyCurrent = spindexerMotor.getSupplyCurrent();
+        spindexerStatorCurrent = spindexerMotor.getStatorCurrent();
+        spindexerDeviceTemp = spindexerMotor.getDeviceTemp();
+
+        feederSupplyCurrent = feederMotor.getSupplyCurrent();
+        feederStatorCurrent = feederMotor.getStatorCurrent();
+        feederDeviceTemp = feederMotor.getDeviceTemp();
+
+        BaseStatusSignal.setUpdateFrequencyForAll(
+            10.0,
+            spindexerSupplyCurrent, spindexerStatorCurrent, spindexerDeviceTemp,
+            feederSupplyCurrent, feederStatorCurrent, feederDeviceTemp
+        );
     }
 
     public void spin(double metersToTarget) {
-        spinAtVoltage(distanceToVoltageMap.get(metersToTarget));
+        if (USE_INTERPOLATION)
+            spinAtVoltage(distanceToVoltageMap.get(metersToTarget));
+        else
+            spinAtVoltage(SPINNING_VOLTAGE);
     }
 
     public void reverseSpin() {
@@ -105,26 +134,19 @@ public class TransferSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        logMotorData();
-    }
-
-    private void logMotorData() {
-        long currentMs = System.currentTimeMillis();
-        if (currentMs - lastMs >= DogLogUtil.LOW_PRI_LOGGING_INTERVAL_MS) {
+        if (LoggingUtility.LOG_TRANSFER && LoggingUtility.updateLowPriorityLogs()) {
             BaseStatusSignal.refreshAll(
-                spindexerMotor.getSupplyCurrent(), spindexerMotor.getStatorCurrent(), spindexerMotor.getDeviceTemp(),
-                feederMotor.getSupplyCurrent(), feederMotor.getStatorCurrent(), feederMotor.getDeviceTemp()
+                spindexerSupplyCurrent, spindexerStatorCurrent, spindexerDeviceTemp,
+                feederSupplyCurrent, feederStatorCurrent, feederDeviceTemp
             );
 
-            lastMs = currentMs;
+            LoggingUtility.logDouble("Transfer/spindexer_current", spindexerSupplyCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Transfer/spindexer_stator_current", spindexerStatorCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Transfer/spindexer_temperature_C", spindexerDeviceTemp.getValueAsDouble());
 
-            DogLogUtil.logDouble("Transfer/spindexer_current", spindexerMotor.getSupplyCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Transfer/spindexer_stator_current", spindexerMotor.getStatorCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Transfer/spindexer_temperature_C", spindexerMotor.getDeviceTemp(false).getValueAsDouble());
-
-            DogLogUtil.logDouble("Transfer/feeder_current", feederMotor.getSupplyCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Transfer/feeder_stator_current", feederMotor.getStatorCurrent(false).getValueAsDouble());
-            DogLogUtil.logDouble("Transfer/feeder_temperature_C", feederMotor.getDeviceTemp(false).getValueAsDouble());
+            LoggingUtility.logDouble("Transfer/feeder_current", feederSupplyCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Transfer/feeder_stator_current", feederStatorCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Transfer/feeder_temperature_C", feederDeviceTemp.getValueAsDouble());
         }
     }
 }

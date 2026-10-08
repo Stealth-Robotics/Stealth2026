@@ -1,10 +1,10 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
-import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
@@ -14,8 +14,12 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.util.DogLogUtil;
+import frc.robot.util.LoggingUtility;
 
 public class TurretSubsystem extends SubsystemBase {
     private final TalonFX turretMotor;
@@ -24,22 +28,27 @@ public class TurretSubsystem extends SubsystemBase {
     private final TalonFXConfiguration turretConfig = new TalonFXConfiguration();
     private final CANcoderConfiguration turretEncoderConfig = new CANcoderConfiguration();
 
-    private final VoltageOut turretController = new VoltageOut(0);
+    private final MotionMagicVoltage turretController = new MotionMagicVoltage(0);
+
+    private final StatusSignal<Angle> turretPosition;
+    private final StatusSignal<AngularVelocity> turretVelocitySignal;
+    private final StatusSignal<Current> turretSupplyCurrent;
+    private final StatusSignal<Current> turretStatorCurrent;
+    private final StatusSignal<Temperature> turretDeviceTemp;
 
     private final double TURRET_LOOKAHEAD_SECONDS = 0.1;
 
-    //TODO: Tune new P + FF control system
-    private final double kP = 0.0;
-    private final double kPV = 0.0;
-    private final double kV = 0.0;
+    private final double kACCELERATION = 200.0;
+    private final double kCRUISE_VELOCITY = 400.0;
+    private final double kP = 120.0;
+    private final double kI = 80.0;
+    private final double kD = 0.0;
+    private final double kV = 5.4; //Theoretical value
 
     //The unclamped value that the turret is commanded to go to (used to see if it is at the target)
     private double rawTargetDegrees = 0;
 
-    //The most recent commanded target turret angle
-    private double lastTargetAngleDegrees = 0;
-
-    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 4.0;
+    private final double TURRET_ANGLE_TOLERANCE_DEGREES = 8.0;
 
     public final double MAX_TURRET_DEGREES = 120;
     private final double TURRET_HOME_DEGREES = 0;
@@ -58,8 +67,6 @@ public class TurretSubsystem extends SubsystemBase {
     private final int TURRET_STATOR_LIMIT = 35;
     private final int TURRET_SUPPLY_LIMIT = 30;
     
-    private long lastMs = 0;
-
     public TurretSubsystem() {
         turretMotor = new TalonFX(TURRET_MOTOR_ID);
         turretEncoder = new CANcoder(TURRET_ENCODER_ID);
@@ -72,6 +79,13 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig.CurrentLimits.StatorCurrentLimit = TURRET_STATOR_LIMIT;
         turretConfig.CurrentLimits.SupplyCurrentLimit = TURRET_SUPPLY_LIMIT;
 
+        turretConfig.Slot0.kP = kP;
+        turretConfig.Slot0.kI = kI;
+        turretConfig.Slot0.kD = kD;
+        turretConfig.Slot0.kV = kV;
+        turretConfig.MotionMagic.MotionMagicAcceleration = kACCELERATION;
+        turretConfig.MotionMagic.MotionMagicCruiseVelocity = kCRUISE_VELOCITY;
+
         turretConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         turretConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
@@ -83,25 +97,58 @@ public class TurretSubsystem extends SubsystemBase {
         turretEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
         turretEncoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = TURRET_ENCODER_DISCONTINUTY_POINT;
 
+        //Software limits to be sure the turret doesn't go past its physical range
+        turretConfig.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        turretConfig.SoftwareLimitSwitch.ForwardSoftLimitThreshold = Units.degreesToRotations(MAX_TURRET_DEGREES);
+
+        turretConfig.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        turretConfig.SoftwareLimitSwitch.ReverseSoftLimitThreshold = Units.degreesToRotations(MIN_TURRET_DEGREES);
+
         turretMotor.getConfigurator().apply(turretConfig);
-        turretEncoder.getConfigurator().apply(turretEncoderConfig);        
+        turretEncoder.getConfigurator().apply(turretEncoderConfig);
+        
+        turretPosition = turretMotor.getPosition();
+        turretVelocitySignal = turretMotor.getVelocity();
+        turretSupplyCurrent = turretMotor.getSupplyCurrent();
+        turretStatorCurrent = turretMotor.getStatorCurrent();
+        turretDeviceTemp = turretMotor.getDeviceTemp();
+        
+        //High priority
+        BaseStatusSignal.setUpdateFrequencyForAll(
+            50.0,
+            turretPosition, turretVelocitySignal
+        );
+
+        //Low priority
+        BaseStatusSignal.setUpdateFrequencyForAll(
+            10.0,
+            turretSupplyCurrent, turretStatorCurrent, turretDeviceTemp
+        );
     }
 
     public void homeTurret() {
-        setTarget(TURRET_HOME_DEGREES, 0);
+        setTarget(TURRET_HOME_DEGREES, 0.0);
     }
 
-    public void setTarget(double targetAngleDegrees, double targetVelocity) {
-        rawTargetDegrees = targetAngleDegrees;
-        
-        targetAngleDegrees = MathUtil.clamp(targetAngleDegrees, MIN_TURRET_DEGREES, MAX_TURRET_DEGREES);
-        lastTargetAngleDegrees = targetAngleDegrees;
+    public void setTarget(double degrees, double velocity) {
+        rawTargetDegrees = degrees;
 
-        double angleError = targetAngleDegrees - getTurretAngleDegrees();
-        double velocityError = targetVelocity - getTurretVelocity();
+        double clampedDegrees = MathUtil.clamp(degrees, MIN_TURRET_DEGREES, MAX_TURRET_DEGREES);
+        double targetRotations = Units.degreesToRotations(clampedDegrees);
 
-        double voltageOutput = (kP * angleError) + (kPV * velocityError) + (kV * targetVelocity);
-        turretMotor.setControl(turretController.withOutput(voltageOutput));
+        double feedforward = Units.degreesToRotations(velocity) * kV;
+
+        //Protect against the feedforward voltage trying to rotate the turret past its limits
+        double currentAngle = getTurretAngleDegrees();
+        if ((currentAngle >= MAX_TURRET_DEGREES && feedforward > 0) ||
+            (currentAngle <= MIN_TURRET_DEGREES && feedforward < 0))
+            feedforward = 0.0;
+
+        turretMotor.setControl(
+            turretController
+                .withPosition(targetRotations)
+                .withFeedForward(feedforward)
+        );
     }
 
     /*
@@ -122,38 +169,35 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     private double getTurretVelocity() {
-        return Units.rotationsToDegrees(turretMotor.getVelocity().getValueAsDouble());
+        return Units.rotationsToDegrees(turretVelocitySignal.getValueAsDouble());
     }
 
     public double getTurretAngleDegrees() {
-        return Units.rotationsToDegrees(turretMotor.getPosition().getValueAsDouble());
+        return Units.rotationsToDegrees(turretPosition.getValueAsDouble());
     }
 
     public double getTargetAngleDegrees() {
-        return Units.rotationsToDegrees(lastTargetAngleDegrees);
+        return Units.rotationsToDegrees(turretController.Position);
     }
 
     @Override
     public void periodic() {
+        //Bulk refresh the high priority signals
+        BaseStatusSignal.refreshAll(turretPosition, turretVelocitySignal);
+
         var turretAngle = getTurretAngleDegrees();
         
-        DogLogUtil.logDoubleForceNT("Turret/turret_degrees", turretAngle);
-        DogLogUtil.logDouble("Turret/turret_error_degrees", turretAngle - getTargetAngleDegrees());
+        LoggingUtility.logDoubleForceNT("Turret/turret_degrees", turretAngle);
+        LoggingUtility.logDouble("Turret/turret_error_degrees", turretAngle - getTargetAngleDegrees());
 
-        logMotorData();
-    }
-
-    private void logMotorData() {
-        long currentMs = System.currentTimeMillis();
-        if (currentMs - lastMs >= DogLogUtil.LOW_PRI_LOGGING_INTERVAL_MS) {
+        if (LoggingUtility.LOG_TURRET && LoggingUtility.updateLowPriorityLogs()) {
             BaseStatusSignal.refreshAll(
-                turretMotor.getSupplyCurrent(), turretMotor.getStatorCurrent(), turretMotor.getDeviceTemp()
+                turretSupplyCurrent, turretStatorCurrent, turretDeviceTemp
             );
             
-            DogLogUtil.logDouble("Turret/turret_supply_current", turretMotor.getSupplyCurrent().getValueAsDouble());
-            DogLogUtil.logDouble("Turret/turret_stator_current", turretMotor.getStatorCurrent().getValueAsDouble());
-            DogLogUtil.logDouble("Turret/turret_device_temp", turretMotor.getDeviceTemp().getValueAsDouble());
-            lastMs = currentMs;
+            LoggingUtility.logDouble("Turret/turret_supply_current", turretSupplyCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Turret/turret_stator_current", turretStatorCurrent.getValueAsDouble());
+            LoggingUtility.logDouble("Turret/turret_device_temp", turretDeviceTemp.getValueAsDouble());
         }
     }
 }
