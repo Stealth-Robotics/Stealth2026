@@ -19,9 +19,9 @@ public class SOTMSolver {
     private final InterpolatingDoubleTreeMap hubRPMMap = new InterpolatingDoubleTreeMap();
     private final InterpolatingDoubleTreeMap passRPMMap = new InterpolatingDoubleTreeMap();
 
-    private final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.25, 0.02);
-    private final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.25, 0.02);
-    private final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.25, 0.02);
+    private final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
+    private final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
+    private final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
 
     public SOTMSolver() {
         //Populate interpolation tables with measured values
@@ -80,7 +80,7 @@ public class SOTMSolver {
             robotPose.getX() + vx * LATENCY,
             robotPose.getY() + vy * LATENCY,
             robotPose.getZ(), //Always zero
-            robotPose.getRotation().rotateBy(new Rotation3d(0, 0, vo * LATENCY))
+            robotPose.getRotation().rotateBy(new Rotation3d(0, 0, -vo * LATENCY))
         ).transformBy(TURRET_OFFSET);
 
         double distanceToTarget = targetPose.getDistance(predictedTurretPose.getTranslation());

@@ -18,10 +18,10 @@ public final class LoggingUtility {
     public static final boolean LOG_TURRET = false;
 
     //Device log settings
-    public static final boolean LOG_PIGEON = false;
-    public static final boolean LOG_CAN = false;
+    public static final boolean LOG_PIGEON = true;
+    public static final boolean LOG_CAN = true;
     public static final boolean LOG_LIMELIGHTS = false;
-    public static final boolean LOG_PDH = false;
+    public static final boolean LOG_PDH = true;
 
     private static double lastLowPriorityLog = 0.0;
     private static double lastHighPriorityLog = 0.0;

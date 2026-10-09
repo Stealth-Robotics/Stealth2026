@@ -43,7 +43,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final double kP = 120.0;
     private final double kI = 80.0;
     private final double kD = 0.0;
-    private final double kV = 5.4; //Theoretical value
+    private final double kS = 0.0;
 
     //The unclamped value that the turret is commanded to go to (used to see if it is at the target)
     private double rawTargetDegrees = 0;
@@ -82,7 +82,7 @@ public class TurretSubsystem extends SubsystemBase {
         turretConfig.Slot0.kP = kP;
         turretConfig.Slot0.kI = kI;
         turretConfig.Slot0.kD = kD;
-        turretConfig.Slot0.kV = kV;
+        turretConfig.Slot0.kS = kS;
         turretConfig.MotionMagic.MotionMagicAcceleration = kACCELERATION;
         turretConfig.MotionMagic.MotionMagicCruiseVelocity = kCRUISE_VELOCITY;
 
@@ -127,27 +127,18 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void homeTurret() {
-        setTarget(TURRET_HOME_DEGREES, 0.0);
+        setTarget(TURRET_HOME_DEGREES);
     }
 
-    public void setTarget(double degrees, double velocity) {
+    public void setTarget(double degrees) {
         rawTargetDegrees = degrees;
 
         double clampedDegrees = MathUtil.clamp(degrees, MIN_TURRET_DEGREES, MAX_TURRET_DEGREES);
         double targetRotations = Units.degreesToRotations(clampedDegrees);
 
-        double feedforward = Units.degreesToRotations(velocity) * kV;
-
-        //Protect against the feedforward voltage trying to rotate the turret past its limits
-        double currentAngle = getTurretAngleDegrees();
-        if ((currentAngle >= MAX_TURRET_DEGREES && feedforward > 0) ||
-            (currentAngle <= MIN_TURRET_DEGREES && feedforward < 0))
-            feedforward = 0.0;
-
         turretMotor.setControl(
             turretController
                 .withPosition(targetRotations)
-                .withFeedForward(feedforward)
         );
     }
 
@@ -188,6 +179,7 @@ public class TurretSubsystem extends SubsystemBase {
         var turretAngle = getTurretAngleDegrees();
         
         LoggingUtility.logDoubleForceNT("Turret/turret_degrees", turretAngle);
+        LoggingUtility.logDouble("Turret/target_turret_degrees", getTargetAngleDegrees());
         LoggingUtility.logDouble("Turret/turret_error_degrees", turretAngle - getTargetAngleDegrees());
 
         if (LoggingUtility.LOG_TURRET && LoggingUtility.updateLowPriorityLogs()) {

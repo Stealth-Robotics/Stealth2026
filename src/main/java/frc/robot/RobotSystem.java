@@ -284,21 +284,20 @@ public class RobotSystem extends SubsystemBase {
     @Override
     public void periodic() {
         var drivePose = drive.getPose2d();
-        
+
+        //Update the field's robot pose
+        elasticField.setRobotPose(drivePose);
         ZoneManager.updateRobotPose(drivePose);
 
         updateShootingState();
         updateOdometry();
 
-        //Update the field's robot pose
-        elasticField.setRobotPose(drivePose);
-
-        handleLogging(drivePose);
+        handleLogging(drive.getPose());
     }
 
     //LOGGING (Beware of scariness)
 
-    private void handleLogging(Pose2d drivePose) {
+    private void handleLogging(Pose3d drivePose) {
         if (LoggingUtility.updateHighPriorityLogs()) {
             DogLog.forceNt.log("Current Zone", ZoneManager.getZone().name());
             DogLog.forceNt.log("Driving Mode", currentDrivingMode.name());

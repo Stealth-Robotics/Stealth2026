@@ -239,8 +239,7 @@ public class ShootingSuperstructure extends SubsystemBase {
         else aimTarget = AllianceUtility.flipPose(hubTarget);
 
         latestShotSolution = solver.solve(robotPose, robotVelocitySupplier.get(), aimTarget, pass);
-
-        turret.setTarget(latestShotSolution.turretAngle(), latestShotSolution.turretVelocity());
+        turret.setTarget(latestShotSolution.turretAngle());
     }
 
     private PassingTarget calculatePassingTarget(Pose2d turretPose) {
