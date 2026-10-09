@@ -74,7 +74,7 @@ public class IntakeSubsystem extends SubsystemBase {
     private final double DEPLOY_ENCODER_DISCONTINUTY_POINT = 0.651;
     private final double DEPLOY_POSITION_TOLERANCE = 0.05;
 
-    private final double DEPLOYED_ROTATIONS = -0.02;
+    private final double DEPLOYED_ROTATIONS = 0.0;
     private final double SAFE_ROTATIONS = 0.15;
     private final double FULL_AGITATE_ROTATIONS = 0.25;
     private final double RETRACTED_ROTATIONS = 0.312;
