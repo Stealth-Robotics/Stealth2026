@@ -13,37 +13,35 @@ import edu.wpi.first.math.util.Units;
 public class SOTMSolver {
     private final double GRAVITY = 9.80665;
     private final double LATENCY = Units.millisecondsToSeconds(30);
+
+    //Taken directly from cad measurements
     private final Transform3d TURRET_OFFSET = new Transform3d(0.14, -0.178, 0.5, Rotation3d.kZero);
 
     private final InterpolatingDoubleTreeMap heightMap = new InterpolatingDoubleTreeMap();
-    private final InterpolatingDoubleTreeMap hubRPMMap = new InterpolatingDoubleTreeMap();
-    private final InterpolatingDoubleTreeMap passRPMMap = new InterpolatingDoubleTreeMap();
+    private final InterpolatingDoubleTreeMap rpmMap = new InterpolatingDoubleTreeMap();
 
-    private final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
-    private final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
-    private final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.1, 0.02);
+    private final LinearFilter vxFilter = LinearFilter.singlePoleIIR(0.1, Units.millisecondsToSeconds(20));
+    private final LinearFilter vyFilter = LinearFilter.singlePoleIIR(0.1, Units.millisecondsToSeconds(20));
+    private final LinearFilter vOmegaFilter = LinearFilter.singlePoleIIR(0.1, Units.millisecondsToSeconds(20));
 
     public SOTMSolver() {
         //Populate interpolation tables with measured values
-        heightMap.put(0.0, 2.0);
-        heightMap.put(2.0, 2.0);
+        heightMap.put(0.0, 2.5);
+        heightMap.put(2.0, 2.5);
         heightMap.put(5.14, 3.0);
         heightMap.put(14.0, 6.0);
 
-        hubRPMMap.put(2.0, 2600.0);
-        hubRPMMap.put(2.18, 2700.0);
-        hubRPMMap.put(3.22, 2900.0);
-        hubRPMMap.put(3.36, 3000.0);
-        hubRPMMap.put(3.64, 3000.0);
-        hubRPMMap.put(4.0, 3100.0);
-        hubRPMMap.put(4.2, 3200.0);
-        hubRPMMap.put(5.14, 3300.0);
-
-        passRPMMap.put(3.0, 2800.0);
-        passRPMMap.put(5.0, 3100.0);
-        passRPMMap.put(8.0, 3800.0);
-        passRPMMap.put(11.0, 4200.0);
-        passRPMMap.put(14.0, 6000.0);
+        rpmMap.put(2.0, 2600.0);
+        rpmMap.put(2.18, 2700.0);
+        rpmMap.put(3.22, 2900.0);
+        rpmMap.put(3.36, 3000.0);
+        rpmMap.put(3.64, 3000.0);
+        rpmMap.put(4.0, 3100.0);
+        rpmMap.put(4.2, 3200.0);
+        rpmMap.put(5.14, 3300.0);
+        rpmMap.put(8.0, 3800.0);
+        rpmMap.put(11.0, 4200.0);
+        rpmMap.put(14.0, 6000.0);
     }
 
     public void resetFilters() {
@@ -59,7 +57,7 @@ public class SOTMSolver {
      * @param pass Whether this shot is a pass shot or not
      * @return ShotSolution containing needed setpoints to hit the target
      */
-    public ShotSolution solve(Pose3d robotPose, ChassisSpeeds robotVelocity, Translation3d targetPose, boolean pass) {
+    public ShotSolution solve(Pose3d robotPose, ChassisSpeeds robotVelocity, Translation3d targetPose) {
         double vx = vxFilter.calculate(robotVelocity.vxMetersPerSecond);
         double vy = vyFilter.calculate(robotVelocity.vyMetersPerSecond);
         double vo = vOmegaFilter.calculate(robotVelocity.omegaRadiansPerSecond);
@@ -108,7 +106,7 @@ public class SOTMSolver {
             fuelZVelocity
         );
 
-        double baseRPM = pass ? passRPMMap.get(distanceToTarget) : hubRPMMap.get(distanceToTarget);
+        double baseRPM = rpmMap.get(distanceToTarget);
 
         double stationaryNorm = stationaryShotVelocity.getNorm();
         double veloScale = (stationaryNorm > 1e-4) ? movingShotVelocity.getNorm() / stationaryNorm : 1.0;
