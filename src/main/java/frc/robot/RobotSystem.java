@@ -49,8 +49,9 @@ public class RobotSystem extends SubsystemBase {
     private final Field2d elasticField = new Field2d();
 
     private DrivingMode currentDrivingMode = DrivingMode.NORMAL;
+    private DrivingMode lastDrivingMode = DrivingMode.NORMAL;
 
-    private double filteredX, filteredY, filteredTheta;
+    private double filteredX, filteredY, filteredTheta, lastFilteredX, lastFilteredY, lastFilteredTheta;
 
     private final SlewRateLimiter precisionXLimiter = new SlewRateLimiter(4.0), precisionYLimiter = new SlewRateLimiter(4.0);
     private final SlewRateLimiter precisionThetaLimiter = new SlewRateLimiter(10.0);
@@ -167,6 +168,14 @@ public class RobotSystem extends SubsystemBase {
                 yInput = Math.copySign(Math.pow(yInput, 2), yInput);
                 thetaInput = Math.copySign(Math.pow(thetaInput, 2), thetaInput);
 
+                if (currentDrivingMode != lastDrivingMode) {
+                    precisionXLimiter.reset(lastFilteredX);
+                    precisionYLimiter.reset(lastFilteredY);
+                    precisionThetaLimiter.reset(lastFilteredTheta);
+
+                    lastDrivingMode = currentDrivingMode;
+                }
+
                 if (currentDrivingMode.equals(DrivingMode.PRECISION)) {
                     filteredX = precisionXLimiter.calculate(xInput);
                     filteredY = precisionYLimiter.calculate(yInput);
@@ -177,6 +186,10 @@ public class RobotSystem extends SubsystemBase {
                     filteredY = yInput;
                     filteredTheta = thetaInput;
                 }
+                
+                lastFilteredX = filteredX;
+                lastFilteredY = filteredY;
+                lastFilteredTheta = filteredTheta;
 
                 double speed = currentDrivingMode.getSlowingFactor();
 
@@ -191,10 +204,6 @@ public class RobotSystem extends SubsystemBase {
     public Command activatePrecisionDriving() {
         return new StartEndCommand(
             () -> {
-                precisionXLimiter.reset(0.0);
-                precisionYLimiter.reset(0.0);
-                precisionThetaLimiter.reset(0.0);
-
                 currentDrivingMode = DrivingMode.PRECISION;
             },
             () -> {
