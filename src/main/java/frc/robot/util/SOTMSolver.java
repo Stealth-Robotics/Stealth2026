@@ -74,6 +74,7 @@ public class SOTMSolver {
         double turretVx = vx + turretTangentialVelocityFieldRelative.getX();
         double turretVy = vy + turretTangentialVelocityFieldRelative.getY();
 
+        //! I'm suspicious of this
         Pose3d predictedTurretPose = new Pose3d(
             robotPose.getX() + vx * LATENCY,
             robotPose.getY() + vy * LATENCY,
@@ -114,8 +115,9 @@ public class SOTMSolver {
         //Scale up the measured RPM by the scale needed to compensate for robot velocity
         double targetFlywheelRPM = baseRPM * veloScale;
 
+        //Tilt the shot vector by the inverse of the robot's tilt - effectively cancelling the robot's tilt angle
         Translation3d tiltAdjustedShotVelocity =
-            movingShotVelocity.rotateBy(predictedTurretPose.getRotation().unaryMinus());
+            movingShotVelocity.rotateBy(Gyro.flatten(predictedTurretPose.getRotation().unaryMinus()));
         
         //Calculate the necessary turret and hood angles to hit the target
         double targetTurretAngle = -Units.radiansToDegrees(Math.atan2(tiltAdjustedShotVelocity.getY(), tiltAdjustedShotVelocity.getX()));
