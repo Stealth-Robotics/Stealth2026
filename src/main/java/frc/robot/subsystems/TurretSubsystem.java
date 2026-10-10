@@ -22,6 +22,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.LoggingUtility;
 
 public class TurretSubsystem extends SubsystemBase {
+
+    public boolean forceAllowShooting = false;
     private final TalonFX turretMotor;
     private final CANcoder turretEncoder;
 
@@ -150,8 +152,8 @@ public class TurretSubsystem extends SubsystemBase {
             rawTargetDegrees < (MAX_TURRET_DEGREES + TURRET_ANGLE_TOLERANCE_DEGREES) &&
             rawTargetDegrees > (MIN_TURRET_DEGREES - TURRET_ANGLE_TOLERANCE_DEGREES);
 
-        return targetInRange && !isApproachingLimit() &&
-            Math.abs(getTurretAngleDegrees() - rawTargetDegrees) < TURRET_ANGLE_TOLERANCE_DEGREES;
+        return (targetInRange && !isApproachingLimit() &&
+            Math.abs(getTurretAngleDegrees() - rawTargetDegrees) < TURRET_ANGLE_TOLERANCE_DEGREES) || forceAllowShooting;
     }
 
     public boolean isApproachingLimit() {

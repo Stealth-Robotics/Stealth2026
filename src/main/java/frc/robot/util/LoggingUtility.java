@@ -11,15 +11,15 @@ public final class LoggingUtility {
     private static final int HIGH_PRIORITY_INTERVAL_MS = 50;
 
     //Subsystem log settings
-    public static final boolean LOG_DRIVE = false;
+    public static final boolean LOG_DRIVE = true;
     public static final boolean LOG_INTAKE = false;
     public static final boolean LOG_SHOOTER = false;
     public static final boolean LOG_TRANSFER = false;
     public static final boolean LOG_TURRET = false;
 
     //Device log settings
-    public static final boolean LOG_PIGEON = true;
-    public static final boolean LOG_CAN = true;
+    public static final boolean LOG_PIGEON = false;
+    public static final boolean LOG_CAN = false;
     public static final boolean LOG_LIMELIGHTS = false;
     public static final boolean LOG_PDH = true;
 

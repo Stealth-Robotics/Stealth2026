@@ -84,6 +84,9 @@ public class RobotContainer {
         // driverController.start().onTrue(new InstantCommand(() -> robot.getDrive().getPigeon2().reset()));
 
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
+        operatorController.x()
+            .onTrue(new InstantCommand(() -> robot.turretForceAllowShooting(true)))
+            .onFalse(new InstantCommand(() -> robot.turretForceAllowShooting(false)));
  
         operatorController.povUp()
             .onTrue(new InstantCommand(() -> robot.changeRPMOffset(25)));

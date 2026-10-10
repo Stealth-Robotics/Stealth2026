@@ -74,6 +74,10 @@ public class RobotSystem extends SubsystemBase {
         SmartDashboard.putData("ElasticField", elasticField);
     }
 
+    public void turretForceAllowShooting(boolean val) {
+        shooter.turretForceAllowShooting(val);
+    }
+
     public Command forceResetOdometry() {
         return new InstantCommand(() -> drive.resetPose(AllianceUtility.flipPose(ODOMETRY_RESET_POSE)));
     }
@@ -293,13 +297,12 @@ public class RobotSystem extends SubsystemBase {
     @Override
     public void periodic() {
         var drivePose = drive.getPose2d();
-
-        //Update the field's robot pose
-        elasticField.setRobotPose(drivePose);
         ZoneManager.updateRobotPose(drivePose);
 
         updateShootingState();
         updateOdometry();
+
+        elasticField.setRobotPose(drivePose);
 
         handleLogging(drive.getPose());
     }
