@@ -24,7 +24,7 @@ public class Autos {
 
     public enum AutoName {
         LEFT_DB,
-        RIGHT_DB,
+        RIGHT_DB, 
         
         LEFT_DB_SAFE,
         RIGHT_DB_SAFE,

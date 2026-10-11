@@ -78,11 +78,6 @@
       }
     },
     {
-      "type": "event_trigger",
-      "t_ratio": 0.8627757133231355,
-      "lib_key": "shoot"
-    },
-    {
       "type": "waypoint",
       "translation_target": {
         "x_meters": 3.12440235887901,
@@ -93,6 +88,11 @@
         "rotation_radians": 0.0,
         "profiled_rotation": true
       }
+    },
+    {
+      "type": "event_trigger",
+      "t_ratio": 0.3214744691621071,
+      "lib_key": "shoot"
     },
     {
       "type": "waypoint",
