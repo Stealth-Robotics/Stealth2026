@@ -31,8 +31,7 @@ public class TransferSubsystem extends SubsystemBase {
     private final VoltageOut spindexerController = new VoltageOut(0);
     private final VoltageOut feederController = new VoltageOut(0);
     
-    //TODO: Determine if necessary after changing shooting trajectory to be lower
-    private final boolean USE_INTERPOLATION = false;
+    private final boolean USE_INTERPOLATION = true;
 
     private final double SPINNING_VOLTAGE = 12;
     private final double FEEDING_VOLTAGE = 12;
@@ -41,16 +40,15 @@ public class TransferSubsystem extends SubsystemBase {
     private final int FEEDER_MOTOR_ID = 6;
 
     private final int SPINDEXER_SUPPLY_LIMIT = 40;
-    private final int FEEDER_SUPPLY_LIMIT = 60;
+    private final int FEEDER_SUPPLY_LIMIT = 30;
 
-    private final int SPINDEXER_STATOR_LIMIT = 45;
-    private final int FEEDER_STATOR_LIMIT = 50;
+    private final int SPINDEXER_STATOR_LIMIT = 40;
+    private final int FEEDER_STATOR_LIMIT = 40;
     
     private final InterpolatingDoubleTreeMap distanceToVoltageMap = new InterpolatingDoubleTreeMap() {{
-        put(2.0, 4.0);
-        put(3.0, 8.0);
-        put(4.0, 12.0);
-        put(6.0, 12.0);
+        put(1.0, 4.0);
+        put(3.0, SPINNING_VOLTAGE);
+        put(6.0, SPINNING_VOLTAGE);
     }};
     
     public TransferSubsystem() {

@@ -139,7 +139,7 @@ public class Autos {
 
         autoBuilder
             .followPath("DB_1")
-            .addCommand(() -> shootForTime(3))
+            .addCommand(() -> shootForTime(3.5))
             .addCommand(() -> deployAndIntake())
             .followPath("DB_2_Safe")
             .addCommand(() -> shootWithAgitate())
@@ -156,7 +156,7 @@ public class Autos {
 
         autoBuilder
             .followPath("DB_1")
-            .addCommand(() -> shootForTime(3))
+            .addCommand(() -> shootForTime(3.5))
             .addCommand(() -> deployAndIntake())
             .followPath("DB_2")
             .addCommand(() -> shootWithAgitate())
