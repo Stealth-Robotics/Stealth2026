@@ -47,6 +47,7 @@ public class TransferSubsystem extends SubsystemBase {
     
     private final InterpolatingDoubleTreeMap distanceToVoltageMap = new InterpolatingDoubleTreeMap() {{
         put(1.0, 4.0);
+        put(2.0, 6.0);
         put(3.0, SPINNING_VOLTAGE);
         put(6.0, SPINNING_VOLTAGE);
     }};

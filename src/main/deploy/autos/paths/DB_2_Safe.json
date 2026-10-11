@@ -98,14 +98,14 @@
     },
     {
       "type": "event_trigger",
-      "t_ratio": 0.3678775732847285,
+      "t_ratio": 1.0,
       "lib_key": "shoot"
     },
     {
       "type": "waypoint",
       "translation_target": {
-        "x_meters": 1.8984155576877106,
-        "y_meters": 1.0405601190149305,
+        "x_meters": 2.066375087272301,
+        "y_meters": 1.651322044777075,
         "intermediate_handoff_radius_meters": 0.3
       },
       "rotation_target": {
