@@ -11,7 +11,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 
 public class SOTMSolver {
-    private final double CONSTANT_RPM_OFFSET = 130;
+    private final double CONSTANT_RPM_OFFSET = -115;
 
     private final double GRAVITY = 9.80665;
     private final double LATENCY = Units.millisecondsToSeconds(30);
@@ -108,7 +108,7 @@ public class SOTMSolver {
             fuelZVelocity
         );
 
-        double baseRPM = rpmMap.get(distanceToTarget) - CONSTANT_RPM_OFFSET;
+        double baseRPM = rpmMap.get(distanceToTarget) + CONSTANT_RPM_OFFSET;
 
         double stationaryNorm = stationaryShotVelocity.getNorm();
         double veloScale = (stationaryNorm > 1e-4) ? movingShotVelocity.getNorm() / stationaryNorm : 1.0;
