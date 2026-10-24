@@ -11,7 +11,7 @@ public final class LoggingUtility {
     private static final int HIGH_PRIORITY_INTERVAL_MS = 50;
 
     //Subsystem log settings
-    public static final boolean LOG_DRIVE = true;
+    public static final boolean LOG_DRIVE = false;
     public static final boolean LOG_INTAKE = false;
     public static final boolean LOG_SHOOTER = false;
     public static final boolean LOG_TRANSFER = false;

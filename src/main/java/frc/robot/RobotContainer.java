@@ -31,6 +31,7 @@ public class RobotContainer {
         DogLog.setOptions(new DogLogOptions()
             .withCaptureConsole(true)
             .withNtPublish(true)
+            .withCaptureNt(true)
             .withCaptureDs(false)
             .withLogExtras(false)
         );
@@ -84,7 +85,7 @@ public class RobotContainer {
         // driverController.start().onTrue(new InstantCommand(() -> robot.getDrive().getPigeon2().reset()));
 
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
-        operatorController.x()
+        driverController.x()
             .onTrue(new InstantCommand(() -> robot.turretForceAllowShooting(true)))
             .onFalse(new InstantCommand(() -> robot.turretForceAllowShooting(false)));
  
