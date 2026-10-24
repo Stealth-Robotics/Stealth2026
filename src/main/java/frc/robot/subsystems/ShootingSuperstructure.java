@@ -328,8 +328,6 @@ public class ShootingSuperstructure extends SubsystemBase {
             }
 
             case TRENCH -> {
-                //Keep hood down while in the trench
-                shooter.setHoodDegrees(0);
                 aim(false);
             }
 
