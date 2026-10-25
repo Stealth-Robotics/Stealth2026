@@ -62,6 +62,8 @@ public class RobotSystem extends SubsystemBase {
     //Pose centered on the front of the hub to reset to if our vision goes haywire
     private final Pose2d ODOMETRY_RESET_POSE = new Pose2d(3.612, 4.027, Rotation2d.kZero);
 
+    public boolean dontUseVision = false;
+
     public RobotSystem(CommandXboxController driverController, CommandXboxController operatorController) {
         drive = TunerConstants.createDrivetrain();
         intake = new IntakeSubsystem();
@@ -240,7 +242,7 @@ public class RobotSystem extends SubsystemBase {
         boolean drivingSlowEnough = 
             Math.hypot(robotSpeed.vxMetersPerSecond, robotSpeed.vyMetersPerSecond) < LimelightConstants.MAX_VELO_METERS_PER_SECOND;
         
-        if (!rotatingSlowEnough || !drivingSlowEnough)
+        if (!rotatingSlowEnough || !drivingSlowEnough || dontUseVision)
             return;
 
         for (String limelight : LimelightConstants.LIMELIGHTS) {
@@ -305,6 +307,8 @@ public class RobotSystem extends SubsystemBase {
         elasticField.setRobotPose(drivePose);
 
         handleLogging(drive.getPose());
+
+        DogLog.forceNt.log("visionDisabled", dontUseVision);
     }
 
     //LOGGING (Beware of scariness)

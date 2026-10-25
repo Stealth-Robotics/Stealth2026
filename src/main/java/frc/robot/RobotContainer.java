@@ -86,8 +86,7 @@ public class RobotContainer {
 
         operatorController.leftBumper().whileTrue(robot.clearTransfer());
         driverController.x()
-            .onTrue(new InstantCommand(() -> robot.turretForceAllowShooting(true)))
-            .onFalse(new InstantCommand(() -> robot.turretForceAllowShooting(false)));
+            .onTrue(new InstantCommand(() -> robot.dontUseVision = !robot.dontUseVision));
  
         operatorController.povUp()
             .onTrue(new InstantCommand(() -> robot.changeRPMOffset(25)));
